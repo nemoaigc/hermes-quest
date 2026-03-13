@@ -1,7 +1,7 @@
 import { useWebSocket } from './websocket'
 import TopBar from './panels/TopBar'
 import CharacterPanel from './panels/CharacterPanel'
-import SkillInventory from './panels/SkillInventory'
+import SkillPanel from './panels/SkillPanel'
 import CenterTabs from './panels/CenterTabs'
 import AdventureLog from './panels/AdventureLog'
 
@@ -25,7 +25,7 @@ export default function App() {
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
           <CharacterPanel />
-          <SkillInventory />
+          <SkillPanel />
         </div>
         <CenterTabs />
         <AdventureLog />
