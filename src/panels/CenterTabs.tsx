@@ -1,6 +1,6 @@
 import { useStore } from '../store'
 import KnowledgeMap from './KnowledgeMap'
-import QuestBoard from './QuestBoard'
+import GuildPanel from './GuildPanel'
 import Shop from './Shop'
 import NPCDialogBar from './NPCDialogBar'
 import type { TabId } from '../types'
@@ -30,7 +30,7 @@ export default function CenterTabs() {
       </div>
       <div className="pixel-panel" style={{ flex: 1, overflow: 'auto' }}>
         {activeTab === 'map' && <KnowledgeMap />}
-        {activeTab === 'guild' && <QuestBoard />}
+        {activeTab === 'guild' && <GuildPanel />}
         {activeTab === 'shop' && <Shop />}
       </div>
       <NPCDialogBar />
