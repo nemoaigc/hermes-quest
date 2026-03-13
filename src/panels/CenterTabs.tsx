@@ -1,5 +1,5 @@
 import { useStore } from '../store'
-import WorldMap from './WorldMap'
+import KnowledgeMap from './KnowledgeMap'
 import QuestBoard from './QuestBoard'
 import Shop from './Shop'
 import NPCDialogBar from './NPCDialogBar'
@@ -29,7 +29,7 @@ export default function CenterTabs() {
         ))}
       </div>
       <div className="pixel-panel" style={{ flex: 1, overflow: 'auto' }}>
-        {activeTab === 'map' && <WorldMap />}
+        {activeTab === 'map' && <KnowledgeMap />}
         {activeTab === 'guild' && <QuestBoard />}
         {activeTab === 'shop' && <Shop />}
       </div>
