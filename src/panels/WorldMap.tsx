@@ -44,7 +44,6 @@ function getHexCenter(col: number, row: number, hexW: number, hexH: number, padX
 }
 
 export default function WorldMap() {
-  const regions = useStore((s) => s.regions)
   const state = useStore((s) => s.state)
 
   const hexW = 110
@@ -54,8 +53,19 @@ export default function WorldMap() {
   const svgW = padX * 2 + 5.5 * hexW
   const svgH = padY * 2 + 3.5 * hexH
 
-  // Build a lookup from regions
-  const regionMap = new Map(regions.map((r) => [r.id, r]))
+  // Derive region status from AgentState arrays
+  const unlockedSet = new Set(state?.regions_unlocked ?? [])
+  const clearedSet = new Set(state?.regions_cleared ?? [])
+  const currentRegion = state?.current_region ?? ''
+
+  // Build a lookup compatible with existing render code
+  const regionMap = new Map(
+    Object.keys(HEX_POS).map((id) => [id, {
+      unlocked: unlockedSet.has(id),
+      current: id === currentRegion,
+      cleared: clearedSet.has(id),
+    }])
+  )
 
   // Calculate mastery % for each domain based on skills
   const skillDist = state?.skill_distribution || {}

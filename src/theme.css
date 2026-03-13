@@ -79,8 +79,8 @@ html, body, #root {
   text-shadow: 1px 1px 0 #000;
 }
 
-.stat-bar-fill.hp { background: var(--red); }
-.stat-bar-fill.mp { background: var(--cyan); }
+.stat-bar-fill.stability { background: var(--red); }
+.stat-bar-fill.energy { background: var(--cyan); }
 .stat-bar-fill.xp { background: var(--green); }
 
 .rarity-common { border-color: #6b7280; }

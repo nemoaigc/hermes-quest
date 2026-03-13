@@ -59,8 +59,8 @@ export default function CharacterPanel() {
         </div>
       </div>
 
-      <StatBar label="STABILITY" current={state.hp} max={state.hp_max} type="hp" />
-      <StatBar label="ENERGY" current={state.mp} max={state.mp_max} type="mp" />
+      <StatBar label="STABILITY" current={state.stability} max={state.stability_max} type="stability" />
+      <StatBar label="ENERGY" current={state.energy} max={state.energy_max} type="energy" />
       <StatBar label="XP" current={state.xp} max={state.xp_to_next} type="xp" />
 
       <div style={{ marginTop: '8px', fontSize: '9px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>

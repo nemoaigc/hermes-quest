@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import type {
-  Continent, SubRegion, Connection, FogRegion,
-  RecommendedQuest, KnowledgeMap,
-  Quest, QuestStatus, QuestSource,
+  KnowledgeMap,
+  Quest, QuestStatus,
   BagItem, BagItemType,
-  NpcId, NpcMood, NpcChatRequest, NpcChatResponse, NpcAction,
+  NpcChatRequest, NpcChatResponse,
 } from '../types'
 
 describe('types', () => {

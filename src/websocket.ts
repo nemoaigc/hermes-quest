@@ -5,19 +5,22 @@ const WS_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.host}/ws`
 const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.host}`
 
 function fetchInitialData() {
-  const { setState, setSkills, setRegions, setEvents } = useStore.getState()
+  const { setState, setSkills, setEvents, setKnowledgeMap, setQuests, setBagItems } = useStore.getState()
   fetch(`${API_URL}/api/state`).then(r => r.json()).then(setState).catch(() => {})
   fetch(`${API_URL}/api/skills`).then(r => r.json()).then(setSkills).catch(() => {})
-  fetch(`${API_URL}/api/regions`).then(r => r.json()).then(setRegions).catch(() => {})
   fetch(`${API_URL}/api/events`).then(r => r.json()).then(setEvents).catch(() => {})
+  fetch(`${API_URL}/api/map`).then(r => {
+    if (r.ok) return r.json()
+    return null
+  }).then(data => { if (data) setKnowledgeMap(data) }).catch(() => {})
+  fetch(`${API_URL}/api/quest/active`).then(r => r.json()).then(d => setQuests(d.quests || [])).catch(() => {})
+  fetch(`${API_URL}/api/bag/items`).then(r => r.json()).then(d => setBagItems(d.items || [])).catch(() => {})
 }
 
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null)
-  const { setState, addEvent, setConnected, setSkills, setRegions } = useStore()
 
   useEffect(() => {
-    // Always fetch initial data via REST, regardless of WS status
     fetchInitialData()
 
     let reconnectTimer: ReturnType<typeof setTimeout>
@@ -27,28 +30,32 @@ export function useWebSocket() {
       wsRef.current = ws
 
       ws.onopen = () => {
-        setConnected(true)
+        useStore.getState().setConnected(true)
       }
 
       ws.onmessage = (e) => {
         try {
           const msg = JSON.parse(e.data)
+          const store = useStore.getState()
           if (msg.type === 'state') {
-            setState(msg.data)
+            store.setState(msg.data)
           } else if (msg.type === 'event') {
-            addEvent(msg.data)
+            store.addEvent(msg.data)
             if (['skill_drop', 'hub_acquire'].includes(msg.data.type)) {
-              fetch(`${API_URL}/api/skills`).then(r => r.json()).then(setSkills).catch(() => {})
+              fetch(`${API_URL}/api/skills`).then(r => r.json()).then(store.setSkills).catch(() => {})
             }
-            if (['region_unlock', 'region_move'].includes(msg.data.type)) {
-              fetch(`${API_URL}/api/regions`).then(r => r.json()).then(setRegions).catch(() => {})
-            }
+          } else if (msg.type === 'map') {
+            store.setKnowledgeMap(msg.data)
+          } else if (msg.type === 'quest') {
+            fetch(`${API_URL}/api/quest/active`).then(r => r.json()).then(d => store.setQuests(d.quests || [])).catch(() => {})
+          } else if (msg.type === 'bag') {
+            fetch(`${API_URL}/api/bag/items`).then(r => r.json()).then(d => store.setBagItems(d.items || [])).catch(() => {})
           }
         } catch {}
       }
 
       ws.onclose = () => {
-        setConnected(false)
+        useStore.getState().setConnected(false)
         reconnectTimer = setTimeout(connect, 3000)
       }
 
@@ -60,7 +67,7 @@ export function useWebSocket() {
       clearTimeout(reconnectTimer)
       wsRef.current?.close()
     }
-  }, [setState, addEvent, setConnected, setSkills, setRegions])
+  }, [])
 }
 
 export { API_URL }
