@@ -1,0 +1,223 @@
+<h2>地图层：大区域布局方案</h2>
+<p class="subtitle">Hermes 的知识版图 — 静态地图层，点击进入图谱层</p>
+
+<div class="cards">
+  <!-- Option A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a140c;padding:20px;min-height:280px;position:relative;">
+      <!-- Parchment style map with continent blobs -->
+      <svg viewBox="0 0 400 280" style="width:100%;height:auto;">
+        <!-- Parchment background -->
+        <rect width="400" height="280" rx="8" fill="#1a140c"/>
+        <rect x="5" y="5" width="390" height="270" rx="6" fill="#0d0a08" stroke="#3a2a1a" stroke-width="1"/>
+
+        <!-- Fog overlay for locked areas -->
+        <rect x="240" y="10" width="150" height="120" rx="20" fill="#0a0a0a" opacity="0.7"/>
+        <text x="315" y="70" text-anchor="middle" fill="#3a3a3a" font-size="10" font-family="monospace">???</text>
+
+        <!-- Region: Software Engineering (large, unlocked) -->
+        <ellipse cx="100" cy="100" rx="70" ry="50" fill="#1a2a1a" stroke="#66BB6A" stroke-width="1.5" opacity="0.8"/>
+        <text x="100" y="90" text-anchor="middle" fill="#66BB6A" font-size="11" font-family="monospace" font-weight="bold">Software</text>
+        <text x="100" y="105" text-anchor="middle" fill="#66BB6A" font-size="11" font-family="monospace" font-weight="bold">Engineering</text>
+        <!-- Sub-regions as small dots -->
+        <circle cx="70" cy="80" r="6" fill="#4CAF50" opacity="0.6"/>
+        <circle cx="110" cy="75" r="4" fill="#81C784" opacity="0.4"/>
+        <circle cx="130" cy="100" r="5" fill="#66BB6A" opacity="0.5"/>
+        <!-- Hermes sprite indicator -->
+        <circle cx="85" cy="95" r="8" fill="none" stroke="#f0e68c" stroke-width="2">
+          <animate attributeName="r" values="8;10;8" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <rect x="82" y="88" width="6" height="10" rx="1" fill="#f0e68c"/>
+        <rect x="80" y="92" width="10" height="2" fill="#c8a87a"/>
+
+        <!-- Region: Research (medium, unlocked) -->
+        <ellipse cx="220" cy="180" rx="55" ry="40" fill="#1a1a2a" stroke="#CE93D8" stroke-width="1.5" opacity="0.8"/>
+        <text x="220" y="175" text-anchor="middle" fill="#CE93D8" font-size="11" font-family="monospace" font-weight="bold">Research</text>
+        <circle cx="200" cy="195" r="4" fill="#AB47BC" opacity="0.5"/>
+        <circle cx="235" cy="190" r="3" fill="#CE93D8" opacity="0.4"/>
+
+        <!-- Region: Automation (small, partially revealed) -->
+        <ellipse cx="100" cy="220" rx="45" ry="30" fill="#1a1a1f" stroke="#78909C" stroke-width="1" opacity="0.5"/>
+        <text x="100" y="220" text-anchor="middle" fill="#78909C" font-size="10" font-family="monospace" opacity="0.6">Automation</text>
+
+        <!-- Paths between regions -->
+        <path d="M140,120 Q180,150 200,165" stroke="#5c3a1e" stroke-width="1.5" fill="none" stroke-dasharray="4,3" opacity="0.5"/>
+        <path d="M100,150 Q100,180 100,190" stroke="#3a2a1a" stroke-width="1" fill="none" stroke-dasharray="3,4" opacity="0.3"/>
+
+        <!-- Compass rose -->
+        <g transform="translate(360,240)">
+          <circle r="12" fill="none" stroke="#5c3a1e" stroke-width="0.5"/>
+          <line x1="0" y1="-10" x2="0" y2="10" stroke="#8b5e3c" stroke-width="0.5"/>
+          <line x1="-10" y1="0" x2="10" y2="0" stroke="#8b5e3c" stroke-width="0.5"/>
+          <text x="0" y="-14" text-anchor="middle" fill="#8b5e3c" font-size="6">N</text>
+        </g>
+
+        <!-- Title -->
+        <text x="200" y="20" text-anchor="middle" fill="#f0e68c" font-size="9" font-family="monospace" letter-spacing="2">KNOWLEDGE ATLAS</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>A: 大陆地图风格</h3>
+      <p>区域是不规则的"大陆"形状，大小反映技能数量。迷雾覆盖未探索区域。有手绘路径连接。Hermes 精灵站在当前区域。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>最像 RPG 世界地图</li><li>大陆大小天然表达精通度</li><li>迷雾效果沉浸感强</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>不规则形状在新区域动态出现时布局复杂</li><li>区域多了会挤</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a140c;padding:20px;min-height:280px;">
+      <svg viewBox="0 0 400 280" style="width:100%;height:auto;">
+        <rect width="400" height="280" rx="8" fill="#1a140c"/>
+        <rect x="5" y="5" width="390" height="270" rx="6" fill="#0d0a08" stroke="#3a2a1a" stroke-width="1"/>
+
+        <!-- Title -->
+        <text x="200" y="22" text-anchor="middle" fill="#f0e68c" font-size="9" font-family="monospace" letter-spacing="2">KNOWLEDGE ATLAS</text>
+
+        <!-- Hex grid cells -->
+        <!-- Row 1 -->
+        <g transform="translate(120,60)">
+          <polygon points="0,-30 26,-15 26,15 0,30 -26,15 -26,-15" fill="#1a2a1a" stroke="#66BB6A" stroke-width="1.5"/>
+          <text x="0" y="-5" text-anchor="middle" fill="#66BB6A" font-size="8" font-family="monospace">PRG</text>
+          <text x="0" y="8" text-anchor="middle" fill="#66BB6A" font-size="6" font-family="monospace">Programming</text>
+          <!-- Progress fill -->
+          <rect x="-15" y="13" width="30" height="3" rx="1" fill="#0a0a0a"/>
+          <rect x="-15" y="13" width="12" height="3" rx="1" fill="#66BB6A" opacity="0.7"/>
+          <!-- Hermes here -->
+          <circle r="4" cy="-18" fill="#f0e68c">
+            <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite"/>
+          </circle>
+        </g>
+
+        <g transform="translate(180,60)">
+          <polygon points="0,-30 26,-15 26,15 0,30 -26,15 -26,-15" fill="#1a1a22" stroke="#78909C" stroke-width="1.5"/>
+          <text x="0" y="-5" text-anchor="middle" fill="#78909C" font-size="8" font-family="monospace">DBG</text>
+          <text x="0" y="8" text-anchor="middle" fill="#78909C" font-size="6" font-family="monospace">Debugging</text>
+          <rect x="-15" y="13" width="30" height="3" rx="1" fill="#0a0a0a"/>
+          <rect x="-15" y="13" width="6" height="3" rx="1" fill="#78909C" opacity="0.7"/>
+        </g>
+
+        <g transform="translate(240,60)">
+          <polygon points="0,-30 26,-15 26,15 0,30 -26,15 -26,-15" fill="#0a0a0a" stroke="#3a3a3a" stroke-width="0.5" stroke-dasharray="3,2"/>
+          <text x="0" y="0" text-anchor="middle" fill="#3a3a3a" font-size="10" font-family="monospace">?</text>
+        </g>
+
+        <!-- Row 2 -->
+        <g transform="translate(150,115)">
+          <polygon points="0,-30 26,-15 26,15 0,30 -26,15 -26,-15" fill="#1a1a2a" stroke="#CE93D8" stroke-width="1"/>
+          <text x="0" y="-5" text-anchor="middle" fill="#CE93D8" font-size="8" font-family="monospace">RSC</text>
+          <text x="0" y="8" text-anchor="middle" fill="#CE93D8" font-size="6" font-family="monospace">Research</text>
+          <rect x="-15" y="13" width="30" height="3" rx="1" fill="#0a0a0a"/>
+          <rect x="-15" y="13" width="8" height="3" rx="1" fill="#CE93D8" opacity="0.7"/>
+        </g>
+
+        <g transform="translate(210,115)">
+          <polygon points="0,-30 26,-15 26,15 0,30 -26,15 -26,-15" fill="#0a0a0a" stroke="#3a3a3a" stroke-width="0.5" stroke-dasharray="3,2"/>
+          <text x="0" y="0" text-anchor="middle" fill="#3a3a3a" font-size="10" font-family="monospace">?</text>
+        </g>
+
+        <g transform="translate(270,115)">
+          <polygon points="0,-30 26,-15 26,15 0,30 -26,15 -26,-15" fill="#0a0a0a" stroke="#3a3a3a" stroke-width="0.5" stroke-dasharray="3,2"/>
+          <text x="0" y="0" text-anchor="middle" fill="#3a3a3a" font-size="10" font-family="monospace">?</text>
+        </g>
+
+        <!-- Row 3 -->
+        <g transform="translate(120,170)">
+          <polygon points="0,-30 26,-15 26,15 0,30 -26,15 -26,-15" fill="#1a1a1f" stroke="#546E7A" stroke-width="0.8" opacity="0.5"/>
+          <text x="0" y="-5" text-anchor="middle" fill="#546E7A" font-size="8" font-family="monospace" opacity="0.5">AUT</text>
+          <text x="0" y="8" text-anchor="middle" fill="#546E7A" font-size="6" font-family="monospace" opacity="0.5">Automation</text>
+        </g>
+
+        <g transform="translate(180,170)">
+          <polygon points="0,-30 26,-15 26,15 0,30 -26,15 -26,-15" fill="#0a0a0a" stroke="#3a3a3a" stroke-width="0.5" stroke-dasharray="3,2"/>
+          <text x="0" y="0" text-anchor="middle" fill="#3a3a3a" font-size="10" font-family="monospace">?</text>
+        </g>
+
+        <!-- Connection lines -->
+        <line x1="140" y1="75" x2="160" y2="75" stroke="#5c3a1e" stroke-width="1" opacity="0.4"/>
+        <line x1="135" y1="85" x2="140" y2="100" stroke="#5c3a1e" stroke-width="1" opacity="0.3"/>
+        <line x1="165" y1="85" x2="160" y2="100" stroke="#5c3a1e" stroke-width="1" opacity="0.3"/>
+
+        <!-- Legend -->
+        <g transform="translate(30,240)">
+          <circle cx="0" cy="0" r="4" fill="#f0e68c"/><text x="10" y="3" fill="#c8a87a" font-size="7" font-family="monospace">= Hermes</text>
+          <polygon points="60,-4 68,-8 68,0 60,4 52,0 52,-8" fill="none" stroke="#66BB6A" stroke-width="1"/><text x="75" y="3" fill="#c8a87a" font-size="7" font-family="monospace">= Explored</text>
+          <polygon points="140,-4 148,-8 148,0 140,4 132,0 132,-8" fill="none" stroke="#3a3a3a" stroke-width="0.5" stroke-dasharray="2,1"/><text x="155" y="3" fill="#c8a87a" font-size="7" font-family="monospace">= Fog</text>
+        </g>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>B: 蜂窝六边形网格</h3>
+      <p>用六边形网格铺地图。已探索区域亮起，未探索是虚线迷雾"?"。区域可以向任意方向扩展。天然适合动态新增。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>新区域扩展最自然（加一个六边形就行）</li><li>网格结构清晰</li><li>经典策略游戏/文明感</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>区域多了六边形会很小</li><li>比大陆风格少一点"探险"味道</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a140c;padding:20px;min-height:280px;">
+      <svg viewBox="0 0 400 280" style="width:100%;height:auto;">
+        <rect width="400" height="280" rx="8" fill="#1a140c"/>
+        <rect x="5" y="5" width="390" height="270" rx="6" fill="#0d0a08" stroke="#3a2a1a" stroke-width="1"/>
+
+        <!-- Title -->
+        <text x="200" y="22" text-anchor="middle" fill="#f0e68c" font-size="9" font-family="monospace" letter-spacing="2">KNOWLEDGE ATLAS</text>
+
+        <!-- Central hub -->
+        <circle cx="200" cy="145" r="25" fill="#1a1a10" stroke="#f0e68c" stroke-width="1.5"/>
+        <text x="200" y="140" text-anchor="middle" fill="#f0e68c" font-size="8" font-family="monospace">HQ</text>
+        <text x="200" y="152" text-anchor="middle" fill="#c8a87a" font-size="6" font-family="monospace">Hermes</text>
+        <!-- Hermes sprite in center -->
+        <rect x="196" y="125" width="8" height="10" rx="1" fill="#f0e68c" opacity="0.8"/>
+
+        <!-- Branch: Software Engineering -->
+        <line x1="175" y1="135" x2="90" y2="80" stroke="#66BB6A" stroke-width="1.5" opacity="0.5"/>
+        <circle cx="90" cy="80" r="30" fill="#1a2a1a" stroke="#66BB6A" stroke-width="1.5"/>
+        <text x="90" y="75" text-anchor="middle" fill="#66BB6A" font-size="8" font-family="monospace">Software</text>
+        <text x="90" y="87" text-anchor="middle" fill="#66BB6A" font-size="8" font-family="monospace">Engineering</text>
+        <!-- Sub-nodes -->
+        <line x1="65" y1="68" x2="35" y2="45" stroke="#4CAF50" stroke-width="0.8" opacity="0.4"/>
+        <circle cx="35" cy="45" r="12" fill="#0d0a08" stroke="#4CAF50" stroke-width="1"/>
+        <text x="35" y="48" text-anchor="middle" fill="#4CAF50" font-size="6" font-family="monospace">PRG</text>
+
+        <line x1="75" y1="55" x2="60" y2="35" stroke="#81C784" stroke-width="0.8" opacity="0.4"/>
+        <circle cx="60" cy="35" r="12" fill="#0d0a08" stroke="#81C784" stroke-width="1"/>
+        <text x="60" y="38" text-anchor="middle" fill="#81C784" font-size="6" font-family="monospace">QA</text>
+
+        <!-- Branch: Research -->
+        <line x1="215" y1="125" x2="310" y2="75" stroke="#CE93D8" stroke-width="1.5" opacity="0.5"/>
+        <circle cx="310" cy="75" r="28" fill="#1a1a2a" stroke="#CE93D8" stroke-width="1.5"/>
+        <text x="310" y="72" text-anchor="middle" fill="#CE93D8" font-size="8" font-family="monospace">Research &</text>
+        <text x="310" y="84" text-anchor="middle" fill="#CE93D8" font-size="8" font-family="monospace">Knowledge</text>
+
+        <!-- Branch: Automation (dimmer) -->
+        <line x1="185" y1="165" x2="110" y2="210" stroke="#546E7A" stroke-width="1" opacity="0.3"/>
+        <circle cx="110" cy="210" r="22" fill="#0d0a08" stroke="#546E7A" stroke-width="0.8" opacity="0.5"/>
+        <text x="110" y="213" text-anchor="middle" fill="#546E7A" font-size="7" font-family="monospace" opacity="0.5">Automation</text>
+
+        <!-- Fog areas -->
+        <circle cx="300" cy="200" r="35" fill="#0a0a0a" stroke="#2a2a2a" stroke-width="0.5" stroke-dasharray="3,2" opacity="0.6"/>
+        <text x="300" y="200" text-anchor="middle" fill="#3a3a3a" font-size="12" font-family="monospace">?</text>
+
+        <circle cx="200" cy="250" r="25" fill="#0a0a0a" stroke="#2a2a2a" stroke-width="0.5" stroke-dasharray="3,2" opacity="0.6"/>
+        <text x="200" y="253" text-anchor="middle" fill="#3a3a3a" font-size="10" font-family="monospace">?</text>
+
+        <!-- Connection between branches -->
+        <path d="M115,90 Q200,60 285,80" stroke="#5c3a1e" stroke-width="0.8" fill="none" stroke-dasharray="3,3" opacity="0.3"/>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>C: 星图/树状展开</h3>
+      <p>Hermes HQ 在中心，大区域向外辐射，子区域再从大区域分支出去。类似星图或思维导图。迷雾在外围。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>层级关系最清晰（大区域 > 子区域 > 技能）</li><li>天然支持点击展开/收起</li><li>和 Obsidian 图谱最接近</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>不太像传统"地图"</li><li>分支多了会放射状散开很远</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
