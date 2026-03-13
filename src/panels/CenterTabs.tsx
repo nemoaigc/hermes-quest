@@ -2,6 +2,7 @@ import { useStore } from '../store'
 import WorldMap from './WorldMap'
 import QuestBoard from './QuestBoard'
 import Shop from './Shop'
+import NPCDialogBar from './NPCDialogBar'
 import type { TabId } from '../types'
 
 const TABS: Array<{ id: TabId; label: string }> = [
@@ -32,6 +33,7 @@ export default function CenterTabs() {
         {activeTab === 'guild' && <QuestBoard />}
         {activeTab === 'shop' && <Shop />}
       </div>
+      <NPCDialogBar />
     </div>
   )
 }
