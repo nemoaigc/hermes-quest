@@ -1,18 +1,18 @@
-import { useState } from 'react'
+import { useStore } from '../store'
 import WorldMap from './WorldMap'
 import QuestBoard from './QuestBoard'
 import Shop from './Shop'
+import type { TabId } from '../types'
 
-const TABS = [
+const TABS: Array<{ id: TabId; label: string }> = [
   { id: 'map', label: 'MAP' },
-  { id: 'quests', label: 'QUESTS' },
+  { id: 'guild', label: 'GUILD' },
   { id: 'shop', label: 'SHOP' },
-] as const
-
-type TabId = typeof TABS[number]['id']
+]
 
 export default function CenterTabs() {
-  const [tab, setTab] = useState<TabId>('map')
+  const activeTab = useStore((s) => s.activeTab)
+  const setActiveTab = useStore((s) => s.setActiveTab)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -20,17 +20,17 @@ export default function CenterTabs() {
         {TABS.map((t) => (
           <button
             key={t.id}
-            className={`tab-btn ${tab === t.id ? 'active' : ''}`}
-            onClick={() => setTab(t.id)}
+            className={`tab-btn ${activeTab === t.id ? 'active' : ''}`}
+            onClick={() => setActiveTab(t.id)}
           >
             {t.label}
           </button>
         ))}
       </div>
       <div className="pixel-panel" style={{ flex: 1, overflow: 'auto' }}>
-        {tab === 'map' && <WorldMap />}
-        {tab === 'quests' && <QuestBoard />}
-        {tab === 'shop' && <Shop />}
+        {activeTab === 'map' && <WorldMap />}
+        {activeTab === 'guild' && <QuestBoard />}
+        {activeTab === 'shop' && <Shop />}
       </div>
     </div>
   )

@@ -4,7 +4,6 @@ import CharacterPanel from './panels/CharacterPanel'
 import SkillInventory from './panels/SkillInventory'
 import CenterTabs from './panels/CenterTabs'
 import AdventureLog from './panels/AdventureLog'
-import ReflectionBar from './panels/ReflectionBar'
 
 export default function App() {
   useWebSocket()
@@ -12,7 +11,7 @@ export default function App() {
   return (
     <div style={{
       display: 'grid',
-      gridTemplateRows: 'auto 1fr auto',
+      gridTemplateRows: 'auto 1fr',
       height: '100vh',
       gap: '2px',
       padding: '2px',
@@ -31,7 +30,6 @@ export default function App() {
         <CenterTabs />
         <AdventureLog />
       </div>
-      <ReflectionBar />
     </div>
   )
 }
