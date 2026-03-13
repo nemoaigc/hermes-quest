@@ -108,7 +108,7 @@ export default function BulletinBoard() {
               fontSize: '9px', color: '#c8a87a',
               padding: '2px 0', borderBottom: '1px solid #1a140c',
             }}>
-              {e.type === 'level_up' && `Level Up! → Lv.${(e.data as Record<string, unknown>).new_level}`}
+              {e.type === 'level_up' && `Level Up! → Lv.${(e.data as Record<string, unknown>).to}`}
               {e.type === 'region_unlock' && `New domain: ${(e.data as Record<string, unknown>).region}`}
               {e.type === 'quest_complete' && `Quest conquered: ${(e.data as Record<string, unknown>).title}`}
             </div>
