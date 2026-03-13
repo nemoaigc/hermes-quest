@@ -12,73 +12,67 @@ const SOURCE_COLOR: Record<string, string> = {
   lobehub: '#55bbff',
 }
 
-/* Pixel art shopkeeper NPC */
-function Shopkeeper() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 16 16" style={{ imageRendering: 'pixelated' }}>
-      {/* hat */}
-      <rect x="5" y="0" width="6" height="1" fill="#8b4513" />
-      <rect x="3" y="1" width="10" height="1" fill="#8b4513" />
-      <rect x="4" y="2" width="8" height="2" fill="#a0522d" />
-      {/* face */}
-      <rect x="5" y="4" width="6" height="4" fill="#deb887" />
-      <rect x="6" y="5" width="1" height="1" fill="#222" />
-      <rect x="9" y="5" width="1" height="1" fill="#222" />
-      <rect x="7" y="7" width="2" height="1" fill="#c87050" />
-      {/* body / apron */}
-      <rect x="4" y="8" width="8" height="1" fill="#556b2f" />
-      <rect x="3" y="9" width="10" height="4" fill="#f5f5dc" />
-      <rect x="6" y="9" width="4" height="4" fill="#f0e68c" />
-      <rect x="7" y="10" width="2" height="1" fill="#daa520" />
-      {/* arms */}
-      <rect x="2" y="9" width="1" height="3" fill="#deb887" />
-      <rect x="13" y="9" width="1" height="3" fill="#deb887" />
-      {/* legs */}
-      <rect x="5" y="13" width="2" height="2" fill="#4a3728" />
-      <rect x="9" y="13" width="2" height="2" fill="#4a3728" />
-      <rect x="4" y="15" width="3" height="1" fill="#3a2a1a" />
-      <rect x="9" y="15" width="3" height="1" fill="#3a2a1a" />
-    </svg>
-  )
+// 12 shelf slots — 4 rows × 3 columns aligned to shop-bg.png (seed 2222, 320x180)
+// Background has 3 arched cabinets, each with 4 shelves. We use top 3 shelves × 3 cabinets + 3 bottom
+// Cabinets at ~8%, ~36%, ~64% left; shelves at ~12%, ~32%, ~52%, ~72% top
+const SHELF_SLOTS: Array<{ left: number; top: number; width: number; height: number }> = []
+for (let row = 0; row < 4; row++) {
+  for (let col = 0; col < 3; col++) {
+    SHELF_SLOTS.push({
+      left: 10 + col * 29,
+      top: 8 + row * 20,
+      width: 24,
+      height: 18,
+    })
+  }
 }
 
-/* Wooden shelf divider */
-function Shelf() {
-  return (
-    <div style={{
-      height: '4px', margin: '8px 0 6px',
-      background: 'linear-gradient(180deg, #5c3a1e 0%, #8b5e3c 40%, #5c3a1e 100%)',
-      borderTop: '1px solid #a0764a',
-      borderBottom: '1px solid #3a2210',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
-    }} />
-  )
-}
+function ShelfItem({ skill, slot, isSelected, onClick }: {
+  skill: HubSkill
+  slot: typeof SHELF_SLOTS[0]
+  isSelected: boolean
+  onClick: () => void
+}) {
+  const src = skill.trust_level === 'builtin' ? 'official' : skill.source
 
-/* Tavern sign style section header */
-function TavernSign({ children }: { children: string }) {
   return (
-    <div style={{
-      fontFamily: 'var(--font-pixel)', fontSize: '7px', color: '#f0e68c',
-      background: 'linear-gradient(180deg, #5c3a1e 0%, #4a2e14 100%)',
-      border: '1px solid #8b5e3c', borderRadius: '2px',
-      padding: '3px 8px', textAlign: 'center', marginBottom: '6px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
-      letterSpacing: '1px',
-    }}>
-      {children}
+    <div
+      onClick={onClick}
+      style={{
+        position: 'absolute',
+        left: `${slot.left}%`, top: `${slot.top}%`,
+        width: `${slot.width}%`, height: `${slot.height}%`,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer',
+        background: isSelected ? 'rgba(240,230,140,0.15)' : 'transparent',
+        border: isSelected ? '1px solid rgba(240,230,140,0.4)' : '1px solid transparent',
+        transition: 'background 0.15s',
+      }}
+    >
+      <SkillIcon name={skill.name} category={skill.tags[0] || 'quest'} size={22} />
+      <div style={{
+        fontFamily: 'var(--font-pixel)',
+        fontSize: 'clamp(4px, 0.7vmin, 6px)',
+        color: '#f0e68c', marginTop: '3px',
+        textAlign: 'center', lineHeight: '1.2',
+        maxWidth: '90%', overflow: 'hidden',
+        textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+      }}>
+        {skill.name}
+      </div>
+      <div style={{
+        fontFamily: 'var(--font-pixel)',
+        fontSize: 'clamp(3px, 0.5vmin, 5px)',
+        color: SOURCE_COLOR[src] || '#8a8a8a',
+        textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+      }}>
+        {src === 'official' ? 'OFFICIAL' : src.toUpperCase()}
+      </div>
     </div>
   )
 }
-
-const SHOPKEEPER_LINES = [
-  "Welcome, adventurer! Browse my wares...",
-  "Fresh skills from across the realms!",
-  "Every skill makes you stronger...",
-  "Take your time, I'm not going anywhere.",
-  "Special stock from the Hub today!",
-  "Rare finds, just for you...",
-]
 
 export default function Shop() {
   const setSkills = useStore((s) => s.setSkills)
@@ -88,20 +82,14 @@ export default function Shop() {
   const [filter, setFilter] = useState('')
   const [sourceFilter, setSourceFilter] = useState<string | null>(null)
   const [selected, setSelected] = useState<HubSkill | null>(null)
-  const [questTitle, setQuestTitle] = useState('')
-  const [questPosting, setQuestPosting] = useState(false)
-  const [questPosted, setQuestPosted] = useState<string | null>(null)
-
-  const [greeting] = useState(() => SHOPKEEPER_LINES[Math.floor(Math.random() * SHOPKEEPER_LINES.length)])
+  const [page, setPage] = useState(0)
 
   useEffect(() => {
     (async () => {
       try {
         const res = await fetch(`${API_URL}/api/hub/search?q=`)
         setAllSkills(await res.json())
-      } catch {
-        setAllSkills([])
-      }
+      } catch { setAllSkills([]) }
       setLoading(false)
     })()
   }, [])
@@ -132,6 +120,14 @@ export default function Shop() {
     return list
   }, [allSkills, filter, sourceFilter])
 
+  const pageSize = 12
+  const totalPages = Math.max(1, Math.ceil(displayed.length / pageSize))
+  const pageItems = displayed.slice(page * pageSize, (page + 1) * pageSize)
+
+  function srcOf(sk: HubSkill) {
+    return sk.trust_level === 'builtin' ? 'official' : sk.source
+  }
+
   async function installSkill(identifier: string) {
     setInstalling(identifier)
     try {
@@ -144,139 +140,97 @@ export default function Shop() {
       setSkills(await res.json())
       setAllSkills((prev) => prev.filter((s) => s.identifier !== identifier))
       setSelected(null)
-    } catch (e) {
-      console.error('Install failed', e)
-    }
+    } catch (e) { console.error('Install failed', e) }
     setInstalling(null)
-  }
-
-  async function postQuest() {
-    if (!questTitle.trim()) return
-    setQuestPosting(true)
-    try {
-      const res = await fetch(`${API_URL}/api/quests`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: questTitle.trim(),
-          description: `Tavern bounty: ${questTitle.trim()}`,
-          rank: 'B',
-          reward_gold: 50 + Math.floor(Math.random() * 100),
-          reward_xp: 100 + Math.floor(Math.random() * 200),
-        }),
-      })
-      const data = await res.json()
-      setQuestPosted(data.id)
-      setQuestTitle('')
-      setTimeout(() => setQuestPosted(null), 3000)
-    } catch (e) {
-      console.error('Failed to post quest', e)
-    }
-    setQuestPosting(false)
-  }
-
-  function srcOf(sk: HubSkill) {
-    return sk.trust_level === 'builtin' ? 'official' : sk.source
   }
 
   return (
     <div style={{
-      background: 'linear-gradient(180deg, #0d0a08 0%, #1a120a 30%, #0d0a08 100%)',
-      border: '1px solid #3a2a1a',
-      padding: '6px',
-      minHeight: '100%',
+      width: '100%', height: '100%',
+      position: 'relative', overflow: 'hidden',
+      backgroundImage: 'url(/bg/shop-bg.png)',
+      backgroundSize: '100% 100%',
+      backgroundRepeat: 'no-repeat',
+      imageRendering: 'pixelated',
     }}>
-      {/* Tavern header with shopkeeper */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '8px',
-        marginBottom: '8px', padding: '4px 6px',
-        background: 'linear-gradient(90deg, rgba(90,60,20,0.3) 0%, transparent 100%)',
-        borderLeft: '2px solid #8b5e3c',
-      }}>
-        <Shopkeeper />
-        <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '8px', color: '#f0e68c' }}>
-            SKILL TAVERN
-          </div>
-          <div style={{
-            fontSize: '9px', color: '#c8a87a', fontStyle: 'italic',
-            marginTop: '2px', lineHeight: '1.3',
-          }}>
-            "{greeting}"
-          </div>
-        </div>
-        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: 'var(--text-dim)' }}>
-          {allSkills.length} wares
-        </div>
-      </div>
+      {/* Items on shelf slots */}
+      {!loading && pageItems.map((skill, i) => {
+        const slot = SHELF_SLOTS[i]
+        if (!slot) return null
+        return (
+          <ShelfItem
+            key={skill.identifier}
+            skill={skill} slot={slot}
+            isSelected={selected?.identifier === skill.identifier}
+            onClick={() => setSelected(selected?.identifier === skill.identifier ? null : skill)}
+          />
+        )
+      })}
 
-      {/* Source filter tabs — like tavern menu categories */}
-      <div style={{ display: 'flex', gap: '3px', marginBottom: '5px', flexWrap: 'wrap' }}>
-        <button
-          className="pixel-btn"
-          onClick={() => { setSourceFilter(null); setSelected(null) }}
+      {loading && (
+        <div style={{
+          position: 'absolute', left: '50%', top: '50%',
+          transform: 'translate(-50%, -50%)',
+          fontFamily: 'var(--font-pixel)', fontSize: '7px',
+          color: '#f0e68c', textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+        }}>
+          Arranging wares...
+        </div>
+      )}
+
+      {/* Search bar (top overlay) */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0,
+        display: 'flex', gap: '4px', padding: '3px 6px',
+        background: 'rgba(20,12,5,0.85)',
+        zIndex: 20, alignItems: 'center',
+      }}>
+        <input
+          value={filter}
+          onChange={(e) => { setFilter(e.target.value); setSelected(null); setPage(0) }}
+          placeholder="Search..."
           style={{
-            fontSize: '6px', padding: '2px 5px',
-            opacity: sourceFilter === null ? 1 : 0.4,
-            borderColor: sourceFilter === null ? '#8b5e3c' : '#3a2a1a',
-            background: sourceFilter === null ? 'rgba(90,60,20,0.4)' : undefined,
+            flex: 1, padding: '2px 5px', minWidth: 0,
+            background: '#0a0804', border: '1px solid #3a2a1a',
+            color: '#c8a87a', fontFamily: 'var(--font-mono)', fontSize: '8px',
           }}
-        >
-          ALL
-        </button>
-        {sources.map(([src, count]) => (
+        />
+        {sources.slice(0, 4).map(([src]) => (
           <button
             key={src}
-            className="pixel-btn"
-            onClick={() => { setSourceFilter(sourceFilter === src ? null : src); setSelected(null) }}
+            onClick={() => { setSourceFilter(sourceFilter === src ? null : src); setSelected(null); setPage(0) }}
             style={{
-              fontSize: '6px', padding: '2px 5px',
-              color: SOURCE_COLOR[src] || 'var(--text)',
-              opacity: sourceFilter === src ? 1 : 0.4,
-              borderColor: sourceFilter === src ? SOURCE_COLOR[src] || '#8b5e3c' : '#3a2a1a',
-              background: sourceFilter === src ? 'rgba(90,60,20,0.3)' : undefined,
+              fontFamily: 'var(--font-pixel)', fontSize: '5px',
+              padding: '1px 4px', cursor: 'pointer',
+              background: sourceFilter === src ? 'rgba(90,60,20,0.6)' : 'transparent',
+              border: `1px solid ${sourceFilter === src ? SOURCE_COLOR[src] || '#8b5e3c' : '#3a2a1a'}`,
+              color: SOURCE_COLOR[src] || '#c8a87a',
+              opacity: sourceFilter === src ? 1 : 0.5,
             }}
-          >
-            {src.toUpperCase()} ({count})
-          </button>
+          >{src.toUpperCase()}</button>
         ))}
+        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8a7a5a' }}>
+          {displayed.length}
+        </span>
       </div>
 
-      {/* Search — like asking the shopkeeper */}
-      <input
-        value={filter}
-        onChange={(e) => { setFilter(e.target.value); setSelected(null) }}
-        placeholder="Ask the shopkeeper..."
-        style={{
-          width: '100%', padding: '3px 6px', marginBottom: '4px', boxSizing: 'border-box',
-          background: '#0a0804', border: '1px solid #3a2a1a',
-          color: '#c8a87a', fontFamily: 'var(--font-mono)', fontSize: '9px',
-        }}
-      />
-
-      <TavernSign>{`SKILL SCROLLS  (${displayed.length})`}</TavernSign>
-
-      {/* Detail panel — parchment style */}
-      {selected ? (
+      {/* Detail panel (bottom overlay) */}
+      {selected && (
         <div style={{
-          padding: '8px', marginBottom: '6px',
-          background: 'linear-gradient(135deg, #1a140c 0%, #231a10 100%)',
-          border: '1px solid #5c3a1e',
-          boxShadow: 'inset 0 0 10px rgba(90,60,20,0.2)',
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          background: 'rgba(15,10,5,0.95)',
+          borderTop: '2px solid #8b5e3c',
+          padding: '8px 10px', zIndex: 20,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <div style={{
-              padding: '4px', background: '#0a0804', border: '1px solid #3a2a1a',
-            }}>
-              <SkillIcon name={selected.name} category={selected.tags[0] || 'quest'} size={28} />
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <SkillIcon name={selected.name} category={selected.tags[0] || 'quest'} size={28} />
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '8px', color: '#f0e68c' }}>
                 {selected.name}
               </div>
-              <div style={{ fontSize: '7px', fontFamily: 'var(--font-pixel)' }}>
+              <div style={{ fontSize: '6px', fontFamily: 'var(--font-pixel)' }}>
                 <span style={{ color: SOURCE_COLOR[srcOf(selected)] || 'var(--text-dim)' }}>
-                  {srcOf(selected) === 'official' ? 'OFFICIAL' : srcOf(selected).toUpperCase()}
+                  {srcOf(selected).toUpperCase()}
                 </span>
                 {selected.tags.length > 0 && (
                   <span style={{ color: '#7a6a5a', marginLeft: '6px' }}>
@@ -287,123 +241,65 @@ export default function Shop() {
             </div>
           </div>
           <div style={{
-            fontSize: '9px', color: '#c8a87a', lineHeight: '1.4',
-            marginBottom: '8px', maxHeight: '45px', overflow: 'auto',
+            fontSize: '9px', color: '#c8a87a', lineHeight: '1.3',
+            marginBottom: '6px', maxHeight: '30px', overflow: 'auto',
           }}>
             {selected.description}
           </div>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            <button className="pixel-btn" onClick={() => setSelected(null)}
-              style={{ fontSize: '7px', borderColor: '#5c3a1e' }}>
-              BACK
-            </button>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button onClick={() => setSelected(null)} style={{
+              fontFamily: 'var(--font-pixel)', fontSize: '6px',
+              padding: '2px 8px', cursor: 'pointer',
+              background: 'transparent', border: '1px solid #5c3a1e', color: '#c8a87a',
+            }}>BACK</button>
             <button
-              className="pixel-btn"
               onClick={() => installSkill(selected.identifier)}
               disabled={installing === selected.identifier}
               style={{
-                fontSize: '7px', color: '#f0e68c',
-                borderColor: '#8b5e3c',
-                background: installing === selected.identifier ? undefined : 'rgba(90,60,20,0.4)',
+                fontFamily: 'var(--font-pixel)', fontSize: '6px',
+                padding: '2px 8px', cursor: 'pointer',
+                background: 'rgba(90,60,20,0.6)', border: '1px solid #8b5e3c', color: '#f0e68c',
               }}
-            >
-              {installing === selected.identifier ? 'LEARNING...' : 'ACQUIRE SKILL'}
-            </button>
+            >{installing === selected.identifier ? 'LEARNING...' : 'ACQUIRE SKILL'}</button>
           </div>
-        </div>
-      ) : null}
-
-      {/* Skill grid — items on shelves */}
-      {loading ? (
-        <div style={{ textAlign: 'center', color: '#7a6a5a', fontSize: '10px', padding: '12px' }}>
-          The shopkeeper is arranging wares...
-        </div>
-      ) : (
-        <div className="skill-grid" style={{
-          gridTemplateColumns: 'repeat(auto-fill, minmax(32px, 1fr))',
-          maxHeight: '180px', overflow: 'auto', marginBottom: '4px',
-          background: 'rgba(10,8,4,0.5)',
-          border: '1px solid #2a1e12',
-          padding: '4px',
-        }}>
-          {displayed.map((skill) => {
-            const src = srcOf(skill)
-            const isSelected = selected?.identifier === skill.identifier
-            return (
-              <div
-                key={skill.identifier}
-                className="skill-slot"
-                title={skill.name}
-                onClick={() => setSelected(isSelected ? null : skill)}
-                style={{
-                  cursor: 'pointer',
-                  background: isSelected ? 'rgba(140,100,40,0.2)' : '#0d0a06',
-                  borderColor: isSelected ? '#f0e68c' : '#2a1e12',
-                  boxShadow: isSelected ? '0 0 8px rgba(240,230,140,0.3)' : undefined,
-                  position: 'relative',
-                }}
-              >
-                <SkillIcon name={skill.name} category={skill.tags[0] || 'quest'} size={18} />
-                {src === 'official' && (
-                  <div style={{
-                    position: 'absolute', top: 0, right: 0,
-                    width: 4, height: 4, borderRadius: '50%',
-                    background: 'var(--green)',
-                  }} />
-                )}
-              </div>
-            )
-          })}
         </div>
       )}
 
-      <Shelf />
-
-      <TavernSign>BOUNTY BOARD</TavernSign>
-
-      {/* Bounty board — post quests for Hermes */}
-      <div style={{
-        padding: '8px',
-        background: 'linear-gradient(180deg, #1a140c 0%, #0d0a06 100%)',
-        border: '1px solid #2a1e12',
-      }}>
-        <div style={{ fontSize: '8px', color: '#7a6a5a', marginBottom: '6px' }}>
-          Pin a task on the board. Hermes will pick it up on the next cycle.
+      {/* Bottom bar: pagination */}
+      {!selected && (
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          padding: '3px 8px', gap: '8px',
+          background: 'rgba(20,12,5,0.85)', zIndex: 20,
+        }}>
+          {totalPages > 1 && (
+            <>
+              <button
+                onClick={() => setPage(Math.max(0, page - 1))}
+                disabled={page === 0}
+                style={{
+                  fontFamily: 'var(--font-pixel)', fontSize: '7px',
+                  background: 'transparent', border: 'none',
+                  color: page === 0 ? '#3a2a1a' : '#f0e68c', cursor: 'pointer',
+                }}
+              >◀</button>
+              <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8a7a5a' }}>
+                {page + 1}/{totalPages}
+              </span>
+              <button
+                onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
+                disabled={page >= totalPages - 1}
+                style={{
+                  fontFamily: 'var(--font-pixel)', fontSize: '7px',
+                  background: 'transparent', border: 'none',
+                  color: page >= totalPages - 1 ? '#3a2a1a' : '#f0e68c', cursor: 'pointer',
+                }}
+              >▶</button>
+            </>
+          )}
         </div>
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <input
-            value={questTitle}
-            onChange={(e) => setQuestTitle(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && postQuest()}
-            placeholder="Write a bounty..."
-            style={{
-              flex: 1, padding: '4px 6px',
-              background: '#0a0804', border: '1px solid #3a2a1a',
-              color: '#c8a87a', fontFamily: 'var(--font-mono)', fontSize: '9px',
-            }}
-          />
-          <button
-            className="pixel-btn"
-            onClick={postQuest}
-            disabled={questPosting || !questTitle.trim()}
-            style={{
-              fontSize: '7px', borderColor: '#5c3a1e',
-              color: '#f0e68c',
-              background: 'rgba(90,60,20,0.4)',
-            }}
-          >
-            {questPosting ? '...' : 'POST'}
-          </button>
-        </div>
-        {questPosted && (
-          <div style={{
-            marginTop: '6px', fontSize: '8px', color: 'var(--green)',
-            fontFamily: 'var(--font-pixel)',
-          }}>
-            Bounty posted! Hermes will see it soon.
-          </div>
-        )}
-      </div>
+      )}
     </div>
   )
 }
