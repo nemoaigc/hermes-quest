@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { useStore } from './store'
+import { API_URL } from './api'
 
 const WS_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.host}/ws`
-const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.host}`
 
 function fetchInitialData() {
   const { setState, setSkills, setEvents, setKnowledgeMap, setQuests, setBagItems } = useStore.getState()
@@ -70,4 +70,3 @@ export function useWebSocket() {
   }, [])
 }
 
-export { API_URL }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../store'
-import { API_URL } from '../websocket'
+import { API_URL } from '../api'
 import { EVENT_ICONS } from '../utils/icons'
 
 export default function ReflectionBar() {

@@ -1,0 +1,35 @@
+import type { NpcChatRequest, NpcChatResponse } from './types'
+
+const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.host}`
+
+export async function sendNpcChat(req: NpcChatRequest): Promise<NpcChatResponse> {
+  const res = await fetch(`${API_URL}/api/npc/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  })
+  if (!res.ok) throw new Error(`NPC chat failed: ${res.status}`)
+  return res.json()
+}
+
+export async function acceptQuest(questId: string): Promise<{ quest_id: string; status: string }> {
+  const res = await fetch(`${API_URL}/api/quest/accept`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ quest_id: questId }),
+  })
+  if (!res.ok) throw new Error(`Accept quest failed: ${res.status}`)
+  return res.json()
+}
+
+export async function acceptFogQuest(fogRegionId: string): Promise<{ quest_id: string; status: string }> {
+  const res = await fetch(`${API_URL}/api/quest/accept`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fog_region_id: fogRegionId }),
+  })
+  if (!res.ok) throw new Error(`Accept fog quest failed: ${res.status}`)
+  return res.json()
+}
+
+export { API_URL }

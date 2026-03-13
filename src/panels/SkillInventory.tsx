@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store'
 import { SkillIcon } from '../utils/icons'
-import { API_URL } from '../websocket'
+import { API_URL } from '../api'
 
 export default function SkillInventory() {
   const skills = useStore((s) => s.skills)
