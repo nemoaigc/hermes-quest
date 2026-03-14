@@ -26,7 +26,7 @@ export default function SkillInventory() {
 
   return (
     <div className="pixel-panel" style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
-      <div className="pixel-panel-title">SKILLS ({skills.length})</div>
+      {/* Title moved to SkillPanel tab label */}
 
       {selectedSkill ? (
         <div style={{ padding: '4px' }}>

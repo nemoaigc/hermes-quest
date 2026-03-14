@@ -38,14 +38,14 @@ export default function CharacterPanel() {
 
   if (!state) return (
     <div className="pixel-panel" style={{ flex: '0 0 auto' }}>
-      <div className="pixel-panel-title">CHARACTER</div>
+      <div className="pixel-panel-title" style={{ textAlign: 'center' }}>CHARACTER</div>
       <div style={{ color: 'var(--text-dim)', fontSize: '10px' }}>Loading...</div>
     </div>
   )
 
   return (
     <div className="pixel-panel" style={{ flex: '0 0 auto' }}>
-      <div className="pixel-panel-title">CHARACTER</div>
+      <div className="pixel-panel-title" style={{ textAlign: 'center' }}>CHARACTER</div>
       <div style={{ textAlign: 'center', marginBottom: '8px' }}>
         <ClassIcon cls={state.class} size={32} />
         <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: 'var(--gold)', marginTop: '4px' }}>

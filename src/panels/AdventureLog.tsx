@@ -7,7 +7,7 @@ export default function AdventureLog() {
 
   return (
     <div className="pixel-panel" style={{ overflow: 'auto' }}>
-      <div className="pixel-panel-title">ADVENTURE LOG</div>
+      <div className="pixel-panel-title" style={{ textAlign: 'center' }}>CHRONICLE</div>
       {events.length === 0 ? (
         <div style={{ color: 'var(--text-dim)', fontSize: '10px', padding: '12px', textAlign: 'center' }}>
           No events yet. Waiting for the first quest cycle...
