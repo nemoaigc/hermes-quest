@@ -78,10 +78,10 @@ export default function Shop() {
   const [allSkills, setAllSkills] = useState<HubSkill[]>([])
   const [loading, setLoading] = useState(true)
   const [installing, setInstalling] = useState<string | null>(null)
-  const [filter, setFilter] = useState('')
-  const [sourceFilter, setSourceFilter] = useState<string | null>(null)
+  const filter = useStore((s) => s.shopFilter)
+  const sourceFilter = useStore((s) => s.shopSourceFilter)
+  const page = useStore((s) => s.shopPage)
   const [selected, setSelected] = useState<HubSkill | null>(null)
-  const [page, setPage] = useState(0)
 
   useEffect(() => {
     (async () => {
@@ -178,41 +178,7 @@ export default function Shop() {
         </div>
       )}
 
-      {/* Search bar (top overlay) */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0,
-        display: 'flex', gap: '4px', padding: '3px 6px',
-        background: 'rgba(20,12,5,0.85)',
-        zIndex: 20, alignItems: 'center',
-      }}>
-        <input
-          value={filter}
-          onChange={(e) => { setFilter(e.target.value); setSelected(null); setPage(0) }}
-          placeholder="Search..."
-          style={{
-            flex: 1, padding: '2px 5px', minWidth: 0,
-            background: '#0a0804', border: '1px solid #3a2a1a',
-            color: '#c8a87a', fontFamily: 'var(--font-mono)', fontSize: '8px',
-          }}
-        />
-        {sources.slice(0, 4).map(([src]) => (
-          <button
-            key={src}
-            onClick={() => { setSourceFilter(sourceFilter === src ? null : src); setSelected(null); setPage(0) }}
-            style={{
-              fontFamily: 'var(--font-pixel)', fontSize: '5px',
-              padding: '1px 4px', cursor: 'pointer',
-              background: sourceFilter === src ? 'rgba(90,60,20,0.6)' : 'transparent',
-              border: `1px solid ${sourceFilter === src ? SOURCE_COLOR[src] || '#8b5e3c' : '#3a2a1a'}`,
-              color: SOURCE_COLOR[src] || '#c8a87a',
-              opacity: sourceFilter === src ? 1 : 0.5,
-            }}
-          >{src.toUpperCase()}</button>
-        ))}
-        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8a7a5a' }}>
-          {displayed.length}
-        </span>
-      </div>
+      {/* Search bar moved to ShopBottomInfo in CenterTabs bottom panel */}
 
       {/* Detail panel (bottom overlay) */}
       {selected && (
@@ -265,41 +231,7 @@ export default function Shop() {
         </div>
       )}
 
-      {/* Bottom bar: pagination */}
-      {!selected && (
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          display: 'flex', justifyContent: 'center', alignItems: 'center',
-          padding: '3px 8px', gap: '8px',
-          background: 'rgba(20,12,5,0.85)', zIndex: 20,
-        }}>
-          {totalPages > 1 && (
-            <>
-              <button
-                onClick={() => setPage(Math.max(0, page - 1))}
-                disabled={page === 0}
-                style={{
-                  fontFamily: 'var(--font-pixel)', fontSize: '7px',
-                  background: 'transparent', border: 'none',
-                  color: page === 0 ? '#3a2a1a' : '#f0e68c', cursor: 'pointer',
-                }}
-              >◀</button>
-              <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8a7a5a' }}>
-                {page + 1}/{totalPages}
-              </span>
-              <button
-                onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-                disabled={page >= totalPages - 1}
-                style={{
-                  fontFamily: 'var(--font-pixel)', fontSize: '7px',
-                  background: 'transparent', border: 'none',
-                  color: page >= totalPages - 1 ? '#3a2a1a' : '#f0e68c', cursor: 'pointer',
-                }}
-              >▶</button>
-            </>
-          )}
-        </div>
-      )}
+      {/* Pagination merged into search bar above */}
     </div>
   )
 }

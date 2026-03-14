@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useStore } from '../store'
+import { SkillIcon } from '../utils/icons'
 import KnowledgeMap from './KnowledgeMap'
+import SubRegionGraph from './SubRegionGraph'
 import GuildPanel from './GuildPanel'
 import Shop from './Shop'
 import type { TabId, NpcId } from '../types'
@@ -336,7 +338,41 @@ function npcSuggestions(npc: typeof NPCS[0]): string[] {
   return suggestions[npc.id] || ["Hello", "Tell me more"]
 }
 
-/** MAP bottom — exploration dashboard */
+/** Reusable RPG panel card */
+function PanelCard({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <div style={{
+      padding: '6px 8px',
+      background: 'linear-gradient(180deg, rgba(20,14,8,0.7) 0%, rgba(10,8,4,0.8) 100%)',
+      border: '1px solid rgba(139,94,60,0.4)',
+      borderTop: '1px solid rgba(180,140,80,0.2)',
+      borderRadius: '2px',
+      boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.5), 0 1px 0 rgba(139,94,60,0.15)',
+      ...style,
+    }}>{children}</div>
+  )
+}
+
+/** Reusable RPG button */
+function RpgButton({ children, onClick, disabled, small }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; small?: boolean }) {
+  return (
+    <button onClick={onClick} disabled={disabled} style={{
+      fontFamily: 'var(--font-pixel)', fontSize: small ? '5px' : '6px',
+      padding: small ? '4px 8px' : '6px 14px',
+      cursor: disabled ? 'wait' : 'pointer',
+      background: disabled ? 'rgba(10,8,4,0.5)' : 'linear-gradient(180deg, #6a4428 0%, #4a2a14 50%, #3a2210 100%)',
+      border: '2px solid #8b5e3c',
+      borderTop: '2px solid #a07040',
+      borderBottom: '2px solid #3a2010',
+      color: '#f0e68c',
+      boxShadow: disabled ? 'none' : '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,140,0.1)',
+      textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+      whiteSpace: 'nowrap' as const,
+    }}>{children}</button>
+  )
+}
+
+/** MAP bottom — two columns: workflow list + stats & action */
 function MapBottomInfo() {
   const km = useStore((s) => s.knowledgeMap)
   const state = useStore((s) => s.state)
@@ -349,71 +385,79 @@ function MapBottomInfo() {
 
   async function startCycle() {
     setCycleLoading(true)
-    try {
-      await fetch('/api/cycle/start', { method: 'POST' })
-    } catch { /* ignore */ }
+    try { await fetch('/api/cycle/start', { method: 'POST' }) } catch {}
     setTimeout(() => setCycleLoading(false), 5000)
   }
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', gap: '8px',
-      width: '100%', fontFamily: 'var(--font-pixel)',
-    }}>
-      {/* RPG stat cards row */}
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
-        {[
-          { label: 'WORKFLOWS', value: workflows.length, color: '#f0e68c' },
-          { label: 'MASTERY', value: `${Math.round(avgMastery * 100)}%`, color: 'var(--cyan)' },
-          { label: 'UNKNOWN', value: fogCount, color: '#8b7355' },
-          { label: 'CYCLES', value: state?.total_cycles || 0, color: 'var(--green)' },
-        ].map((stat) => (
-          <div key={stat.label} style={{
-            flex: 1, textAlign: 'center', padding: '6px 4px',
-            background: 'linear-gradient(180deg, rgba(20,14,8,0.7) 0%, rgba(10,8,4,0.8) 100%)',
-            border: '1px solid rgba(139,94,60,0.4)',
-            borderTop: '1px solid rgba(180,140,80,0.2)',
-            borderRadius: '2px',
-            boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.5), 0 1px 0 rgba(139,94,60,0.15)',
-          }}>
-            <div style={{ fontSize: '16px', color: stat.color, fontFamily: 'var(--font-pixel)', lineHeight: 1 }}>
-              {stat.value}
-            </div>
-            <div style={{ fontSize: '4px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '3px', letterSpacing: '0.5px' }}>
-              {stat.label}
-            </div>
+    <div style={{ display: 'flex', gap: '10px', width: '100%', fontFamily: 'var(--font-pixel)' }}>
+      {/* Left: mini map preview — scattered nodes */}
+      <PanelCard style={{ flex: 1, position: 'relative', minHeight: '60px', overflow: 'hidden' }}>
+        {workflows.length === 0 ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '8px', color: '#6a5a3a', fontStyle: 'italic' }}>
+            Start a cycle to explore...
           </div>
-        ))}
-        <button
-          onClick={startCycle}
-          disabled={cycleLoading}
-          style={{
-            fontFamily: 'var(--font-pixel)', fontSize: '7px',
-            padding: '12px 18px', cursor: cycleLoading ? 'wait' : 'pointer',
-            background: cycleLoading ? 'rgba(10,8,4,0.5)' : 'linear-gradient(180deg, #6a4428 0%, #4a2a14 50%, #3a2210 100%)',
-            border: '2px solid #8b5e3c',
-            borderTop: '2px solid #a07040',
-            borderBottom: '2px solid #3a2010',
-            color: '#f0e68c',
-            letterSpacing: '1px', whiteSpace: 'nowrap',
-            boxShadow: cycleLoading ? 'none' : '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,140,0.1)',
-            textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-            transition: 'all 0.1s',
-          }}
-          onMouseEnter={e => { if (!cycleLoading) e.currentTarget.style.boxShadow = '0 2px 8px rgba(240,230,140,0.2), inset 0 1px 0 rgba(255,220,140,0.15)' }}
-          onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,140,0.1)' }}
-        >{cycleLoading ? 'RUNNING...' : '▶ CYCLE'}</button>
+        ) : (
+          <>
+            {workflows.map((w: any, i: number) => {
+              const angle = (i / Math.max(workflows.length, 1)) * Math.PI * 2
+              const r = 30
+              const cx = 50 + Math.cos(angle) * r
+              const cy = 50 + Math.sin(angle) * r
+              const catColor: Record<string, string> = { coding: 'var(--cyan)', research: 'var(--purple)', automation: 'var(--gold)', creative: '#ff9944' }
+              return (
+                <div key={w.id} title={`${w.name} — ${Math.round((w.mastery || 0) * 100)}%`} style={{
+                  position: 'absolute',
+                  left: `${cx}%`, top: `${cy}%`,
+                  transform: 'translate(-50%, -50%)',
+                  width: `${12 + (w.mastery || 0) * 16}px`,
+                  height: `${12 + (w.mastery || 0) * 16}px`,
+                  borderRadius: '50%',
+                  background: `radial-gradient(circle at 35% 35%, ${catColor[w.category] || '#8b7355'}, rgba(0,0,0,0.6))`,
+                  border: '1px solid rgba(200,160,100,0.3)',
+                  boxShadow: `0 0 ${4 + (w.mastery || 0) * 8}px ${catColor[w.category] || '#8b7355'}40`,
+                  cursor: 'pointer',
+                }} />
+              )
+            })}
+            {/* Connection lines */}
+            <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+              {workflows.length > 1 && workflows.slice(0, -1).map((_: any, i: number) => {
+                const a1 = (i / workflows.length) * Math.PI * 2
+                const a2 = ((i + 1) / workflows.length) * Math.PI * 2
+                return <line key={i} x1={`${50 + Math.cos(a1) * 30}%`} y1={`${50 + Math.sin(a1) * 30}%`} x2={`${50 + Math.cos(a2) * 30}%`} y2={`${50 + Math.sin(a2) * 30}%`} stroke="rgba(139,94,60,0.3)" strokeWidth="1" strokeDasharray="3 2" />
+              })}
+            </svg>
+            {fogCount > 0 && <div style={{ position: 'absolute', bottom: '2px', right: '4px', fontSize: '4px', color: '#6a5a3a', fontFamily: 'var(--font-pixel)' }}>?×{fogCount}</div>}
+          </>
+        )}
+      </PanelCard>
+
+      {/* Right: stats column + action */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '120px' }}>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <PanelCard style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: '14px', color: '#f0e68c', lineHeight: 1 }}>{workflows.length}</div>
+            <div style={{ fontSize: '4px', color: '#8b7355', marginTop: '2px' }}>REGIONS</div>
+          </PanelCard>
+          <PanelCard style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: '14px', color: 'var(--cyan)', lineHeight: 1 }}>{Math.round(avgMastery * 100)}%</div>
+            <div style={{ fontSize: '4px', color: '#8b7355', marginTop: '2px' }}>MASTERY</div>
+          </PanelCard>
+        </div>
+        <RpgButton onClick={startCycle} disabled={cycleLoading}>
+          {cycleLoading ? 'EXPLORING...' : '▶ START CYCLE'}
+        </RpgButton>
       </div>
     </div>
   )
 }
 
-/** GUILD bottom — quest tracker + task input */
+/** GUILD bottom — two columns: task list + input & Lyra */
 function GuildBottomInfo() {
   const quests = useStore((s) => s.quests)
   const [input, setInput] = useState('')
   const [creating, setCreating] = useState(false)
-
   const activeQuests = quests.filter((q) => q.status === 'active' || q.status === 'in_progress' || q.status === 'pending')
 
   async function createTask() {
@@ -422,130 +466,110 @@ function GuildBottomInfo() {
     setInput('')
     setCreating(true)
     try {
-      await fetch('/api/quest/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, source: 'user' }),
-      })
-    } catch { /* ignore */ }
+      await fetch('/api/quest/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, source: 'user' }) })
+    } catch {}
     setCreating(false)
   }
 
   return (
-    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      {/* Header */}
-      <div style={{
-        fontFamily: 'var(--font-pixel)', fontSize: '7px', color: '#f0e68c',
-        letterSpacing: '1px',
-      }}>
-        LEARNING TASKS ({activeQuests.length})
-      </div>
-      {/* Task list */}
-      <div style={{ flex: 1, overflow: 'auto' }}>
+    <div style={{ display: 'flex', gap: '10px', width: '100%', fontFamily: 'var(--font-pixel)' }}>
+      {/* Left: task list */}
+      <PanelCard style={{ flex: 1, overflow: 'auto' }}>
+        <div style={{ fontSize: '5px', color: '#8b7355', marginBottom: '4px', letterSpacing: '1px' }}>ACTIVE TASKS ({activeQuests.length})</div>
         {activeQuests.length === 0 ? (
-          <div style={{ fontSize: '9px', color: '#6a5a3a', fontStyle: 'italic' }}>
-            No active tasks. Assign one below or wait for agent recommendations.
-          </div>
-        ) : activeQuests.slice(0, 5).map((q) => (
+          <div style={{ fontSize: '8px', color: '#6a5a3a', fontStyle: 'italic' }}>No tasks assigned. Write one below.</div>
+        ) : activeQuests.slice(0, 4).map((q) => (
           <div key={q.id} style={{
-            fontSize: '9px', color: '#e8d5b0', marginBottom: '4px',
-            padding: '5px 8px',
-            background: 'linear-gradient(180deg, rgba(30,20,10,0.6) 0%, rgba(15,10,5,0.7) 100%)',
-            border: '1px solid rgba(139,94,60,0.3)',
-            borderLeft: '2px solid rgba(139,94,60,0.5)',
-            borderRadius: '2px',
-            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            marginBottom: '3px', fontSize: '8px', padding: '2px 4px',
+            borderLeft: '2px solid rgba(139,94,60,0.5)',
           }}>
             <div style={{ flex: 1, overflow: 'hidden' }}>
-              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {q.title}
-              </div>
-              <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '4px', color: '#8b7355', marginTop: '1px' }}>
-                {q.source === 'user' ? 'YOU' : 'AGENT'} · {q.status.toUpperCase()}
-              </div>
+              <div style={{ color: '#e8d5b0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.title}</div>
+              <div style={{ fontSize: '4px', color: '#8b7355' }}>{q.source === 'user' ? 'YOU' : 'AGENT'}</div>
             </div>
-            <div style={{
-              fontFamily: 'var(--font-pixel)', fontSize: '6px',
-              color: q.progress > 0.5 ? 'var(--green)' : 'var(--cyan)',
-              marginLeft: '8px',
-            }}>
-              {Math.round(q.progress * 100)}%
+            <div style={{ width: '40px', height: '5px', background: 'rgba(10,8,4,0.6)', border: '1px solid rgba(139,94,60,0.3)', borderRadius: '1px', marginLeft: '6px' }}>
+              <div style={{ height: '100%', width: `${q.progress * 100}%`, background: q.progress > 0.5 ? 'var(--green)' : 'var(--cyan)', borderRadius: '1px', transition: 'width 0.3s' }} />
             </div>
           </div>
         ))}
-      </div>
-      {/* Task input */}
-      <div style={{ display: 'flex', gap: '4px' }}>
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && createTask()}
-          placeholder="Teach agent something new..."
-          disabled={creating}
-          style={{
-            flex: 1, padding: '5px 8px',
-            background: 'rgba(10,8,4,0.6)', border: '1px solid #5c3a1e',
-            color: '#e8d5b0', fontFamily: 'var(--font-mono)', fontSize: '9px',
-          }}
-        />
-        <button onClick={createTask} disabled={creating || !input.trim()} style={{
-          fontFamily: 'var(--font-pixel)', fontSize: '6px',
-          padding: '5px 12px', cursor: 'pointer',
-          background: 'linear-gradient(180deg, #5c3a1e 0%, #3a2210 100%)',
-          border: '2px solid #8b5e3c', color: '#f0e68c',
-        }}>{creating ? '...' : 'ASSIGN'}</button>
+      </PanelCard>
+
+      {/* Right: Lyra portrait + task input */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '140px' }}>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <img src="/npc/guild-master.png" alt="Lyra" style={{ width: '36px', height: '36px', imageRendering: 'pixelated', borderRadius: '2px', border: '1px solid #8b5e3c' }} />
+          <div>
+            <div style={{ fontSize: '6px', color: '#f0e68c' }}>Lyra</div>
+            <div style={{ fontSize: '8px', color: '#c8a87a', fontFamily: 'Georgia, serif' }}>Assign me a task!</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '3px' }}>
+          <input
+            value={input} onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && createTask()}
+            placeholder="Teach me..."
+            disabled={creating}
+            style={{ flex: 1, padding: '4px 6px', background: 'rgba(10,8,4,0.6)', border: '1px solid #5c3a1e', color: '#e8d5b0', fontFamily: 'var(--font-mono)', fontSize: '8px' }}
+          />
+          <RpgButton onClick={createTask} disabled={creating || !input.trim()} small>{creating ? '...' : 'GO'}</RpgButton>
+        </div>
       </div>
     </div>
   )
 }
 
-/** SHOP bottom — skill overview + recommendation hint */
+/** SHOP bottom — search + filters + skill grid */
 function ShopBottomInfo() {
   const skills = useStore((s) => s.skills)
-  const km = useStore((s) => s.knowledgeMap)
-  const workflows = km?.workflows || km?.continents || []
+  const filter = useStore((s) => s.shopFilter)
+  const sourceFilter = useStore((s) => s.shopSourceFilter)
+  const setFilter = useStore((s) => s.setShopFilter)
+  const setSourceFilter = useStore((s) => s.setShopSourceFilter)
 
-  // Count skills by category
-  const cats: Record<string, number> = {}
-  skills.forEach((s) => { cats[s.category || 'other'] = (cats[s.category || 'other'] || 0) + 1 })
+  const SOURCE_COLOR: Record<string, string> = {
+    official: 'var(--green)', github: 'var(--cyan)',
+    'claude-marketplace': '#b48eff', clawhub: '#ff9944', lobehub: '#55bbff',
+  }
+
+  // Get unique sources from skills
+  const sources = Array.from(new Set(skills.map(s => s.source || 'other')))
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', gap: '6px',
-      width: '100%', fontFamily: 'var(--font-pixel)',
-    }}>
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
-        <div style={{
-          textAlign: 'center', padding: '6px 12px',
-          background: 'rgba(10,8,4,0.5)', border: '1px solid rgba(139,94,60,0.5)',
-          borderRadius: '2px',
-        }}>
-          <div style={{ fontSize: '18px', color: 'var(--cyan)', fontFamily: 'var(--font-pixel)', lineHeight: 1 }}>
-            {skills.length}
-          </div>
-          <div style={{ fontSize: '4px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '3px' }}>
-            TOTAL
-          </div>
-        </div>
-        {Object.entries(cats).slice(0, 4).map(([cat, count]) => (
-          <div key={cat} style={{
-            flex: 1, textAlign: 'center', padding: '6px 4px',
-            background: 'linear-gradient(180deg, rgba(20,14,8,0.7) 0%, rgba(10,8,4,0.8) 100%)',
-            border: '1px solid rgba(139,94,60,0.4)',
-            borderTop: '1px solid rgba(180,140,80,0.2)',
-            borderRadius: '2px',
-            boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.5), 0 1px 0 rgba(139,94,60,0.15)',
-          }}>
-            <div style={{ fontSize: '14px', color: '#e8d5b0', fontFamily: 'var(--font-pixel)', lineHeight: 1 }}>
-              {count}
-            </div>
-            <div style={{ fontSize: '4px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '3px', textTransform: 'uppercase' }}>
-              {cat}
-            </div>
-          </div>
+    <div style={{ display: 'flex', gap: '8px', width: '100%', alignItems: 'center' }}>
+      {/* Search input */}
+      <input
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+        placeholder="Search skills..."
+        style={{
+          flex: 1, padding: '6px 10px', minWidth: '100px',
+          background: 'rgba(10,8,4,0.6)', border: '1px solid #5c3a1e',
+          color: '#c8a87a', fontFamily: 'var(--font-mono)', fontSize: '10px',
+        }}
+      />
+      {/* Filter buttons */}
+      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+        {sources.slice(0, 4).map((src) => (
+          <button
+            key={src}
+            onClick={() => setSourceFilter(sourceFilter === src ? null : src)}
+            style={{
+              fontFamily: 'var(--font-pixel)', fontSize: '5px',
+              padding: '4px 6px', cursor: 'pointer',
+              background: sourceFilter === src ? 'rgba(90,60,20,0.6)' : 'transparent',
+              border: `1px solid ${sourceFilter === src ? SOURCE_COLOR[src] || '#8b5e3c' : '#3a2a1a'}`,
+              color: SOURCE_COLOR[src] || '#c8a87a',
+              opacity: sourceFilter === src ? 1 : 0.6,
+            }}
+          >{src.toUpperCase()}</button>
         ))}
       </div>
+      {/* Skill count */}
+      <PanelCard style={{ textAlign: 'center', padding: '4px 10px' }}>
+        <div style={{ fontSize: '14px', color: 'var(--cyan)', fontFamily: 'var(--font-pixel)', lineHeight: 1 }}>{skills.length}</div>
+        <div style={{ fontSize: '4px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '2px' }}>SKILLS</div>
+      </PanelCard>
     </div>
   )
 }
@@ -555,6 +579,9 @@ export default function CenterTabs() {
   const setActiveTab = useStore((s) => s.setActiveTab)
   const [activeNpc, setActiveNpc] = useState<string | null>(null)
   const selectedNpc = NPCS.find((n) => n.id === activeNpc)
+  const [mapSelectedContinent, setMapSelectedContinent] = useState<string | null>(null)
+  const knowledgeMap = useStore((s) => s.knowledgeMap)
+  const [cycleLoading, setCycleLoading] = useState(false)
   const [rumors, setRumors] = useState<Array<{ id: string; text: string; author: string; handle: string; likes: number; time: string }>>([])
   const [_rumorsOpen, setRumorsOpen] = useState(false)
   const [rumorsLoading, setRumorsLoading] = useState(false)
@@ -616,7 +643,7 @@ export default function CenterTabs() {
         border: '3px solid #8b5e3c',
         boxShadow: 'inset 0 0 8px rgba(0,0,0,0.5)',
       }}>
-        {activeTab === 'map' && <KnowledgeMap />}
+        {activeTab === 'map' && <KnowledgeMap onContinentSelect={setMapSelectedContinent} />}
         {activeTab === 'guild' && <GuildPanel />}
         {activeTab === 'shop' && <Shop />}
         {activeTab === 'npc' && <TavernScene onRumorsClick={() => fetchRumors()} rumors={rumors} rumorsLoading={rumorsLoading} />}
@@ -687,7 +714,45 @@ export default function CenterTabs() {
         }} />
         {activeTab === 'npc' && !selectedNpc && <TavernNpcBar onNpcClick={setActiveNpc} activeNpc={activeNpc} />}
         {activeTab === 'npc' && selectedNpc && <RpgDialogInline npc={selectedNpc} onClose={() => setActiveNpc(null)} />}
-        {activeTab === 'map' && <MapBottomInfo />}
+        {activeTab === 'map' && (() => {
+          const selected = mapSelectedContinent && knowledgeMap
+            ? (knowledgeMap.continents || knowledgeMap.workflows || []).find((c) => c.id === mapSelectedContinent)
+            : null
+          // If a continent is selected, show its knowledge graph; otherwise show first workflow or stats
+          const displayWorkflow = selected
+            || (knowledgeMap ? (knowledgeMap.continents || knowledgeMap.workflows || [])[0] : null)
+          if (displayWorkflow && knowledgeMap) {
+            return (
+              <div style={{ display: 'flex', width: '100%', height: '100%', gap: '8px' }}>
+                {/* Knowledge graph */}
+                <div style={{ flex: 1, position: 'relative', minHeight: '60px' }}>
+                  <SubRegionGraph
+                    continent={displayWorkflow}
+                    connections={knowledgeMap.connections}
+                    onBack={() => setMapSelectedContinent(null)}
+                  />
+                </div>
+                {/* Right: stats + cycle button */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '120px' }}>
+                  <PanelCard style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '12px', color: '#f0e68c', fontFamily: 'var(--font-pixel)', lineHeight: 1 }}>
+                      {(knowledgeMap.continents || knowledgeMap.workflows || []).length}
+                    </div>
+                    <div style={{ fontSize: '4px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '2px' }}>REGIONS</div>
+                  </PanelCard>
+                  <RpgButton onClick={() => {
+                    setCycleLoading(true)
+                    fetch('/api/cycle/start', { method: 'POST' }).catch(() => {})
+                    setTimeout(() => setCycleLoading(false), 5000)
+                  }} disabled={cycleLoading}>
+                    {cycleLoading ? '...' : '▶ CYCLE'}
+                  </RpgButton>
+                </div>
+              </div>
+            )
+          }
+          return <MapBottomInfo />
+        })()}
         {activeTab === 'guild' && <GuildBottomInfo />}
         {activeTab === 'shop' && <ShopBottomInfo />}
       </div>

@@ -158,7 +158,7 @@ function RoadLines({ connections, containerW, containerH }: {
   )
 }
 
-export default function KnowledgeMap() {
+export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?: (id: string | null) => void } = {}) {
   const knowledgeMap = useStore((s) => s.knowledgeMap)
   const [selectedContinent, setSelectedContinent] = useState<string | null>(null)
   const setSelectedRegion = useStore((s) => s.setSelectedRegion)
@@ -178,23 +178,13 @@ export default function KnowledgeMap() {
   }, [])
 
   function handleContinentClick(id: string) {
-    setSelectedContinent(id)
-    setSelectedRegion(id)
+    const newId = selectedContinent === id ? null : id
+    setSelectedContinent(newId)
+    setSelectedRegion(newId)
+    onContinentSelect?.(newId)
   }
 
-  // Drill-down view
-  if (selectedContinent && knowledgeMap) {
-    const continent = (knowledgeMap.continents || knowledgeMap.workflows || []).find((c) => c.id === selectedContinent)
-    if (continent) {
-      return (
-        <SubRegionGraph
-          continent={continent}
-          connections={knowledgeMap.connections}
-          onBack={() => { setSelectedContinent(null); setSelectedRegion(null) }}
-        />
-      )
-    }
-  }
+  // No longer switches to SubRegionGraph internally — bottom panel handles drill-down
 
   // Build cross-continent connections
   const continentConnections: Array<{ from: Continent; to: Continent }> = []

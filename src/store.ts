@@ -95,6 +95,14 @@ interface Store {
   selectedBagItems: string[]
   selectedRegion: string | null
 
+  // Shop filter (shared between Shop scene + bottom bar)
+  shopFilter: string
+  shopSourceFilter: string | null
+  shopPage: number
+  setShopFilter: (f: string) => void
+  setShopSourceFilter: (s: string | null) => void
+  setShopPage: (p: number) => void
+
   // Existing actions
   setState: (s: AgentState) => void
   addEvent: (e: GameEvent) => void
@@ -126,6 +134,12 @@ export const useStore = create<Store>((set) => ({
   activeTab: 'map',
   selectedBagItems: [],
   selectedRegion: null,
+  shopFilter: '',
+  shopSourceFilter: null,
+  shopPage: 0,
+  setShopFilter: (f) => set({ shopFilter: f, shopPage: 0 }),
+  setShopSourceFilter: (s) => set({ shopSourceFilter: s, shopPage: 0 }),
+  setShopPage: (p) => set({ shopPage: p }),
 
   setState: (s) => {
     // v2→v1 compat: map new field names to old ones for components not yet migrated
