@@ -608,70 +608,78 @@ function GuildBottomInfo() {
   )
 }
 
-/** SHOP bottom — clean search bar + category stats */
+/** SHOP bottom — left: source shops, right: skills from selected source */
 function ShopBottomInfo() {
   const skills = useStore((s) => s.skills)
-  const filter = useStore((s) => s.shopFilter)
   const sourceFilter = useStore((s) => s.shopSourceFilter)
-  const setFilter = useStore((s) => s.setShopFilter)
   const setSourceFilter = useStore((s) => s.setShopSourceFilter)
 
   const SOURCE_COLOR: Record<string, string> = {
     official: 'var(--green)', github: 'var(--cyan)',
     'claude-marketplace': '#b48eff', clawhub: '#ff9944', lobehub: '#55bbff',
-  }
-  const CAT_COLOR: Record<string, string> = {
-    coding: 'var(--cyan)', research: 'var(--purple)',
-    automation: 'var(--gold)', creative: '#ff9944',
+    filesystem: '#8b7355',
   }
 
-  const sources = Array.from(new Set(skills.map(s => s.source || 'other')))
-  const cats: Record<string, number> = {}
-  skills.forEach(s => { cats[s.category || 'other'] = (cats[s.category || 'other'] || 0) + 1 })
+  // Count skills per source
+  const sourceCounts = new Map<string, number>()
+  skills.forEach(s => {
+    const src = s.source || 'other'
+    sourceCounts.set(src, (sourceCounts.get(src) || 0) + 1)
+  })
+  const sources = Array.from(sourceCounts.entries()).sort((a, b) => b[1] - a[1])
+
+  // Skills from selected source
+  const filteredSkills = sourceFilter
+    ? skills.filter(s => (s.source || 'other') === sourceFilter)
+    : skills.slice(0, 8)
 
   return (
-    <PanelCard style={{ width: '100%' }}>
-      {/* Search row */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', alignItems: 'center' }}>
-        <input
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Search skills..."
-          style={{
-            flex: 1, padding: '5px 8px',
-            background: 'rgba(10,8,4,0.5)', border: '1px solid rgba(107,76,42,0.4)',
-            color: '#c8a87a', fontFamily: 'var(--font-mono)', fontSize: '10px',
-          }}
-        />
-        {sources.slice(0, 4).map((src) => (
-          <button
+    <div style={{ display: 'flex', gap: '6px', width: '100%', height: '100%' }}>
+      {/* Left: source shops */}
+      <PanelCard style={{ minWidth: '110px', overflow: 'auto' }}>
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355', marginBottom: '4px', letterSpacing: '1px' }}>SOURCES</div>
+        {sources.map(([src, count]) => (
+          <div
             key={src}
             onClick={() => setSourceFilter(sourceFilter === src ? null : src)}
             style={{
-              fontFamily: 'var(--font-pixel)', fontSize: '5px',
-              padding: '4px 6px', cursor: 'pointer',
-              background: sourceFilter === src ? 'rgba(90,60,20,0.6)' : 'transparent',
-              border: `1px solid ${sourceFilter === src ? SOURCE_COLOR[src] || '#6b4c2a' : 'rgba(107,76,42,0.4)'}`,
-              color: SOURCE_COLOR[src] || '#c8a87a',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '3px 4px', marginBottom: '2px', cursor: 'pointer',
+              background: sourceFilter === src ? 'rgba(90,60,20,0.4)' : 'transparent',
+              borderLeft: `2px solid ${sourceFilter === src ? SOURCE_COLOR[src] || '#6b4c2a' : 'transparent'}`,
+              transition: 'all 0.1s',
             }}
-          >{src.toUpperCase()}</button>
-        ))}
-      </div>
-      {/* Category bars row */}
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: '#c8a87a', whiteSpace: 'nowrap' }}>
-          {skills.length} SKILLS
-        </span>
-        {Object.entries(cats).slice(0, 4).map(([cat, count]) => (
-          <div key={cat} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <div style={{ flex: 1, height: '6px', background: 'rgba(10,8,4,0.5)', border: '1px solid rgba(107,76,42,0.3)', borderRadius: '1px' }}>
-              <div style={{ height: '100%', width: `${(count / skills.length) * 100}%`, background: CAT_COLOR[cat] || '#8b7355', borderRadius: '1px' }} />
-            </div>
-            <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '4px', color: '#8b7355', textTransform: 'uppercase' }}>{cat}</span>
+            onMouseEnter={e => { if (sourceFilter !== src) e.currentTarget.style.background = 'rgba(90,60,20,0.2)' }}
+            onMouseLeave={e => { if (sourceFilter !== src) e.currentTarget.style.background = 'transparent' }}
+          >
+            <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: SOURCE_COLOR[src] || '#c8a87a', textTransform: 'uppercase' }}>
+              {src}
+            </span>
+            <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355' }}>{count}</span>
           </div>
         ))}
-      </div>
-    </PanelCard>
+      </PanelCard>
+
+      {/* Right: skills from selected source */}
+      <PanelCard style={{ flex: 1, overflow: 'auto' }}>
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355', marginBottom: '4px', letterSpacing: '1px' }}>
+          {sourceFilter ? sourceFilter.toUpperCase() : 'ALL'} ({filteredSkills.length})
+        </div>
+        {filteredSkills.map(s => (
+          <div key={s.name} style={{
+            fontSize: '8px', color: '#e8d5b0', padding: '2px 0',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {s.name}
+          </div>
+        ))}
+        {!sourceFilter && skills.length > 8 && (
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '4px', color: '#6a5a3a', marginTop: '2px' }}>
+            Select a source to see all
+          </div>
+        )}
+      </PanelCard>
+    </div>
   )
 }
 
