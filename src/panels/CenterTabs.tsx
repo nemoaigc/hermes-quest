@@ -147,7 +147,7 @@ function TavernScene({ onRumorsClick, rumors, rumorsLoading }: {
   )
 }
 
-/** TAVERN bottom — 5 NPC cells with borders, portrait fills cell */
+/** TAVERN bottom — 5 NPC cells with embedded panel style */
 function TavernNpcBar({ onNpcClick, activeNpc }: { onNpcClick: (id: string) => void; activeNpc: string | null }) {
   return (
     <div style={{
@@ -164,8 +164,14 @@ function TavernNpcBar({ onNpcClick, activeNpc }: { onNpcClick: (id: string) => v
               display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer',
-              borderRight: i < NPCS.length - 1 ? '2px solid #5c3a1e' : 'none',
-              background: isActive ? 'rgba(240,230,140,0.1)' : 'transparent',
+              background: isActive
+                ? 'linear-gradient(180deg, rgba(50,35,20,0.6) 0%, rgba(35,25,15,0.7) 100%)'
+                : 'linear-gradient(180deg, rgba(40,28,16,0.5) 0%, rgba(28,20,12,0.6) 100%)',
+              border: '1px solid rgba(139,94,60,0.3)',
+              borderTop: '1px solid rgba(180,140,80,0.15)',
+              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3), 0 1px 0 rgba(139,94,60,0.1)',
+              borderRadius: '2px',
+              margin: '2px',
               transition: 'background 0.15s',
               padding: '4px 2px',
               overflow: 'hidden',
@@ -472,50 +478,30 @@ function GuildBottomInfo() {
   }
 
   return (
-    <div style={{ display: 'flex', gap: '10px', width: '100%', fontFamily: 'var(--font-pixel)' }}>
-      {/* Left: task list */}
-      <PanelCard style={{ flex: 1, overflow: 'auto' }}>
-        <div style={{ fontSize: '5px', color: '#8b7355', marginBottom: '4px', letterSpacing: '1px' }}>ACTIVE TASKS ({activeQuests.length})</div>
-        {activeQuests.length === 0 ? (
-          <div style={{ fontSize: '8px', color: '#6a5a3a', fontStyle: 'italic' }}>No tasks assigned. Write one below.</div>
-        ) : activeQuests.slice(0, 4).map((q) => (
-          <div key={q.id} style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            marginBottom: '3px', fontSize: '8px', padding: '2px 4px',
-            borderLeft: '2px solid rgba(139,94,60,0.5)',
-          }}>
-            <div style={{ flex: 1, overflow: 'hidden' }}>
-              <div style={{ color: '#e8d5b0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.title}</div>
-              <div style={{ fontSize: '4px', color: '#8b7355' }}>{q.source === 'user' ? 'YOU' : 'AGENT'}</div>
-            </div>
-            <div style={{ width: '40px', height: '5px', background: 'rgba(10,8,4,0.6)', border: '1px solid rgba(139,94,60,0.3)', borderRadius: '1px', marginLeft: '6px' }}>
-              <div style={{ height: '100%', width: `${q.progress * 100}%`, background: q.progress > 0.5 ? 'var(--green)' : 'var(--cyan)', borderRadius: '1px', transition: 'width 0.3s' }} />
-            </div>
-          </div>
-        ))}
-      </PanelCard>
-
-      {/* Right: Lyra portrait + task input */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '140px' }}>
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-          <img src="/npc/guild-master.png" alt="Lyra" style={{ width: '36px', height: '36px', imageRendering: 'pixelated', borderRadius: '2px', border: '1px solid #8b5e3c' }} />
-          <div>
-            <div style={{ fontSize: '6px', color: '#f0e68c' }}>Lyra</div>
-            <div style={{ fontSize: '8px', color: '#c8a87a', fontFamily: 'Georgia, serif' }}>Assign me a task!</div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '3px' }}>
-          <input
-            value={input} onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && createTask()}
-            placeholder="Teach me..."
-            disabled={creating}
-            style={{ flex: 1, padding: '4px 6px', background: 'rgba(10,8,4,0.6)', border: '1px solid #5c3a1e', color: '#e8d5b0', fontFamily: 'var(--font-mono)', fontSize: '8px' }}
-          />
-          <RpgButton onClick={createTask} disabled={creating || !input.trim()} small>{creating ? '...' : 'GO'}</RpgButton>
-        </div>
+    <PanelCard style={{ width: '100%', overflow: 'auto' }}>
+      <div style={{ fontSize: '5px', color: '#8b7355', marginBottom: '4px', letterSpacing: '1px', fontFamily: 'var(--font-pixel)' }}>
+        ACTIVE TASKS ({activeQuests.length})
       </div>
-    </div>
+      {activeQuests.length === 0 ? (
+        <div style={{ fontSize: '8px', color: '#6a5a3a', fontStyle: 'italic' }}>
+          No tasks assigned. Talk to Lyra in the Tavern.
+        </div>
+      ) : activeQuests.slice(0, 5).map((q) => (
+        <div key={q.id} style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          marginBottom: '3px', fontSize: '8px', padding: '2px 4px',
+          borderLeft: '2px solid rgba(139,94,60,0.5)',
+        }}>
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <div style={{ color: '#e8d5b0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.title}</div>
+            <div style={{ fontSize: '4px', color: '#8b7355', fontFamily: 'var(--font-pixel)' }}>{q.source === 'user' ? 'YOU' : 'AGENT'}</div>
+          </div>
+          <div style={{ width: '50px', height: '5px', background: 'rgba(10,8,4,0.6)', border: '1px solid rgba(139,94,60,0.3)', borderRadius: '1px', marginLeft: '6px' }}>
+            <div style={{ height: '100%', width: `${q.progress * 100}%`, background: q.progress > 0.5 ? 'var(--green)' : 'var(--cyan)', borderRadius: '1px', transition: 'width 0.3s' }} />
+          </div>
+        </div>
+      ))}
+    </PanelCard>
   )
 }
 
@@ -651,52 +637,8 @@ export default function CenterTabs() {
       {/* Bottom bar — distinct material per tab */}
       <div style={{
         flex: 1, minHeight: '80px',
-        ...(activeTab === 'map' ? {
-          // Cartographer's mahogany bookshelf
-          background: `
-            repeating-linear-gradient(90deg, transparent 0px, transparent 80px, rgba(0,0,0,0.06) 80px, rgba(0,0,0,0.06) 82px),
-            linear-gradient(180deg, #3d2818 0%, #2a1c10 40%, #221608 100%)
-          `,
-          borderTop: '4px solid #6a4428',
-          borderBottom: '2px solid #1a0e05',
-          borderLeft: '3px solid #5a3a20',
-          borderRight: '3px solid #5a3a20',
-          boxShadow: 'inset 0 2px 0 rgba(160,112,60,0.25), inset 0 -1px 0 rgba(100,70,40,0.2), inset 0 4px 12px rgba(0,0,0,0.4)',
-        } : activeTab === 'guild' ? {
-          // Adventurer's oak counter
-          background: `
-            repeating-linear-gradient(0deg, transparent 0px, transparent 20px, rgba(120,80,40,0.04) 20px, rgba(120,80,40,0.04) 21px),
-            linear-gradient(180deg, #4a3520 0%, #3a2815 40%, #2a1a0c 100%)
-          `,
-          borderTop: '4px solid #8b5e3c',
-          borderBottom: '2px solid #1a0e05',
-          borderLeft: '3px solid #6a4a2a',
-          borderRight: '3px solid #6a4a2a',
-          boxShadow: 'inset 0 2px 0 rgba(180,130,70,0.2), inset 0 -1px 0 rgba(100,70,40,0.15), inset 0 4px 10px rgba(0,0,0,0.35)',
-        } : activeTab === 'shop' ? {
-          // Alchemist's stone ledge
-          background: `
-            repeating-linear-gradient(45deg, transparent 0px, transparent 6px, rgba(80,60,40,0.03) 6px, rgba(80,60,40,0.03) 7px),
-            repeating-linear-gradient(-45deg, transparent 0px, transparent 6px, rgba(60,40,30,0.03) 6px, rgba(60,40,30,0.03) 7px),
-            linear-gradient(180deg, #352a20 0%, #2a2018 40%, #1e1610 100%)
-          `,
-          borderTop: '4px solid #6a5a4a',
-          borderBottom: '2px solid #0e0a06',
-          borderLeft: '3px solid #5a4a3a',
-          borderRight: '3px solid #5a4a3a',
-          boxShadow: 'inset 0 2px 0 rgba(140,120,100,0.15), inset 0 -1px 0 rgba(80,60,40,0.2), inset 0 4px 10px rgba(0,0,0,0.4)',
-        } : {
-          // Tavern leather bar rail
-          background: `
-            repeating-linear-gradient(90deg, transparent 0px, transparent 40px, rgba(100,60,30,0.05) 40px, rgba(100,60,30,0.05) 42px),
-            linear-gradient(180deg, #3a2515 0%, #2d1c10 50%, #22150a 100%)
-          `,
-          borderTop: '4px solid #7a5030',
-          borderBottom: '2px solid #1a0c04',
-          borderLeft: '3px solid #6a4428',
-          borderRight: '3px solid #6a4428',
-          boxShadow: 'inset 0 2px 0 rgba(180,120,60,0.2), inset 0 -1px 0 rgba(120,80,40,0.15), inset 0 4px 10px rgba(0,0,0,0.35)',
-        }),
+        background: 'linear-gradient(180deg, #3a2515 0%, #2a1a0c 40%, #1e1208 100%)',
+      border: '3px solid #8b5e3c',
         display: 'flex',
         alignItems: 'stretch',
         justifyContent: 'center',
@@ -704,38 +646,30 @@ export default function CenterTabs() {
         overflow: 'auto',
         position: 'relative',
       } as React.CSSProperties}>
-        {/* Material-specific edge details */}
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: '1px',
-          background: activeTab === 'shop'
-            ? 'linear-gradient(90deg, transparent 0%, rgba(140,120,100,0.3) 20%, rgba(140,120,100,0.15) 50%, rgba(140,120,100,0.3) 80%, transparent 100%)'
-            : 'linear-gradient(90deg, transparent 0%, rgba(200,160,100,0.2) 20%, rgba(200,160,100,0.1) 50%, rgba(200,160,100,0.2) 80%, transparent 100%)',
-          pointerEvents: 'none',
-        }} />
+        {/* No edge line for MAP (knowledge graph fills it) */}
         {activeTab === 'npc' && !selectedNpc && <TavernNpcBar onNpcClick={setActiveNpc} activeNpc={activeNpc} />}
         {activeTab === 'npc' && selectedNpc && <RpgDialogInline npc={selectedNpc} onClose={() => setActiveNpc(null)} />}
         {activeTab === 'map' && (() => {
           const selected = mapSelectedContinent && knowledgeMap
             ? (knowledgeMap.continents || knowledgeMap.workflows || []).find((c) => c.id === mapSelectedContinent)
             : null
-          // If a continent is selected, show its knowledge graph; otherwise show first workflow or stats
           const displayWorkflow = selected
             || (knowledgeMap ? (knowledgeMap.continents || knowledgeMap.workflows || [])[0] : null)
           if (displayWorkflow && knowledgeMap) {
             return (
               <div style={{ display: 'flex', width: '100%', height: '100%', gap: '8px' }}>
-                {/* Knowledge graph */}
-                <div style={{ flex: 1, position: 'relative', minHeight: '60px' }}>
+                {/* Knowledge graph in embedded panel */}
+                <PanelCard style={{ flex: 1, padding: 0, overflow: 'hidden' }}>
                   <SubRegionGraph
                     continent={displayWorkflow}
                     connections={knowledgeMap.connections}
                     onBack={() => setMapSelectedContinent(null)}
                   />
-                </div>
-                {/* Right: stats + cycle button */}
+                </PanelCard>
+                {/* Right: stats + cycle */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '120px' }}>
                   <PanelCard style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '12px', color: '#f0e68c', fontFamily: 'var(--font-pixel)', lineHeight: 1 }}>
+                    <div style={{ fontSize: '14px', color: '#f0e68c', fontFamily: 'var(--font-pixel)', lineHeight: 1 }}>
                       {(knowledgeMap.continents || knowledgeMap.workflows || []).length}
                     </div>
                     <div style={{ fontSize: '4px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '2px' }}>REGIONS</div>
