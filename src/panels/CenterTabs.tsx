@@ -147,23 +147,45 @@ function TavernScene({ onRumorsClick, rumors, rumorsLoading }: {
   )
 }
 
+const NPC_BIOS: Record<string, { lore: string; trait: string }> = {
+  guild_master: {
+    lore: 'Once a legendary adventurer herself, Lyra retired to manage the guild after a fateful expedition. She has an eye for potential and knows exactly which quest will push you to grow.',
+    trait: 'Assigns quests · Evaluates progress',
+  },
+  cartographer: {
+    lore: 'Aldric has mapped every corner of the known world and several that shouldn\'t exist. His spectacles see not just places, but the connections between all things.',
+    trait: 'Maps knowledge · Finds weak spots',
+  },
+  quartermaster: {
+    lore: 'Kael earned her silver hair in battle, not from age. She knows every weapon, tool, and skill in the armory — and exactly which one you need.',
+    trait: 'Manages skills · Recommends gear',
+  },
+  bartender: {
+    lore: 'Rosa hears everything. Every boast, every whisper, every secret spilled over a drink. She remembers it all and shares only what matters.',
+    trait: 'Shares gossip · Tells stories',
+  },
+  sage: {
+    lore: 'No one knows how old Orin truly is. Some say he\'s read every book ever written. When the world feels too complex, his wisdom cuts through the fog.',
+    trait: 'Deep analysis · Reflection',
+  },
+}
+
 /** TAVERN bottom — 5 NPC cells with embedded panel style */
-function TavernNpcBar({ onNpcClick, activeNpc }: { onNpcClick: (id: string) => void; activeNpc: string | null }) {
+function TavernNpcBar({ onNpcClick, activeNpc, onBioClick, bioNpc }: { onNpcClick: (id: string) => void; activeNpc: string | null; onBioClick: (id: string | null) => void; bioNpc: string | null }) {
   return (
     <div style={{
       display: 'flex', width: '100%', height: '100%',
+      position: 'relative',
     }}>
       {NPCS.map((npc, i) => {
         const isActive = activeNpc === npc.id
         return (
           <div
             key={npc.id}
-            onClick={() => onNpcClick(npc.id)}
             style={{
               flex: 1,
               display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
               background: isActive
                 ? 'linear-gradient(180deg, rgba(50,35,20,0.6) 0%, rgba(35,25,15,0.7) 100%)'
                 : 'linear-gradient(180deg, rgba(40,28,16,0.5) 0%, rgba(28,20,12,0.6) 100%)',
@@ -180,12 +202,15 @@ function TavernNpcBar({ onNpcClick, activeNpc }: { onNpcClick: (id: string) => v
             <img
               src={npc.img}
               alt={npc.name}
+              onClick={() => onBioClick(bioNpc === npc.id ? null : npc.id)}
               style={{
                 width: '100%', maxWidth: '80px', aspectRatio: '1',
                 objectFit: 'cover',
                 imageRendering: 'pixelated',
-                border: isActive ? '2px solid #f0e68c' : '2px solid transparent',
+                border: isActive ? '2px solid #f0e68c' : bioNpc === npc.id ? '2px solid #c8a87a' : '2px solid transparent',
                 borderRadius: '2px',
+                cursor: 'pointer',
+                transition: 'border-color 0.15s',
               }}
             />
             <span style={{
@@ -204,9 +229,100 @@ function TavernNpcBar({ onNpcClick, activeNpc }: { onNpcClick: (id: string) => v
             }}>
               {npc.title}
             </span>
+            <button
+              onClick={(e) => { e.stopPropagation(); onNpcClick(npc.id) }}
+              style={{
+                fontFamily: 'var(--font-pixel)',
+                fontSize: 'clamp(3px, 0.4vw, 5px)',
+                padding: '2px 8px',
+                marginTop: '3px',
+                cursor: 'pointer',
+                background: isActive
+                  ? 'linear-gradient(180deg, #7a5030 0%, #5a3820 100%)'
+                  : 'transparent',
+                border: isActive ? '1px solid #f0e68c' : '1px solid rgba(139,94,60,0.4)',
+                color: isActive ? '#f0e68c' : '#8b7355',
+                borderRadius: '2px',
+                letterSpacing: '1px',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#f0e68c'
+                e.currentTarget.style.color = '#f0e68c'
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.borderColor = 'rgba(139,94,60,0.4)'
+                  e.currentTarget.style.color = '#8b7355'
+                }
+              }}
+            >CHAT</button>
           </div>
         )
       })}
+
+      {/* Bio overlay removed — now handled by NpcBioPanel in bottom bar */}
+    </div>
+  )
+}
+
+/** NPC Bio Panel — replaces bottom bar when portrait is clicked */
+/** Shared back button style */
+function BackButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} style={{
+      fontFamily: 'var(--font-pixel)', fontSize: '6px', padding: '4px 10px',
+      background: 'transparent', border: '1px solid rgba(139,94,60,0.5)',
+      color: '#8b7355', cursor: 'pointer', letterSpacing: '1px',
+      transition: 'all 0.15s',
+    }}
+    onMouseEnter={e => { e.currentTarget.style.borderColor = '#f0e68c'; e.currentTarget.style.color = '#f0e68c' }}
+    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(139,94,60,0.5)'; e.currentTarget.style.color = '#8b7355' }}
+    >◀ BACK</button>
+  )
+}
+
+function NpcBioPanel({ npc, bio, onClose }: {
+  npc: typeof NPCS[0]
+  bio: { lore: string; trait: string }
+  onClose: () => void
+  onChat: () => void
+}) {
+  return (
+    <div style={{
+      display: 'flex', gap: '12px', width: '100%', height: '100%', padding: '8px 12px',
+    }}>
+      {/* Left: large portrait + back */}
+      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+        <img src={npc.img} alt="" style={{
+          width: '80px', height: '80px', imageRendering: 'pixelated',
+          border: '2px solid #8b5e3c', borderRadius: '3px',
+        }} />
+        <BackButton onClick={onClose} />
+      </div>
+
+      {/* Right: bio content */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', overflow: 'auto' }}>
+        <div>
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: '#f0e68c', letterSpacing: '1px' }}>
+            {npc.name}
+          </div>
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#8b7355', marginTop: '2px' }}>
+            {npc.title}
+          </div>
+        </div>
+
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: 'var(--cyan)', letterSpacing: '0.5px' }}>
+          {bio.trait}
+        </div>
+
+        <div style={{
+          fontSize: '12px', color: '#c8a87a', lineHeight: '1.7',
+          fontFamily: 'Georgia, serif', fontStyle: 'italic',
+        }}>
+          "{bio.lore}"
+        </div>
+      </div>
     </div>
   )
 }
@@ -246,53 +362,51 @@ function RpgDialogInline({ npc, onClose }: { npc: typeof NPCS[0]; onClose: () =>
 
   return (
     <div style={{
-      display: 'flex', gap: '8px',
+      display: 'flex', gap: '12px',
       width: '100%', height: '100%',
-      padding: '6px 10px',
+      padding: '8px 12px',
     }}>
-      {/* NPC portrait */}
-      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+      {/* Left: portrait + back — matches bio panel exactly */}
+      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
         <img src={npc.img} alt="" style={{
-          width: '56px', height: '56px', imageRendering: 'pixelated',
-          border: '2px solid #8b5e3c', borderRadius: '2px',
+          width: '80px', height: '80px', imageRendering: 'pixelated',
+          border: '2px solid #8b5e3c', borderRadius: '3px',
         }} />
-        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#f0e68c' }}>{npc.name}</span>
+        <BackButton onClick={onClose} />
       </div>
 
-      {/* Dialog content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
-        {/* NPC text */}
+      {/* Right: dialog content */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+        {/* NPC name — matches bio panel */}
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: '#f0e68c', letterSpacing: '1px' }}>
+          {npc.name}
+        </div>
+
         <div style={{
           flex: 1, overflow: 'auto',
-          fontSize: '10px', lineHeight: '1.5', color: '#e8d5b0',
+          fontSize: '12px', lineHeight: '1.7', color: '#e8d5b0',
           fontFamily: 'Georgia, serif',
         }}>
-          {lastNpcMsg && (
-            <span>
-              <strong style={{ color: '#f0e68c', fontFamily: 'var(--font-pixel)', fontSize: '5px' }}>
-                {npc.name}:
-              </strong>{' '}
-              {lastNpcMsg.text}
-            </span>
-          )}
+          {lastNpcMsg && lastNpcMsg.text}
           {loading && <span style={{ color: '#8b7355', fontStyle: 'italic' }}> ...</span>}
         </div>
 
-        {/* Suggestions */}
         {!loading && messages.length <= 2 && (
-          <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
             {suggestions.map((q, i) => (
               <button key={i} onClick={() => handleSend(q)} style={{
-                fontFamily: 'var(--font-pixel)', fontSize: '4px',
-                padding: '2px 6px', cursor: 'pointer',
+                fontFamily: 'var(--font-pixel)', fontSize: '5px',
+                padding: '3px 8px', cursor: 'pointer',
                 background: 'rgba(90,60,20,0.4)', border: '1px solid #5c3a1e',
-                color: '#c8a87a',
-              }}>{q}</button>
+                color: '#c8a87a', transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#f0e68c'; e.currentTarget.style.color = '#f0e68c' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#5c3a1e'; e.currentTarget.style.color = '#c8a87a' }}
+              >{q}</button>
             ))}
           </div>
         )}
 
-        {/* Input */}
         <div style={{ display: 'flex', gap: '4px' }}>
           <input
             value={input}
@@ -301,21 +415,12 @@ function RpgDialogInline({ npc, onClose }: { npc: typeof NPCS[0]; onClose: () =>
             placeholder={`Talk to ${npc.name}...`}
             disabled={loading}
             style={{
-              flex: 1, padding: '3px 6px',
+              flex: 1, padding: '5px 8px',
               background: 'rgba(10,8,4,0.6)', border: '1px solid #5c3a1e',
-              color: '#e8d5b0', fontFamily: 'var(--font-mono)', fontSize: '9px',
+              color: '#e8d5b0', fontFamily: 'var(--font-mono)', fontSize: '10px',
             }}
           />
-          <button onClick={() => handleSend()} disabled={loading || !input.trim()} style={{
-            fontFamily: 'var(--font-pixel)', fontSize: '5px',
-            padding: '3px 8px', cursor: 'pointer',
-            background: '#5c3a1e', border: '2px solid #8b5e3c', color: '#f0e68c',
-          }}>SEND</button>
-          <button onClick={onClose} style={{
-            fontFamily: 'var(--font-pixel)', fontSize: '5px',
-            padding: '3px 6px', cursor: 'pointer',
-            background: 'transparent', border: '1px solid #5c3a1e', color: '#8b7355',
-          }}>X</button>
+          <RpgButton onClick={() => handleSend()} disabled={loading || !input.trim()} small>SEND</RpgButton>
         </div>
       </div>
     </div>
@@ -368,8 +473,6 @@ function RpgButton({ children, onClick, disabled, small }: { children: React.Rea
       cursor: disabled ? 'wait' : 'pointer',
       background: disabled ? 'rgba(10,8,4,0.5)' : 'linear-gradient(180deg, #6a4428 0%, #4a2a14 50%, #3a2210 100%)',
       border: '2px solid #8b5e3c',
-      borderTop: '2px solid #a07040',
-      borderBottom: '2px solid #3a2010',
       color: '#f0e68c',
       boxShadow: disabled ? 'none' : '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,140,0.1)',
       textShadow: '0 1px 2px rgba(0,0,0,0.5)',
@@ -565,6 +668,8 @@ export default function CenterTabs() {
   const setActiveTab = useStore((s) => s.setActiveTab)
   const [activeNpc, setActiveNpc] = useState<string | null>(null)
   const selectedNpc = NPCS.find((n) => n.id === activeNpc)
+  const [bioNpcId, setBioNpcId] = useState<string | null>(null)
+  const bioNpcData = bioNpcId ? NPCS.find(n => n.id === bioNpcId) : null
   const [mapSelectedContinent, setMapSelectedContinent] = useState<string | null>(null)
   const knowledgeMap = useStore((s) => s.knowledgeMap)
   const [cycleLoading, setCycleLoading] = useState(false)
@@ -588,7 +693,7 @@ export default function CenterTabs() {
       <div style={{
         display: 'flex', gap: '0', marginBottom: '0',
         background: 'linear-gradient(to bottom, #2a1a0e, #1a120a)',
-        borderBottom: '2px solid #5c3a1e',
+        borderBottom: '2px solid #8b5e3c',
       }}>
         {TABS.map((t) => {
           const isActive = activeTab === t.id
@@ -626,7 +731,7 @@ export default function CenterTabs() {
       <div style={{
         width: '100%', aspectRatio: '1024 / 572',
         flexShrink: 0, position: 'relative', overflow: 'hidden',
-        border: '3px solid #8b5e3c',
+        border: '2px solid #8b5e3c',
         boxShadow: 'inset 0 0 8px rgba(0,0,0,0.5)',
       }}>
         {activeTab === 'map' && <KnowledgeMap onContinentSelect={setMapSelectedContinent} />}
@@ -638,7 +743,7 @@ export default function CenterTabs() {
       <div style={{
         flex: 1, minHeight: '80px',
         background: 'linear-gradient(180deg, #3a2515 0%, #2a1a0c 40%, #1e1208 100%)',
-      border: '3px solid #8b5e3c',
+      border: '2px solid #8b5e3c',
         display: 'flex',
         alignItems: 'stretch',
         justifyContent: 'center',
@@ -647,7 +752,8 @@ export default function CenterTabs() {
         position: 'relative',
       } as React.CSSProperties}>
         {/* No edge line for MAP (knowledge graph fills it) */}
-        {activeTab === 'npc' && !selectedNpc && <TavernNpcBar onNpcClick={setActiveNpc} activeNpc={activeNpc} />}
+        {activeTab === 'npc' && !selectedNpc && !bioNpcData && <TavernNpcBar onNpcClick={setActiveNpc} activeNpc={activeNpc} onBioClick={setBioNpcId} bioNpc={bioNpcId} />}
+        {activeTab === 'npc' && !selectedNpc && bioNpcData && <NpcBioPanel npc={bioNpcData} bio={NPC_BIOS[bioNpcId!]} onClose={() => setBioNpcId(null)} onChat={() => { setActiveNpc(bioNpcId!); setBioNpcId(null) }} />}
         {activeTab === 'npc' && selectedNpc && <RpgDialogInline npc={selectedNpc} onClose={() => setActiveNpc(null)} />}
         {activeTab === 'map' && (() => {
           const selected = mapSelectedContinent && knowledgeMap

@@ -8,7 +8,7 @@
 :root {
   --bg: #0d0a06;
   --panel: #1a140c;
-  --border: #5c3a1e;
+  --border: #8b5e3c;
   --highlight: #3a2a1a;
   --text: #e8d5b0;
   --text-dim: #8b7355;
@@ -39,7 +39,7 @@ html, body, #root {
 
 .pixel-panel {
   background: var(--panel);
-  border: 2px solid var(--border);
+  border: 2px solid var(--border);  /* unified: 2px #8b5e3c */
   image-rendering: pixelated;
   padding: 8px;
 }
