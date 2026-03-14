@@ -7,6 +7,7 @@ interface Props {
   continent: AnyContinent
   connections: Connection[]
   onBack: () => void
+  extraAction?: React.ReactNode
 }
 
 const COLORS = ['#4ecdc4', '#a855f7', '#f0e68c', '#ff6b6b', '#ff9944', '#66bb6a', '#42a5f5']
@@ -20,7 +21,7 @@ interface Node {
   color: string
 }
 
-export default function SubRegionGraph({ continent, connections, onBack }: Props) {
+export default function SubRegionGraph({ continent, connections, onBack, extraAction }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const nodesRef = useRef<Node[]>([])
@@ -260,7 +261,7 @@ export default function SubRegionGraph({ continent, connections, onBack }: Props
 
         // Label
         if (isH) {
-          ctx.font = '6px "Press Start 2P", monospace'
+          ctx.font = '8px "Press Start 2P", monospace'
           ctx.fillStyle = '#f0e68c'
           ctx.textAlign = 'center'
           ctx.shadowColor = 'rgba(0,0,0,0.9)'
@@ -294,29 +295,43 @@ export default function SubRegionGraph({ continent, connections, onBack }: Props
   }
 
   return (
-    <div ref={containerRef} style={{
+    <div style={{
       width: '100%', height: '100%', minHeight: '80px',
-      position: 'relative', overflow: 'hidden',
-      cursor: hoveredNode ? 'pointer' : 'default',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
     }}>
-      <canvas
-        ref={canvasRef}
-        width={sizeRef.current.w}
-        height={sizeRef.current.h}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={() => { hoveredRef.current = null; setHoveredNode(null) }}
-        style={{ display: 'block', width: '100%', height: '100%' }}
-      />
+      {/* Title bar — fixed, same font size as other panels */}
       <div style={{
-        position: 'absolute', top: 4, left: 6,
-        fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#f0e68c',
-        display: 'flex', alignItems: 'center', gap: '6px',
-        textShadow: '0 1px 3px rgba(0,0,0,0.8)',
-        pointerEvents: 'auto',
+        display: 'flex', alignItems: 'center', gap: '8px',
+        padding: '4px 8px',
+        background: 'rgba(10,8,4,0.6)',
+        borderBottom: '1px solid rgba(107,76,42,0.3)',
+        flexShrink: 0,
       }}>
-        <span onClick={onBack} style={{ cursor: 'pointer', color: '#8b7355' }}>◀</span>
-        <span>{continent.name}</span>
-        <span style={{ color: '#8b7355', fontSize: '5px' }}>{continent.description}</span>
+        <span onClick={onBack} style={{
+          cursor: 'pointer', color: '#8b7355',
+          fontFamily: 'var(--font-pixel)', fontSize: '6px',
+        }}>◀</span>
+        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: '#f0e68c' }}>
+          {continent.name}
+        </span>
+        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355', flex: 1 }}>
+          {continent.description}
+        </span>
+        {extraAction}
+      </div>
+      {/* Canvas — fills remaining space */}
+      <div ref={containerRef} style={{
+        flex: 1, position: 'relative', overflow: 'hidden',
+        cursor: hoveredNode ? 'pointer' : 'default',
+      }}>
+        <canvas
+          ref={canvasRef}
+          width={sizeRef.current.w}
+          height={sizeRef.current.h}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={() => { hoveredRef.current = null; setHoveredNode(null) }}
+          style={{ display: 'block', width: '100%', height: '100%' }}
+        />
       </div>
     </div>
   )

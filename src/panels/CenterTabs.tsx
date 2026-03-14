@@ -307,17 +307,17 @@ function NpcBioPanel({ npc, bio, onClose }: {
           <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: '#f0e68c', letterSpacing: '1px' }}>
             {npc.name}
           </div>
-          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#8b7355', marginTop: '2px' }}>
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: '#8b7355', marginTop: '2px' }}>
             {npc.title}
           </div>
         </div>
 
-        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: 'var(--cyan)', letterSpacing: '0.5px' }}>
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: 'var(--cyan)', letterSpacing: '0.5px' }}>
           {bio.trait}
         </div>
 
         <div style={{
-          fontSize: '12px', color: '#c8a87a', lineHeight: '1.7',
+          fontSize: '13px', color: '#c8a87a', lineHeight: '1.7',
           fontFamily: 'Georgia, serif', fontStyle: 'italic',
         }}>
           "{bio.lore}"
@@ -384,7 +384,7 @@ function RpgDialogInline({ npc, onClose }: { npc: typeof NPCS[0]; onClose: () =>
 
         <div style={{
           flex: 1, overflow: 'auto',
-          fontSize: '12px', lineHeight: '1.7', color: '#e8d5b0',
+          fontSize: '13px', lineHeight: '1.7', color: '#e8d5b0',
           fontFamily: 'Georgia, serif',
         }}>
           {lastNpcMsg && lastNpcMsg.text}
@@ -582,24 +582,24 @@ function GuildBottomInfo() {
 
   return (
     <PanelCard style={{ width: '100%', overflow: 'auto' }}>
-      <div style={{ fontSize: '5px', color: '#8b7355', marginBottom: '4px', letterSpacing: '1px', fontFamily: 'var(--font-pixel)' }}>
+      <div style={{ fontSize: '8px', color: '#c8a87a', marginBottom: '6px', letterSpacing: '1px', fontFamily: 'var(--font-pixel)' }}>
         ACTIVE TASKS ({activeQuests.length})
       </div>
       {activeQuests.length === 0 ? (
-        <div style={{ fontSize: '8px', color: '#6a5a3a', fontStyle: 'italic' }}>
+        <div style={{ fontSize: '11px', color: '#6a5a3a', fontStyle: 'italic', fontFamily: 'Georgia, serif' }}>
           No tasks assigned. Talk to Lyra in the Tavern.
         </div>
       ) : activeQuests.slice(0, 5).map((q) => (
         <div key={q.id} style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          marginBottom: '3px', fontSize: '8px', padding: '2px 4px',
-          borderLeft: '2px solid rgba(139,94,60,0.5)',
+          marginBottom: '4px', fontSize: '11px', padding: '3px 6px',
+          borderLeft: '3px solid rgba(139,94,60,0.5)',
         }}>
           <div style={{ flex: 1, overflow: 'hidden' }}>
             <div style={{ color: '#e8d5b0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.title}</div>
-            <div style={{ fontSize: '4px', color: '#8b7355', fontFamily: 'var(--font-pixel)' }}>{q.source === 'user' ? 'YOU' : 'AGENT'}</div>
+            <div style={{ fontSize: '6px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '1px' }}>{q.source === 'user' ? 'YOU' : 'AGENT'}</div>
           </div>
-          <div style={{ width: '50px', height: '5px', background: 'rgba(10,8,4,0.6)', border: '1px solid rgba(139,94,60,0.3)', borderRadius: '1px', marginLeft: '6px' }}>
+          <div style={{ width: '60px', height: '6px', background: 'rgba(10,8,4,0.6)', border: '1px solid rgba(139,94,60,0.3)', borderRadius: '1px', marginLeft: '8px' }}>
             <div style={{ height: '100%', width: `${q.progress * 100}%`, background: q.progress > 0.5 ? 'var(--green)' : 'var(--cyan)', borderRadius: '1px', transition: 'width 0.3s' }} />
           </div>
         </div>
@@ -608,7 +608,7 @@ function GuildBottomInfo() {
   )
 }
 
-/** SHOP bottom — search + filters + skill grid */
+/** SHOP bottom — clean search bar + category stats */
 function ShopBottomInfo() {
   const skills = useStore((s) => s.skills)
   const filter = useStore((s) => s.shopFilter)
@@ -620,25 +620,29 @@ function ShopBottomInfo() {
     official: 'var(--green)', github: 'var(--cyan)',
     'claude-marketplace': '#b48eff', clawhub: '#ff9944', lobehub: '#55bbff',
   }
+  const CAT_COLOR: Record<string, string> = {
+    coding: 'var(--cyan)', research: 'var(--purple)',
+    automation: 'var(--gold)', creative: '#ff9944',
+  }
 
-  // Get unique sources from skills
   const sources = Array.from(new Set(skills.map(s => s.source || 'other')))
+  const cats: Record<string, number> = {}
+  skills.forEach(s => { cats[s.category || 'other'] = (cats[s.category || 'other'] || 0) + 1 })
 
   return (
-    <div style={{ display: 'flex', gap: '8px', width: '100%', alignItems: 'center' }}>
-      {/* Search input */}
-      <input
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
-        placeholder="Search skills..."
-        style={{
-          flex: 1, padding: '6px 10px', minWidth: '100px',
-          background: 'rgba(10,8,4,0.6)', border: '1px solid #5c3a1e',
-          color: '#c8a87a', fontFamily: 'var(--font-mono)', fontSize: '10px',
-        }}
-      />
-      {/* Filter buttons */}
-      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+    <PanelCard style={{ width: '100%' }}>
+      {/* Search row */}
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', alignItems: 'center' }}>
+        <input
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Search skills..."
+          style={{
+            flex: 1, padding: '5px 8px',
+            background: 'rgba(10,8,4,0.5)', border: '1px solid rgba(107,76,42,0.4)',
+            color: '#c8a87a', fontFamily: 'var(--font-mono)', fontSize: '10px',
+          }}
+        />
         {sources.slice(0, 4).map((src) => (
           <button
             key={src}
@@ -647,19 +651,27 @@ function ShopBottomInfo() {
               fontFamily: 'var(--font-pixel)', fontSize: '5px',
               padding: '4px 6px', cursor: 'pointer',
               background: sourceFilter === src ? 'rgba(90,60,20,0.6)' : 'transparent',
-              border: `1px solid ${sourceFilter === src ? SOURCE_COLOR[src] || '#6b4c2a' : '#3a2a1a'}`,
+              border: `1px solid ${sourceFilter === src ? SOURCE_COLOR[src] || '#6b4c2a' : 'rgba(107,76,42,0.4)'}`,
               color: SOURCE_COLOR[src] || '#c8a87a',
-              opacity: sourceFilter === src ? 1 : 0.6,
             }}
           >{src.toUpperCase()}</button>
         ))}
       </div>
-      {/* Skill count */}
-      <PanelCard style={{ textAlign: 'center', padding: '4px 10px' }}>
-        <div style={{ fontSize: '14px', color: 'var(--cyan)', fontFamily: 'var(--font-pixel)', lineHeight: 1 }}>{skills.length}</div>
-        <div style={{ fontSize: '4px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '2px' }}>SKILLS</div>
-      </PanelCard>
-    </div>
+      {/* Category bars row */}
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: '#c8a87a', whiteSpace: 'nowrap' }}>
+          {skills.length} SKILLS
+        </span>
+        {Object.entries(cats).slice(0, 4).map(([cat, count]) => (
+          <div key={cat} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div style={{ flex: 1, height: '6px', background: 'rgba(10,8,4,0.5)', border: '1px solid rgba(107,76,42,0.3)', borderRadius: '1px' }}>
+              <div style={{ height: '100%', width: `${(count / skills.length) * 100}%`, background: CAT_COLOR[cat] || '#8b7355', borderRadius: '1px' }} />
+            </div>
+            <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '4px', color: '#8b7355', textTransform: 'uppercase' }}>{cat}</span>
+          </div>
+        ))}
+      </div>
+    </PanelCard>
   )
 }
 
@@ -766,32 +778,22 @@ export default function CenterTabs() {
             || (knowledgeMap ? (knowledgeMap.continents || knowledgeMap.workflows || [])[0] : null)
           if (displayWorkflow && knowledgeMap) {
             return (
-              <div style={{ display: 'flex', width: '100%', height: '100%', gap: '8px' }}>
-                {/* Knowledge graph in embedded panel */}
-                <PanelCard style={{ flex: 1, padding: 0, overflow: 'hidden' }}>
-                  <SubRegionGraph
-                    continent={displayWorkflow}
-                    connections={knowledgeMap.connections}
-                    onBack={() => setMapSelectedContinent(null)}
-                  />
-                </PanelCard>
-                {/* Right: stats + cycle */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '120px' }}>
-                  <PanelCard style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '14px', color: '#f0e68c', fontFamily: 'var(--font-pixel)', lineHeight: 1 }}>
-                      {(knowledgeMap.continents || knowledgeMap.workflows || []).length}
-                    </div>
-                    <div style={{ fontSize: '4px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '2px' }}>REGIONS</div>
-                  </PanelCard>
-                  <RpgButton onClick={() => {
-                    setCycleLoading(true)
-                    fetch('/api/cycle/start', { method: 'POST' }).catch(() => {})
-                    setTimeout(() => setCycleLoading(false), 5000)
-                  }} disabled={cycleLoading}>
-                    {cycleLoading ? '...' : '▶ CYCLE'}
-                  </RpgButton>
-                </div>
-              </div>
+              <PanelCard style={{ width: '100%', height: '100%', padding: 0, overflow: 'hidden' }}>
+                <SubRegionGraph
+                  continent={displayWorkflow}
+                  connections={knowledgeMap.connections}
+                  onBack={() => setMapSelectedContinent(null)}
+                  extraAction={
+                    <RpgButton onClick={() => {
+                      setCycleLoading(true)
+                      fetch('/api/cycle/start', { method: 'POST' }).catch(() => {})
+                      setTimeout(() => setCycleLoading(false), 5000)
+                    }} disabled={cycleLoading} small>
+                      {cycleLoading ? '...' : '▶ CYCLE'}
+                    </RpgButton>
+                  }
+                />
+              </PanelCard>
             )
           }
           return <MapBottomInfo />

@@ -9,7 +9,8 @@ const CAT_COLOR: Record<string, string> = {
 }
 
 export default function SkillInventory() {
-  const skills = useStore((s) => s.skills)
+  const allSkills = useStore((s) => s.skills)
+  const skills = allSkills.filter(s => s.name && s.name.trim())
   const setSkills = useStore((s) => s.setSkills)
   const [selected, setSelected] = useState<string | null>(null)
   const [forgetting, setForgetting] = useState(false)
@@ -60,34 +61,26 @@ export default function SkillInventory() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
       {skills.map((skill) => (
         <div
           key={skill.name}
           onClick={() => setSelected(skill.name)}
           style={{
             display: 'flex', alignItems: 'center', gap: '6px',
-            padding: '4px 6px', cursor: 'pointer',
-            borderLeft: `2px solid ${CAT_COLOR[skill.category || ''] || 'var(--border)'}`,
+            padding: '3px 6px', cursor: 'pointer',
+            borderLeft: `3px solid ${CAT_COLOR[skill.category || ''] || 'var(--border)'}`,
             transition: 'background 0.1s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,94,60,0.1)' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,94,60,0.15)' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
         >
           <SkillIcon name={skill.name} category={skill.category || ''} size={16} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
-              fontSize: '9px', color: 'var(--text)',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
-              {skill.name}
-            </div>
-          </div>
           <span style={{
-            fontFamily: 'var(--font-pixel)', fontSize: '4px',
-            color: CAT_COLOR[skill.category || ''] || 'var(--text-dim)',
+            flex: 1, fontSize: '8px', color: 'var(--text)',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
-            {skill.category}
+            {skill.name}
           </span>
         </div>
       ))}
