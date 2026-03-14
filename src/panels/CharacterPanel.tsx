@@ -59,25 +59,32 @@ export default function CharacterPanel() {
         </div>
       </div>
 
-      <StatBar label="STABILITY" current={state.stability} max={state.stability_max} type="stability" />
-      <StatBar label="ENERGY" current={state.energy} max={state.energy_max} type="energy" />
+      <StatBar label="HP" current={state.hp} max={state.hp_max} type="stability" />
+      <StatBar label="MP" current={state.mp} max={state.mp_max} type="energy" />
       <StatBar label="XP" current={state.xp} max={state.xp_to_next} type="xp" />
+
+      {/* Understanding */}
+      <div style={{ marginTop: '6px', fontSize: '8px', fontFamily: 'var(--font-pixel)', display: 'flex', justifyContent: 'space-between' }}>
+        <span>UNDERSTANDING</span>
+        <span style={{ color: 'var(--cyan)' }}>
+          {state.understanding < 0 ? 'Calibrating...' : `${Math.round(state.understanding * 100)}%`}
+        </span>
+      </div>
 
       <div style={{ marginTop: '8px', fontSize: '9px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
         <div><span style={{ color: 'var(--text-dim)' }}>Cycles: </span><span>{state.total_cycles}</span></div>
         <div><span style={{ color: 'var(--text-dim)' }}>Skills: </span><span>{state.skills_count}</span></div>
-        <div><span style={{ color: 'var(--text-dim)' }}>Quests: </span><span>{state.completed_quests}</span></div>
-        <div><span style={{ color: 'var(--text-dim)' }}>Mastered: </span><span>{state.regions_cleared.length}</span></div>
+        <div><span style={{ color: 'var(--text-dim)' }}>Workflows: </span><span>{state.workflows_discovered ?? 0}</span></div>
+        <div><span style={{ color: 'var(--text-dim)' }}>Corrections: </span><span>{state.total_corrections ?? 0}</span></div>
       </div>
 
-      {state.inventory.length > 0 && (
+      {state.inventory && state.inventory.length > 0 && (
         <div style={{ marginTop: '8px' }}>
-          <div style={{ fontSize: '8px', color: 'var(--text-dim)', marginBottom: '4px' }}>INVENTORY</div>
+          <div style={{ fontSize: '8px', color: 'var(--text-dim)', marginBottom: '4px' }}>INVENTORY ({state.inventory.length})</div>
           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
-            {state.inventory.map((item) => (
-              <div key={item.item} title={item.item} style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                <ItemIcon item={item.item} size={16} />
-                <span style={{ fontSize: '9px', fontFamily: 'var(--font-pixel)' }}>x{item.count}</span>
+            {state.inventory.slice(0, 8).map((item: any, i: number) => (
+              <div key={item.id || i} title={item.name || item.type || ''} style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                <ItemIcon item={item.type || 'scroll'} size={16} />
               </div>
             ))}
           </div>

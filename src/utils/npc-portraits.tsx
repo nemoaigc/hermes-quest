@@ -13,6 +13,8 @@ const SPRITE_CONFIG: Record<NpcId, { sheet: string; frames: number; static: stri
   guild_master: { sheet: '/npc/sprites/guild-master-idle.png', frames: 4, static: '/npc/guild-master.png' },
   cartographer: { sheet: '/npc/sprites/cartographer-idle.png', frames: 4, static: '/npc/cartographer.png' },
   quartermaster: { sheet: '/npc/sprites/quartermaster-idle.png', frames: 1, static: '/npc/quartermaster.png' },
+  bartender: { sheet: '', frames: 1, static: '/npc/bartender.png' },
+  sage: { sheet: '', frames: 1, static: '/npc/sage.png' },
 }
 
 // Inject sprite animation keyframes once
@@ -96,8 +98,18 @@ export function QuartermasterPortrait(props: PortraitProps) {
   return <AnimatedPortrait npcId="quartermaster" {...props} />
 }
 
+export function BartenderPortrait(props: PortraitProps) {
+  return <AnimatedPortrait npcId="bartender" {...props} />
+}
+
+export function SagePortrait(props: PortraitProps) {
+  return <AnimatedPortrait npcId="sage" {...props} />
+}
+
 export const NPC_PORTRAITS: Record<NpcId, React.FC<PortraitProps>> = {
   guild_master: GuildMasterPortrait,
   cartographer: CartographerPortrait,
   quartermaster: QuartermasterPortrait,
+  bartender: BartenderPortrait,
+  sage: SagePortrait,
 }

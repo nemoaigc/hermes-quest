@@ -1,9 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { SkillIcon } from '../utils/icons'
-import type { Continent, Connection, SubRegion } from '../types'
+import type { Continent, Connection } from '../types'
+
+// v2 compat: Workflow has sub_nodes, v1 Continent had sub_regions
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyContinent = Continent & { sub_regions?: any[]; sub_nodes?: any[]; skills_involved?: string[] }
 
 interface Props {
-  continent: Continent
+  continent: AnyContinent
   connections: Connection[]
   onBack: () => void
 }
@@ -24,20 +28,23 @@ export default function SubRegionGraph({ continent, connections, onBack }: Props
     return () => window.removeEventListener('resize', updateSize)
   }, [])
 
-  const allSkills = continent.sub_regions.flatMap((sr) => sr.skills)
-  const skillPositions = new Map<string, { x: number; y: number; subRegion: SubRegion }>()
+  // v2 compat: use sub_nodes or sub_regions, skills from skills_involved or sr.skills
+  const subRegions: any[] = continent.sub_nodes || continent.sub_regions || []
+  const allSkills: string[] = continent.skills_involved || subRegions.flatMap((sr: any) => sr.skills || [])
+  const skillPositions = new Map<string, { x: number; y: number; subRegion: any }>()
 
   const centerX = size.w / 2
   const centerY = size.h / 2
 
-  continent.sub_regions.forEach((sr, srIdx) => {
-    const angle = (srIdx / continent.sub_regions.length) * Math.PI * 2
+  subRegions.forEach((sr: any, srIdx: number) => {
+    const angle = (srIdx / subRegions.length) * Math.PI * 2
     const regionR = Math.min(size.w, size.h) * 0.28
     const regionCx = centerX + Math.cos(angle) * regionR
     const regionCy = centerY + Math.sin(angle) * regionR
 
-    sr.skills.forEach((skill, skIdx) => {
-      const skAngle = angle + ((skIdx - (sr.skills.length - 1) / 2) * 0.4)
+    const srSkills: string[] = sr.skills || []
+    srSkills.forEach((skill: string, skIdx: number) => {
+      const skAngle = angle + ((skIdx - (srSkills.length - 1) / 2) * 0.4)
       const skR = 30 + skIdx * 15
       skillPositions.set(skill, {
         x: regionCx + Math.cos(skAngle) * skR,
@@ -82,15 +89,15 @@ export default function SubRegionGraph({ continent, connections, onBack }: Props
         </button>
         <span style={{
           fontFamily: 'var(--font-pixel)', fontSize: '8px',
-          color: continent.color, letterSpacing: '1px',
+          color: continent.color || '#f0e68c', letterSpacing: '1px',
         }}>
           {continent.name}
         </span>
       </div>
 
       <svg width={size.w} height={size.h} style={{ position: 'absolute', inset: 0 }}>
-        {continent.sub_regions.map((sr, srIdx) => {
-          const angle = (srIdx / continent.sub_regions.length) * Math.PI * 2
+        {subRegions.map((sr, srIdx) => {
+          const angle = (srIdx / subRegions.length) * Math.PI * 2
           const regionR = Math.min(size.w, size.h) * 0.28
           const rx = centerX + Math.cos(angle) * regionR
           const ry = centerY + Math.sin(angle) * regionR - 25
@@ -122,7 +129,7 @@ export default function SubRegionGraph({ continent, connections, onBack }: Props
               fill="none"
               stroke="#5c4a2a"
               strokeWidth="1"
-              strokeDasharray={c.type === 'prerequisite' ? '4 2' : 'none'}
+              strokeDasharray={c.type === 'prerequisite' ? '4 2' : c.type === 'workflow' ? '2 2' : 'none'}
               opacity="0.6"
             />
           )

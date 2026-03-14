@@ -39,11 +39,11 @@ function QuestSlot({ quest, slot, onAccept, accepting }: {
       <div style={{
         fontFamily: 'var(--font-pixel)',
         fontSize: 'clamp(5px, 0.7vw, 8px)',
-        color: RANK_COLOR[quest.rank] || '#5a5a5a',
+        color: RANK_COLOR[quest.rank || 'C'] || '#5a5a5a',
         fontWeight: 'bold',
         lineHeight: 1,
       }}>
-        [{quest.rank}]
+        [{quest.rank || 'C'}]
       </div>
 
       {/* Title */}

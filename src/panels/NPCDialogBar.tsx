@@ -15,9 +15,11 @@ const NPC_NAMES: Record<NpcId, string> = {
   guild_master: 'Guild Master',
   cartographer: 'Cartographer',
   quartermaster: 'Quartermaster',
+  bartender: 'Bartender',
+  sage: 'Sage',
 }
 
-const NPC_IDS: NpcId[] = ['guild_master', 'cartographer', 'quartermaster']
+const NPC_IDS: NpcId[] = ['guild_master', 'cartographer', 'quartermaster', 'bartender', 'sage']
 
 export default function NPCDialogBar() {
   const activeTab = useStore((s) => s.activeTab)

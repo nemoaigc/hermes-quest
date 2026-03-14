@@ -20,10 +20,12 @@ function ContinentSprite({ continent, onClick, isActive }: {
   onClick: () => void
   isActive: boolean
 }) {
-  const avgMastery = continent.sub_regions.length > 0
-    ? continent.sub_regions.reduce((a, s) => a + s.mastery, 0) / continent.sub_regions.length
-    : 0
-  const skillCount = continent.sub_regions.reduce((a, s) => a + s.skills.length, 0)
+  // v2 compat: workflows use sub_nodes + mastery + skills_involved
+  const subNodes = (continent as any).sub_nodes || (continent as any).sub_regions || []
+  const avgMastery = (continent as any).mastery ?? (subNodes.length > 0
+    ? subNodes.reduce((a: number, s: any) => a + (s.mastery || 0), 0) / subNodes.length
+    : 0)
+  const skillCount = (continent as any).skills_involved?.length ?? subNodes.reduce((a: number, s: any) => a + (s.skills?.length || 0), 0)
   const sprite = CONTINENT_SPRITES[continent.id]
 
   // Map 0-1 position to parchment area percentages
@@ -85,8 +87,9 @@ function ContinentSprite({ continent, onClick, isActive }: {
 }
 
 function FogSprite({ fog }: { fog: FogRegion }) {
-  const left = PARCHMENT.left + fog.position.x * PARCHMENT.width
-  const top = PARCHMENT.top + fog.position.y * PARCHMENT.height
+  const pos = fog.position || { x: 0.5, y: 0.5 }
+  const left = PARCHMENT.left + pos.x * PARCHMENT.width
+  const top = PARCHMENT.top + pos.y * PARCHMENT.height
 
   return (
     <div style={{
@@ -181,7 +184,7 @@ export default function KnowledgeMap() {
 
   // Drill-down view
   if (selectedContinent && knowledgeMap) {
-    const continent = knowledgeMap.continents.find((c) => c.id === selectedContinent)
+    const continent = (knowledgeMap.continents || knowledgeMap.workflows || []).find((c) => c.id === selectedContinent)
     if (continent) {
       return (
         <SubRegionGraph
@@ -199,8 +202,8 @@ export default function KnowledgeMap() {
     for (const conn of knowledgeMap.connections) {
       let fromC: Continent | undefined
       let toC: Continent | undefined
-      for (const c of knowledgeMap.continents) {
-        const skills = c.sub_regions.flatMap((s) => s.skills)
+      for (const c of (knowledgeMap.continents || knowledgeMap.workflows || [])) {
+        const skills: string[] = (c as any).skills_involved || (c as any).sub_regions?.flatMap((s: any) => s.skills || []) || []
         if (skills.includes(conn.from)) fromC = c
         if (skills.includes(conn.to)) toC = c
       }
@@ -215,7 +218,7 @@ export default function KnowledgeMap() {
     }
   }
 
-  const hasData = knowledgeMap && knowledgeMap.continents.length > 0
+  const hasData = knowledgeMap && (knowledgeMap.continents || knowledgeMap.workflows || []).length > 0
 
   return (
     <div
@@ -274,7 +277,7 @@ export default function KnowledgeMap() {
           ))}
 
           {/* Continent sprites */}
-          {knowledgeMap!.continents.map((c) => (
+          {(knowledgeMap!.continents || knowledgeMap!.workflows || []).map((c) => (
             <ContinentSprite
               key={c.id}
               continent={c}

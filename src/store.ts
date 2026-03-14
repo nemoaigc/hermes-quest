@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type {
-  KnowledgeMap, Quest, BagItem, TabId,
+  KnowledgeMap, Quest, BagItem, TabId, Workflow,
 } from './types'
 
 export interface AgentState {
@@ -11,22 +11,31 @@ export interface AgentState {
   title: string
   xp: number
   xp_to_next: number
+  // v2: HP = stability (objective reliability)
+  hp: number
+  hp_max: number
+  // v2: MP = morale (subjective confidence)
+  mp: number
+  mp_max: number
+  // v2: global understanding
+  understanding: number // 0.0-1.0, -1 = calibrating
+  skills_count: number
+  skill_distribution: Record<string, number>
+  inventory: Array<Record<string, unknown>>
+  total_cycles: number
+  total_corrections: number
+  total_positive_signals: number
+  workflows_discovered: number
+  started_at: string | null
+  last_cycle_at: string | null
+  last_interaction_at: string | null
+  reflection_letter_pending: boolean
+  // v1 compat (mapped from v2 fields)
   stability: number
   stability_max: number
   energy: number
   energy_max: number
   gold: number
-  current_region: string
-  regions_unlocked: string[]
-  regions_cleared: string[]
-  skills_count: number
-  skill_distribution: Record<string, number>
-  inventory: Array<{ item: string; count: number }>
-  active_quests: Array<{ id: string; title: string; reward_gold: number; reward_xp: number }>
-  completed_quests: number
-  total_cycles: number
-  started_at: string | null
-  last_cycle_at: string | null
 }
 
 export interface GameEvent {
@@ -94,7 +103,7 @@ interface Store {
   setConnected: (c: boolean) => void
 
   // New actions
-  setKnowledgeMap: (m: KnowledgeMap | null) => void
+  setKnowledgeMap: (m: KnowledgeMap | null | Record<string, unknown>) => void
   setQuests: (q: Quest[]) => void
   setBagItems: (b: BagItem[]) => void
   setActiveTab: (t: TabId) => void
@@ -118,7 +127,23 @@ export const useStore = create<Store>((set) => ({
   selectedBagItems: [],
   selectedRegion: null,
 
-  setState: (s) => set({ state: s }),
+  setState: (s) => {
+    // v2→v1 compat: map new field names to old ones for components not yet migrated
+    const compat = {
+      ...s,
+      stability: s.hp ?? s.stability ?? 0,
+      stability_max: s.hp_max ?? s.stability_max ?? 100,
+      energy: s.mp ?? s.energy ?? 0,
+      energy_max: s.mp_max ?? s.energy_max ?? 100,
+      gold: s.gold ?? 0,
+      hp: s.hp ?? s.stability ?? 0,
+      hp_max: s.hp_max ?? s.stability_max ?? 100,
+      mp: s.mp ?? s.energy ?? 0,
+      mp_max: s.mp_max ?? s.energy_max ?? 100,
+      understanding: s.understanding ?? 0,
+    }
+    set({ state: compat })
+  },
   addEvent: (e) => set((prev) => {
     const key = `${e.ts}-${e.type}`
     if (prev.events.some((x) => `${x.ts}-${x.type}` === key)) return prev
@@ -128,7 +153,15 @@ export const useStore = create<Store>((set) => ({
   setSkills: (s) => set({ skills: s }),
   setConnected: (c) => set({ connected: c }),
 
-  setKnowledgeMap: (m) => set({ knowledgeMap: m }),
+  setKnowledgeMap: (m) => {
+    if (!m) { set({ knowledgeMap: null }); return }
+    // v2 compat: map 'workflows' to 'continents' alias for components using old field
+    const km = m as KnowledgeMap & { continents?: Workflow[] }
+    if (km.workflows && !km.continents) {
+      km.continents = km.workflows
+    }
+    set({ knowledgeMap: km as KnowledgeMap })
+  },
   setQuests: (q) => set({ quests: q }),
   setBagItems: (b) => set({ bagItems: b }),
   setActiveTab: (t) => set({ activeTab: t }),
