@@ -1,103 +1,103 @@
-/** Pixel art NPC portraits — 32x32 rendered from 16x16 grid */
+/** NPC portraits — PixelLab animated sprite sheets */
+
+import type { NpcId } from '../types'
 
 interface PortraitProps {
   size?: number
+  active?: boolean
+  speaking?: boolean
 }
 
-/** Guild Master — authority figure, warm gold/brown tones */
-export function GuildMasterPortrait({ size = 32 }: PortraitProps) {
+// Sprite sheet config: each is a horizontal strip of 4 frames, 48x48 per frame
+const SPRITE_CONFIG: Record<NpcId, { sheet: string; frames: number; static: string }> = {
+  guild_master: { sheet: '/npc/sprites/guild-master-idle.png', frames: 4, static: '/npc/guild-master.png' },
+  cartographer: { sheet: '/npc/sprites/cartographer-idle.png', frames: 4, static: '/npc/cartographer.png' },
+  quartermaster: { sheet: '/npc/sprites/quartermaster-idle.png', frames: 1, static: '/npc/quartermaster.png' },
+}
+
+// Inject sprite animation keyframes once
+const STYLE_ID = 'npc-sprite-anims'
+if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
+  const style = document.createElement('style')
+  style.id = STYLE_ID
+  style.textContent = `
+    @keyframes npc-sprite-4 {
+      0% { background-position-x: 0%; }
+      25% { background-position-x: 33.333%; }
+      50% { background-position-x: 66.666%; }
+      75% { background-position-x: 100%; }
+      100% { background-position-x: 0%; }
+    }
+    @keyframes npc-glow {
+      0%, 100% { box-shadow: 0 0 6px 1px rgba(240,230,140,0.3); }
+      50% { box-shadow: 0 0 14px 4px rgba(240,230,140,0.7); }
+    }
+    @keyframes npc-speak-bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+  `
+  document.head.appendChild(style)
+}
+
+function AnimatedPortrait({ npcId, size = 32, active = false, speaking = false }: PortraitProps & { npcId: NpcId }) {
+  const config = SPRITE_CONFIG[npcId]
+  const hasAnimation = config.frames > 1
+
   return (
-    <svg width={size} height={size} viewBox="0 0 16 16" style={{ imageRendering: 'pixelated' }}>
-      {/* crown */}
-      <rect x="5" y="0" width="1" height="1" fill="#ffd700" />
-      <rect x="7" y="0" width="2" height="1" fill="#ffd700" />
-      <rect x="10" y="0" width="1" height="1" fill="#ffd700" />
-      <rect x="4" y="1" width="8" height="1" fill="#daa520" />
-      <rect x="4" y="2" width="8" height="1" fill="#b8860b" />
-      {/* face */}
-      <rect x="5" y="3" width="6" height="5" fill="#deb887" />
-      <rect x="6" y="4" width="1" height="1" fill="#222" />
-      <rect x="9" y="4" width="1" height="1" fill="#222" />
-      <rect x="6" y="6" width="4" height="1" fill="#a0522d" /> {/* mustache */}
-      <rect x="7" y="7" width="2" height="1" fill="#c87050" />
-      {/* body — armor */}
-      <rect x="3" y="8" width="10" height="1" fill="#8b7355" />
-      <rect x="3" y="9" width="10" height="4" fill="#6b5b3a" />
-      <rect x="7" y="9" width="2" height="3" fill="#daa520" /> {/* medal */}
-      {/* arms */}
-      <rect x="2" y="9" width="1" height="3" fill="#deb887" />
-      <rect x="13" y="9" width="1" height="3" fill="#deb887" />
-      {/* legs */}
-      <rect x="5" y="13" width="2" height="2" fill="#4a3728" />
-      <rect x="9" y="13" width="2" height="2" fill="#4a3728" />
-      <rect x="4" y="15" width="3" height="1" fill="#3a2a1a" />
-      <rect x="9" y="15" width="3" height="1" fill="#3a2a1a" />
-    </svg>
+    <div style={{
+      width: size, height: size,
+      animation: speaking ? 'npc-speak-bounce 0.4s ease-in-out infinite' : 'none',
+    }}>
+      {hasAnimation ? (
+        // Animated sprite sheet
+        <div style={{
+          width: size,
+          height: size,
+          backgroundImage: `url(${config.sheet})`,
+          backgroundSize: `${config.frames * 100}% 100%`,
+          backgroundRepeat: 'no-repeat',
+          imageRendering: 'pixelated',
+          animation: `npc-sprite-4 ${speaking ? '0.4s' : '1.2s'} steps(1) infinite`,
+          borderRadius: '4px',
+          border: active ? '2px solid #f0e68c' : '2px solid transparent',
+          boxSizing: 'border-box',
+          ...(active ? { animation: `npc-sprite-4 ${speaking ? '0.4s' : '1.2s'} steps(1) infinite, npc-glow 2s ease-in-out infinite` } : {}),
+        }} />
+      ) : (
+        // Static fallback (uses 128x128 portrait)
+        <img
+          src={config.static}
+          width={size}
+          height={size}
+          style={{
+            imageRendering: 'pixelated',
+            borderRadius: '4px',
+            border: active ? '2px solid #f0e68c' : '2px solid transparent',
+            display: 'block',
+            animation: active ? 'npc-glow 2s ease-in-out infinite' : 'none',
+          }}
+          alt=""
+        />
+      )}
+    </div>
   )
 }
 
-/** Cartographer — scholarly look, map tools, blue/brown */
-export function CartographerPortrait({ size = 32 }: PortraitProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" style={{ imageRendering: 'pixelated' }}>
-      {/* beret */}
-      <rect x="5" y="0" width="7" height="1" fill="#4a6fa5" />
-      <rect x="4" y="1" width="8" height="2" fill="#3a5a8a" />
-      {/* face — older, spectacles */}
-      <rect x="5" y="3" width="6" height="5" fill="#d2b48c" />
-      <rect x="5" y="4" width="3" height="2" fill="none" stroke="#8b7355" strokeWidth="0.3" /> {/* left lens */}
-      <rect x="8" y="4" width="3" height="2" fill="none" stroke="#8b7355" strokeWidth="0.3" /> {/* right lens */}
-      <rect x="6" y="5" width="1" height="1" fill="#222" />
-      <rect x="9" y="5" width="1" height="1" fill="#222" />
-      <rect x="7" y="7" width="2" height="1" fill="#b87050" />
-      {/* body — scholarly robe */}
-      <rect x="3" y="8" width="10" height="1" fill="#2a4a6a" />
-      <rect x="3" y="9" width="10" height="4" fill="#1a3a5a" />
-      <rect x="7" y="10" width="2" height="2" fill="#c8a87a" /> {/* scroll */}
-      {/* arms */}
-      <rect x="2" y="9" width="1" height="3" fill="#d2b48c" />
-      <rect x="13" y="9" width="1" height="3" fill="#d2b48c" />
-      {/* legs */}
-      <rect x="5" y="13" width="2" height="2" fill="#2a3a4a" />
-      <rect x="9" y="13" width="2" height="2" fill="#2a3a4a" />
-      <rect x="4" y="15" width="3" height="1" fill="#1a2a3a" />
-      <rect x="9" y="15" width="3" height="1" fill="#1a2a3a" />
-    </svg>
-  )
+export function GuildMasterPortrait(props: PortraitProps) {
+  return <AnimatedPortrait npcId="guild_master" {...props} />
 }
 
-/** Quartermaster — merchant, apron, practical look */
-export function QuartermasterPortrait({ size = 32 }: PortraitProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" style={{ imageRendering: 'pixelated' }}>
-      {/* hat */}
-      <rect x="5" y="0" width="6" height="1" fill="#8b4513" />
-      <rect x="3" y="1" width="10" height="1" fill="#8b4513" />
-      <rect x="4" y="2" width="8" height="2" fill="#a0522d" />
-      {/* face */}
-      <rect x="5" y="4" width="6" height="4" fill="#deb887" />
-      <rect x="6" y="5" width="1" height="1" fill="#222" />
-      <rect x="9" y="5" width="1" height="1" fill="#222" />
-      <rect x="7" y="7" width="2" height="1" fill="#c87050" />
-      {/* body — apron */}
-      <rect x="4" y="8" width="8" height="1" fill="#556b2f" />
-      <rect x="3" y="9" width="10" height="4" fill="#f5f5dc" />
-      <rect x="6" y="9" width="4" height="4" fill="#f0e68c" />
-      <rect x="7" y="10" width="2" height="1" fill="#daa520" />
-      {/* arms */}
-      <rect x="2" y="9" width="1" height="3" fill="#deb887" />
-      <rect x="13" y="9" width="1" height="3" fill="#deb887" />
-      {/* legs */}
-      <rect x="5" y="13" width="2" height="2" fill="#4a3728" />
-      <rect x="9" y="13" width="2" height="2" fill="#4a3728" />
-      <rect x="4" y="15" width="3" height="1" fill="#3a2a1a" />
-      <rect x="9" y="15" width="3" height="1" fill="#3a2a1a" />
-    </svg>
-  )
+export function CartographerPortrait(props: PortraitProps) {
+  return <AnimatedPortrait npcId="cartographer" {...props} />
 }
 
-export const NPC_PORTRAITS = {
+export function QuartermasterPortrait(props: PortraitProps) {
+  return <AnimatedPortrait npcId="quartermaster" {...props} />
+}
+
+export const NPC_PORTRAITS: Record<NpcId, React.FC<PortraitProps>> = {
   guild_master: GuildMasterPortrait,
   cartographer: CartographerPortrait,
   quartermaster: QuartermasterPortrait,
-} as const
+}

@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react'
+import { getSkillIconPath, getItemIconPath } from './icon-registry'
 /* Pixel art SVG icons — no emojis, unified dark fantasy style */
 
 const S = 16 // viewBox size
@@ -96,6 +97,22 @@ export function CategoryIcon({ cat, size = 18 }: { cat: string; size?: number })
 
 /* ── Item icons (inventory, shop) ── */
 export function ItemIcon({ item, size = 20 }: { item: string; size?: number }) {
+  // Try real pixel art icon first
+  const iconPath = getItemIconPath(item)
+  if (iconPath) {
+    return (
+      <div style={{ width: size, height: size }}>
+        <img
+          src={iconPath}
+          alt={item}
+          width={size}
+          height={size}
+          style={{ imageRendering: 'pixelated', borderRadius: '2px' }}
+        />
+      </div>
+    )
+  }
+
   const wrap = (inner: ReactElement) => <div style={{ width: size, height: size }}>{inner}</div>
 
   switch (item) {
@@ -183,6 +200,23 @@ function hsl(h: number, s: number, l: number): string {
  * Category determines the color family.
  */
 export function SkillIcon({ name, category, size = 18 }: { name: string; category: string; size?: number }) {
+  // Try real pixel art icon first
+  const iconPath = getSkillIconPath(name, category)
+  if (iconPath) {
+    return (
+      <div style={{ width: size, height: size }}>
+        <img
+          src={iconPath}
+          alt={name}
+          width={size}
+          height={size}
+          style={{ imageRendering: 'pixelated', borderRadius: '2px' }}
+        />
+      </div>
+    )
+  }
+
+  // Fallback to procedural identicon
   const seed = hashStr(name || 'x')
   const r = rng(seed)
 

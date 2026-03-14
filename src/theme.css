@@ -6,12 +6,12 @@
 }
 
 :root {
-  --bg: #12111a;
-  --panel: #1a1926;
-  --border: #3a3850;
-  --highlight: #4a4870;
-  --text: #e8e6f0;
-  --text-dim: #8a889a;
+  --bg: #0d0a06;
+  --panel: #1a140c;
+  --border: #5c3a1e;
+  --highlight: #3a2a1a;
+  --text: #e8d5b0;
+  --text-dim: #8b7355;
   --green: #00ff88;
   --red: #ff6b6b;
   --cyan: #4ecdc4;
@@ -139,7 +139,7 @@ html, body, #root {
 
 .skill-slot {
   aspect-ratio: 1;
-  background: #0a0a12;
+  background: #0d0a06;
   border: 2px solid var(--border);
   display: flex;
   align-items: center;
@@ -155,7 +155,7 @@ html, body, #root {
 
 .event-item {
   padding: 4px 6px;
-  border-bottom: 1px solid #1a1926;
+  border-bottom: 1px solid #2a1a0e;
   font-size: 10px;
   display: flex;
   gap: 6px;
@@ -166,7 +166,7 @@ html, body, #root {
 .event-time { color: var(--text-dim); font-size: 8px; }
 
 .quest-card {
-  background: #0a0a12;
+  background: #0d0a06;
   border: 2px solid var(--border);
   padding: 8px;
   margin: 4px 0;

@@ -12,17 +12,16 @@ const SOURCE_COLOR: Record<string, string> = {
   lobehub: '#55bbff',
 }
 
-// 12 shelf slots — 4 rows × 3 columns aligned to shop-bg.png (seed 2222, 320x180)
-// Background has 3 arched cabinets, each with 4 shelves. We use top 3 shelves × 3 cabinets + 3 bottom
-// Cabinets at ~8%, ~36%, ~64% left; shelves at ~12%, ~32%, ~52%, ~72% top
+// 9 shelf slots — 3 rows × 3 columns aligned to shop-bg.png (1024x572)
+// Cabinet: ~20%-80% width, ~22%-88% height
 const SHELF_SLOTS: Array<{ left: number; top: number; width: number; height: number }> = []
-for (let row = 0; row < 4; row++) {
+for (let row = 0; row < 3; row++) {
   for (let col = 0; col < 3; col++) {
     SHELF_SLOTS.push({
-      left: 10 + col * 29,
-      top: 8 + row * 20,
-      width: 24,
-      height: 18,
+      left: 21 + col * 20,
+      top: 22 + row * 22,
+      width: 18,
+      height: 20,
     })
   }
 }
@@ -120,7 +119,7 @@ export default function Shop() {
     return list
   }, [allSkills, filter, sourceFilter])
 
-  const pageSize = 12
+  const pageSize = 9
   const totalPages = Math.max(1, Math.ceil(displayed.length / pageSize))
   const pageItems = displayed.slice(page * pageSize, (page + 1) * pageSize)
 
@@ -148,11 +147,12 @@ export default function Shop() {
     <div style={{
       width: '100%', height: '100%',
       position: 'relative', overflow: 'hidden',
-      backgroundImage: 'url(/bg/shop-bg.png)',
-      backgroundSize: '100% 100%',
-      backgroundRepeat: 'no-repeat',
-      imageRendering: 'pixelated',
     }}>
+      <img src="/bg/shop-bg.png" alt="" draggable={false} style={{
+        width: '100%', height: '100%',
+        objectFit: 'fill', imageRendering: 'pixelated',
+        position: 'absolute', inset: 0,
+      }} />
       {/* Items on shelf slots */}
       {!loading && pageItems.map((skill, i) => {
         const slot = SHELF_SLOTS[i]

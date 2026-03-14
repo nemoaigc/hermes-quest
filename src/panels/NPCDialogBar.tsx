@@ -8,6 +8,7 @@ const TAB_TO_NPC: Record<TabId, NpcId> = {
   map: 'cartographer',
   guild: 'guild_master',
   shop: 'quartermaster',
+  npc: 'guild_master',
 }
 
 const NPC_NAMES: Record<NpcId, string> = {
@@ -68,17 +69,23 @@ export default function NPCDialogBar() {
 
   return (
     <div style={{
-      background: 'linear-gradient(180deg, #1a140c 0%, #0d0a08 100%)',
-      border: '2px solid #5c3a1e',
-      borderTop: '3px solid #8b5e3c',
-      padding: '6px',
+      backgroundImage: 'url(/bg/npc-bg.png)',
+      backgroundSize: '100% 100%',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      imageRendering: 'pixelated' as const,
+      padding: '8px',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
     }}>
-      <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', flex: 1, minHeight: 0 }}>
         {/* NPC portrait selector */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {NPC_IDS.map((id) => {
             const P = NPC_PORTRAITS[id]
             const isActive = id === activeNpc
+            const isSpeaking = isActive && npcChat.loading
             return (
               <div
                 key={id}
@@ -86,22 +93,22 @@ export default function NPCDialogBar() {
                 title={NPC_NAMES[id]}
                 style={{
                   cursor: 'pointer',
-                  padding: '2px',
-                  border: `2px solid ${isActive ? '#f0e68c' : '#3a2a1a'}`,
+                  padding: '3px',
                   background: isActive ? 'rgba(240,230,140,0.1)' : 'transparent',
+                  borderRadius: '4px',
                 }}
               >
-                <P size={24} />
+                <P size={40} active={isActive} speaking={isSpeaking} />
               </div>
             )
           })}
         </div>
 
         {/* Dialog area */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', minHeight: 0 }}>
           {/* NPC name */}
           <div style={{
-            fontFamily: 'var(--font-pixel)', fontSize: '7px',
+            fontFamily: 'var(--font-pixel)', fontSize: '8px',
             color: '#f0e68c', letterSpacing: '1px',
           }}>
             {NPC_NAMES[activeNpc]}
@@ -111,9 +118,9 @@ export default function NPCDialogBar() {
           <div
             ref={dialogRef}
             style={{
-              maxHeight: '80px', overflow: 'auto',
+              flex: 1, overflow: 'auto',
               background: '#0a0804', border: '1px solid #3a2a1a',
-              padding: '4px', fontSize: '10px', lineHeight: '1.4',
+              padding: '6px', fontSize: '11px', lineHeight: '1.4',
             }}
           >
             {npcChat.messages.length === 0 ? (

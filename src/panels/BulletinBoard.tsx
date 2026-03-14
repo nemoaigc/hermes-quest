@@ -3,15 +3,15 @@ import { useStore } from '../store'
 import { acceptQuest } from '../api'
 import type { RecommendedQuest } from '../types'
 
-// 6 parchment slot positions — mapped to bulletin-bg.png (seed 555, 320x180)
-// Cork board frame centered, 6 papers in 2 rows × 3 cols inside frame
+// 6 parchment slot positions — mapped to bulletin-bg.png (1024x572)
+// Cork board area: ~22%-78% left, ~12%-82% top
 const PARCHMENT_SLOTS = [
-  { left: 20, top: 10, width: 18, height: 36 },  // row 1 col 1
-  { left: 40, top: 10, width: 18, height: 36 },  // row 1 col 2
-  { left: 60, top: 10, width: 18, height: 36 },  // row 1 col 3
-  { left: 20, top: 50, width: 18, height: 36 },  // row 2 col 1
-  { left: 40, top: 50, width: 18, height: 36 },  // row 2 col 2
-  { left: 60, top: 50, width: 18, height: 36 },  // row 2 col 3
+  { left: 23, top: 12, width: 16, height: 33 },  // row 1 col 1
+  { left: 41, top: 12, width: 16, height: 33 },  // row 1 col 2
+  { left: 59, top: 12, width: 16, height: 33 },  // row 1 col 3
+  { left: 23, top: 48, width: 16, height: 33 },  // row 2 col 1
+  { left: 41, top: 48, width: 16, height: 33 },  // row 2 col 2
+  { left: 59, top: 48, width: 16, height: 33 },  // row 2 col 3
 ]
 
 const RANK_COLOR: Record<string, string> = {
@@ -112,11 +112,12 @@ export default function BulletinBoard() {
     <div style={{
       width: '100%', height: '100%',
       position: 'relative', overflow: 'hidden',
-      backgroundImage: 'url(/bg/bulletin-bg.png)',
-      backgroundSize: '100% 100%',
-      backgroundRepeat: 'no-repeat',
-      imageRendering: 'pixelated',
     }}>
+      <img src="/bg/bulletin-bg.png" alt="" draggable={false} style={{
+        width: '100%', height: '100%',
+        objectFit: 'fill', imageRendering: 'pixelated',
+        position: 'absolute', inset: 0,
+      }} />
       {displayed.map((quest, i) => {
         const slot = PARCHMENT_SLOTS[i]
         if (!slot) return null
