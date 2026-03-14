@@ -336,9 +336,10 @@ function npcSuggestions(npc: typeof NPCS[0]): string[] {
   return suggestions[npc.id] || ["Hello", "Tell me more"]
 }
 
-/** MAP bottom — status + cycle button */
+/** MAP bottom — exploration dashboard */
 function MapBottomInfo() {
   const km = useStore((s) => s.knowledgeMap)
+  const state = useStore((s) => s.state)
   const [cycleLoading, setCycleLoading] = useState(false)
   const workflows = km?.workflows || km?.continents || []
   const fogCount = km?.fog_regions?.length || 0
@@ -351,30 +352,58 @@ function MapBottomInfo() {
     try {
       await fetch('/api/cycle/start', { method: 'POST' })
     } catch { /* ignore */ }
-    setCycleLoading(false)
+    setTimeout(() => setCycleLoading(false), 5000)
   }
 
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      width: '100%', padding: '0 4px',
-      fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#c8a87a',
+      display: 'flex', flexDirection: 'column', gap: '8px',
+      width: '100%', fontFamily: 'var(--font-pixel)',
     }}>
-      <div style={{ display: 'flex', gap: '12px' }}>
-        <span>WORKFLOWS: <span style={{ color: '#f0e68c' }}>{workflows.length}</span></span>
-        <span>MASTERY: <span style={{ color: 'var(--cyan)' }}>{Math.round(avgMastery * 100)}%</span></span>
-        {fogCount > 0 && <span>UNKNOWN: <span style={{ color: '#8b7355' }}>{fogCount}</span></span>}
+      {/* RPG stat cards row */}
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
+        {[
+          { label: 'WORKFLOWS', value: workflows.length, color: '#f0e68c' },
+          { label: 'MASTERY', value: `${Math.round(avgMastery * 100)}%`, color: 'var(--cyan)' },
+          { label: 'UNKNOWN', value: fogCount, color: '#8b7355' },
+          { label: 'CYCLES', value: state?.total_cycles || 0, color: 'var(--green)' },
+        ].map((stat) => (
+          <div key={stat.label} style={{
+            flex: 1, textAlign: 'center', padding: '6px 4px',
+            background: 'linear-gradient(180deg, rgba(20,14,8,0.7) 0%, rgba(10,8,4,0.8) 100%)',
+            border: '1px solid rgba(139,94,60,0.4)',
+            borderTop: '1px solid rgba(180,140,80,0.2)',
+            borderRadius: '2px',
+            boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.5), 0 1px 0 rgba(139,94,60,0.15)',
+          }}>
+            <div style={{ fontSize: '16px', color: stat.color, fontFamily: 'var(--font-pixel)', lineHeight: 1 }}>
+              {stat.value}
+            </div>
+            <div style={{ fontSize: '4px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '3px', letterSpacing: '0.5px' }}>
+              {stat.label}
+            </div>
+          </div>
+        ))}
+        <button
+          onClick={startCycle}
+          disabled={cycleLoading}
+          style={{
+            fontFamily: 'var(--font-pixel)', fontSize: '7px',
+            padding: '12px 18px', cursor: cycleLoading ? 'wait' : 'pointer',
+            background: cycleLoading ? 'rgba(10,8,4,0.5)' : 'linear-gradient(180deg, #6a4428 0%, #4a2a14 50%, #3a2210 100%)',
+            border: '2px solid #8b5e3c',
+            borderTop: '2px solid #a07040',
+            borderBottom: '2px solid #3a2010',
+            color: '#f0e68c',
+            letterSpacing: '1px', whiteSpace: 'nowrap',
+            boxShadow: cycleLoading ? 'none' : '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,140,0.1)',
+            textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+            transition: 'all 0.1s',
+          }}
+          onMouseEnter={e => { if (!cycleLoading) e.currentTarget.style.boxShadow = '0 2px 8px rgba(240,230,140,0.2), inset 0 1px 0 rgba(255,220,140,0.15)' }}
+          onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,140,0.1)' }}
+        >{cycleLoading ? 'RUNNING...' : '▶ CYCLE'}</button>
       </div>
-      <button
-        onClick={startCycle}
-        disabled={cycleLoading}
-        style={{
-          fontFamily: 'var(--font-pixel)', fontSize: '5px',
-          padding: '4px 10px', cursor: 'pointer',
-          background: cycleLoading ? '#3a2a1a' : '#5c3a1e',
-          border: '2px solid #8b5e3c', color: '#f0e68c',
-        }}
-      >{cycleLoading ? 'RUNNING...' : '▶ START CYCLE'}</button>
     </div>
   )
 }
@@ -385,7 +414,7 @@ function GuildBottomInfo() {
   const [input, setInput] = useState('')
   const [creating, setCreating] = useState(false)
 
-  const activeQuests = quests.filter((q) => q.status === 'active' || q.status === 'in_progress')
+  const activeQuests = quests.filter((q) => q.status === 'active' || q.status === 'in_progress' || q.status === 'pending')
 
   async function createTask() {
     const title = input.trim()
@@ -403,62 +432,120 @@ function GuildBottomInfo() {
   }
 
   return (
-    <div style={{ width: '100%', padding: '4px 6px', overflow: 'auto' }}>
-      {/* Active quests summary */}
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      {/* Header */}
       <div style={{
-        fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#c8a87a',
-        marginBottom: '4px', letterSpacing: '1px',
+        fontFamily: 'var(--font-pixel)', fontSize: '7px', color: '#f0e68c',
+        letterSpacing: '1px',
       }}>
-        ACTIVE TASKS: {activeQuests.length}
+        LEARNING TASKS ({activeQuests.length})
       </div>
-      {activeQuests.slice(0, 3).map((q) => (
-        <div key={q.id} style={{
-          fontSize: '8px', color: '#e8d5b0', marginBottom: '2px',
-          display: 'flex', justifyContent: 'space-between',
-        }}>
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
-            {q.title}
-          </span>
-          <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '4px', color: 'var(--cyan)' }}>
-            {Math.round(q.progress * 100)}%
-          </span>
-        </div>
-      ))}
+      {/* Task list */}
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        {activeQuests.length === 0 ? (
+          <div style={{ fontSize: '9px', color: '#6a5a3a', fontStyle: 'italic' }}>
+            No active tasks. Assign one below or wait for agent recommendations.
+          </div>
+        ) : activeQuests.slice(0, 5).map((q) => (
+          <div key={q.id} style={{
+            fontSize: '9px', color: '#e8d5b0', marginBottom: '4px',
+            padding: '5px 8px',
+            background: 'linear-gradient(180deg, rgba(30,20,10,0.6) 0%, rgba(15,10,5,0.7) 100%)',
+            border: '1px solid rgba(139,94,60,0.3)',
+            borderLeft: '2px solid rgba(139,94,60,0.5)',
+            borderRadius: '2px',
+            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {q.title}
+              </div>
+              <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '4px', color: '#8b7355', marginTop: '1px' }}>
+                {q.source === 'user' ? 'YOU' : 'AGENT'} · {q.status.toUpperCase()}
+              </div>
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-pixel)', fontSize: '6px',
+              color: q.progress > 0.5 ? 'var(--green)' : 'var(--cyan)',
+              marginLeft: '8px',
+            }}>
+              {Math.round(q.progress * 100)}%
+            </div>
+          </div>
+        ))}
+      </div>
       {/* Task input */}
-      <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+      <div style={{ display: 'flex', gap: '4px' }}>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && createTask()}
-          placeholder="Teach agent a new task..."
+          placeholder="Teach agent something new..."
           disabled={creating}
           style={{
-            flex: 1, padding: '3px 6px',
+            flex: 1, padding: '5px 8px',
             background: 'rgba(10,8,4,0.6)', border: '1px solid #5c3a1e',
-            color: '#e8d5b0', fontFamily: 'var(--font-mono)', fontSize: '8px',
+            color: '#e8d5b0', fontFamily: 'var(--font-mono)', fontSize: '9px',
           }}
         />
         <button onClick={createTask} disabled={creating || !input.trim()} style={{
-          fontFamily: 'var(--font-pixel)', fontSize: '5px',
-          padding: '3px 8px', cursor: 'pointer',
-          background: '#5c3a1e', border: '2px solid #8b5e3c', color: '#f0e68c',
-        }}>ASSIGN</button>
+          fontFamily: 'var(--font-pixel)', fontSize: '6px',
+          padding: '5px 12px', cursor: 'pointer',
+          background: 'linear-gradient(180deg, #5c3a1e 0%, #3a2210 100%)',
+          border: '2px solid #8b5e3c', color: '#f0e68c',
+        }}>{creating ? '...' : 'ASSIGN'}</button>
       </div>
     </div>
   )
 }
 
-/** SHOP bottom — search + filters */
+/** SHOP bottom — skill overview + recommendation hint */
 function ShopBottomInfo() {
   const skills = useStore((s) => s.skills)
+  const km = useStore((s) => s.knowledgeMap)
+  const workflows = km?.workflows || km?.continents || []
+
+  // Count skills by category
+  const cats: Record<string, number> = {}
+  skills.forEach((s) => { cats[s.category || 'other'] = (cats[s.category || 'other'] || 0) + 1 })
+
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      width: '100%', padding: '0 4px',
-      fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#c8a87a',
+      display: 'flex', flexDirection: 'column', gap: '6px',
+      width: '100%', fontFamily: 'var(--font-pixel)',
     }}>
-      <span>SKILLS LEARNED: <span style={{ color: 'var(--cyan)' }}>{skills.length}</span></span>
-      <span style={{ color: '#6a5a3a' }}>Click items on shelf to install</span>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
+        <div style={{
+          textAlign: 'center', padding: '6px 12px',
+          background: 'rgba(10,8,4,0.5)', border: '1px solid rgba(139,94,60,0.5)',
+          borderRadius: '2px',
+        }}>
+          <div style={{ fontSize: '18px', color: 'var(--cyan)', fontFamily: 'var(--font-pixel)', lineHeight: 1 }}>
+            {skills.length}
+          </div>
+          <div style={{ fontSize: '4px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '3px' }}>
+            TOTAL
+          </div>
+        </div>
+        {Object.entries(cats).slice(0, 4).map(([cat, count]) => (
+          <div key={cat} style={{
+            flex: 1, textAlign: 'center', padding: '6px 4px',
+            background: 'linear-gradient(180deg, rgba(20,14,8,0.7) 0%, rgba(10,8,4,0.8) 100%)',
+            border: '1px solid rgba(139,94,60,0.4)',
+            borderTop: '1px solid rgba(180,140,80,0.2)',
+            borderRadius: '2px',
+            boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.5), 0 1px 0 rgba(139,94,60,0.15)',
+          }}>
+            <div style={{ fontSize: '14px', color: '#e8d5b0', fontFamily: 'var(--font-pixel)', lineHeight: 1 }}>
+              {count}
+            </div>
+            <div style={{ fontSize: '4px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '3px', textTransform: 'uppercase' }}>
+              {cat}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -534,18 +621,70 @@ export default function CenterTabs() {
         {activeTab === 'shop' && <Shop />}
         {activeTab === 'npc' && <TavernScene onRumorsClick={() => fetchRumors()} rumors={rumors} rumorsLoading={rumorsLoading} />}
       </div>
-      {/* Bottom bar — per-tab content on wood plank */}
+      {/* Bottom bar — distinct material per tab */}
       <div style={{
-        flex: 1, minHeight: '60px',
-        background: 'linear-gradient(180deg, #3a2a1a 0%, #2a1a0e 40%, #1a120a 100%)',
-        borderTop: '3px solid #8b5e3c',
-        boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.4)',
+        flex: 1, minHeight: '80px',
+        ...(activeTab === 'map' ? {
+          // Cartographer's mahogany bookshelf
+          background: `
+            repeating-linear-gradient(90deg, transparent 0px, transparent 80px, rgba(0,0,0,0.06) 80px, rgba(0,0,0,0.06) 82px),
+            linear-gradient(180deg, #3d2818 0%, #2a1c10 40%, #221608 100%)
+          `,
+          borderTop: '4px solid #6a4428',
+          borderBottom: '2px solid #1a0e05',
+          borderLeft: '3px solid #5a3a20',
+          borderRight: '3px solid #5a3a20',
+          boxShadow: 'inset 0 2px 0 rgba(160,112,60,0.25), inset 0 -1px 0 rgba(100,70,40,0.2), inset 0 4px 12px rgba(0,0,0,0.4)',
+        } : activeTab === 'guild' ? {
+          // Adventurer's oak counter
+          background: `
+            repeating-linear-gradient(0deg, transparent 0px, transparent 20px, rgba(120,80,40,0.04) 20px, rgba(120,80,40,0.04) 21px),
+            linear-gradient(180deg, #4a3520 0%, #3a2815 40%, #2a1a0c 100%)
+          `,
+          borderTop: '4px solid #8b5e3c',
+          borderBottom: '2px solid #1a0e05',
+          borderLeft: '3px solid #6a4a2a',
+          borderRight: '3px solid #6a4a2a',
+          boxShadow: 'inset 0 2px 0 rgba(180,130,70,0.2), inset 0 -1px 0 rgba(100,70,40,0.15), inset 0 4px 10px rgba(0,0,0,0.35)',
+        } : activeTab === 'shop' ? {
+          // Alchemist's stone ledge
+          background: `
+            repeating-linear-gradient(45deg, transparent 0px, transparent 6px, rgba(80,60,40,0.03) 6px, rgba(80,60,40,0.03) 7px),
+            repeating-linear-gradient(-45deg, transparent 0px, transparent 6px, rgba(60,40,30,0.03) 6px, rgba(60,40,30,0.03) 7px),
+            linear-gradient(180deg, #352a20 0%, #2a2018 40%, #1e1610 100%)
+          `,
+          borderTop: '4px solid #6a5a4a',
+          borderBottom: '2px solid #0e0a06',
+          borderLeft: '3px solid #5a4a3a',
+          borderRight: '3px solid #5a4a3a',
+          boxShadow: 'inset 0 2px 0 rgba(140,120,100,0.15), inset 0 -1px 0 rgba(80,60,40,0.2), inset 0 4px 10px rgba(0,0,0,0.4)',
+        } : {
+          // Tavern leather bar rail
+          background: `
+            repeating-linear-gradient(90deg, transparent 0px, transparent 40px, rgba(100,60,30,0.05) 40px, rgba(100,60,30,0.05) 42px),
+            linear-gradient(180deg, #3a2515 0%, #2d1c10 50%, #22150a 100%)
+          `,
+          borderTop: '4px solid #7a5030',
+          borderBottom: '2px solid #1a0c04',
+          borderLeft: '3px solid #6a4428',
+          borderRight: '3px solid #6a4428',
+          boxShadow: 'inset 0 2px 0 rgba(180,120,60,0.2), inset 0 -1px 0 rgba(120,80,40,0.15), inset 0 4px 10px rgba(0,0,0,0.35)',
+        }),
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'stretch',
         justifyContent: 'center',
-        padding: '4px 8px',
-        imageRendering: 'pixelated' as const,
-      }}>
+        padding: '10px 14px',
+        overflow: 'auto',
+        position: 'relative',
+      } as React.CSSProperties}>
+        {/* Material-specific edge details */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: '1px',
+          background: activeTab === 'shop'
+            ? 'linear-gradient(90deg, transparent 0%, rgba(140,120,100,0.3) 20%, rgba(140,120,100,0.15) 50%, rgba(140,120,100,0.3) 80%, transparent 100%)'
+            : 'linear-gradient(90deg, transparent 0%, rgba(200,160,100,0.2) 20%, rgba(200,160,100,0.1) 50%, rgba(200,160,100,0.2) 80%, transparent 100%)',
+          pointerEvents: 'none',
+        }} />
         {activeTab === 'npc' && !selectedNpc && <TavernNpcBar onNpcClick={setActiveNpc} activeNpc={activeNpc} />}
         {activeTab === 'npc' && selectedNpc && <RpgDialogInline npc={selectedNpc} onClose={() => setActiveNpc(null)} />}
         {activeTab === 'map' && <MapBottomInfo />}
