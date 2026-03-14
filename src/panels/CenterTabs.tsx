@@ -336,38 +336,129 @@ function npcSuggestions(npc: typeof NPCS[0]): string[] {
   return suggestions[npc.id] || ["Hello", "Tell me more"]
 }
 
-/** MAP bottom — placeholder */
+/** MAP bottom — status + cycle button */
 function MapBottomInfo() {
+  const km = useStore((s) => s.knowledgeMap)
+  const [cycleLoading, setCycleLoading] = useState(false)
+  const workflows = km?.workflows || km?.continents || []
+  const fogCount = km?.fog_regions?.length || 0
+  const avgMastery = workflows.length > 0
+    ? workflows.reduce((a, w) => a + ((w as any).mastery || 0), 0) / workflows.length
+    : 0
+
+  async function startCycle() {
+    setCycleLoading(true)
+    try {
+      await fetch('/api/cycle/start', { method: 'POST' })
+    } catch { /* ignore */ }
+    setCycleLoading(false)
+  }
+
   return (
     <div style={{
-      fontFamily: 'var(--font-pixel)', fontSize: '6px',
-      color: '#6a5a3a', letterSpacing: '1px',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      width: '100%', padding: '0 4px',
+      fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#c8a87a',
     }}>
-      EXPLORE THE WORLD
+      <div style={{ display: 'flex', gap: '12px' }}>
+        <span>WORKFLOWS: <span style={{ color: '#f0e68c' }}>{workflows.length}</span></span>
+        <span>MASTERY: <span style={{ color: 'var(--cyan)' }}>{Math.round(avgMastery * 100)}%</span></span>
+        {fogCount > 0 && <span>UNKNOWN: <span style={{ color: '#8b7355' }}>{fogCount}</span></span>}
+      </div>
+      <button
+        onClick={startCycle}
+        disabled={cycleLoading}
+        style={{
+          fontFamily: 'var(--font-pixel)', fontSize: '5px',
+          padding: '4px 10px', cursor: 'pointer',
+          background: cycleLoading ? '#3a2a1a' : '#5c3a1e',
+          border: '2px solid #8b5e3c', color: '#f0e68c',
+        }}
+      >{cycleLoading ? 'RUNNING...' : '▶ START CYCLE'}</button>
     </div>
   )
 }
 
-/** GUILD bottom — placeholder */
+/** GUILD bottom — quest tracker + task input */
 function GuildBottomInfo() {
+  const quests = useStore((s) => s.quests)
+  const [input, setInput] = useState('')
+  const [creating, setCreating] = useState(false)
+
+  const activeQuests = quests.filter((q) => q.status === 'active' || q.status === 'in_progress')
+
+  async function createTask() {
+    const title = input.trim()
+    if (!title || creating) return
+    setInput('')
+    setCreating(true)
+    try {
+      await fetch('/api/quest/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, source: 'user' }),
+      })
+    } catch { /* ignore */ }
+    setCreating(false)
+  }
+
   return (
-    <div style={{
-      fontFamily: 'var(--font-pixel)', fontSize: '6px',
-      color: '#6a5a3a', letterSpacing: '1px',
-    }}>
-      ACCEPT QUESTS TO BEGIN
+    <div style={{ width: '100%', padding: '4px 6px', overflow: 'auto' }}>
+      {/* Active quests summary */}
+      <div style={{
+        fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#c8a87a',
+        marginBottom: '4px', letterSpacing: '1px',
+      }}>
+        ACTIVE TASKS: {activeQuests.length}
+      </div>
+      {activeQuests.slice(0, 3).map((q) => (
+        <div key={q.id} style={{
+          fontSize: '8px', color: '#e8d5b0', marginBottom: '2px',
+          display: 'flex', justifyContent: 'space-between',
+        }}>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
+            {q.title}
+          </span>
+          <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '4px', color: 'var(--cyan)' }}>
+            {Math.round(q.progress * 100)}%
+          </span>
+        </div>
+      ))}
+      {/* Task input */}
+      <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && createTask()}
+          placeholder="Teach agent a new task..."
+          disabled={creating}
+          style={{
+            flex: 1, padding: '3px 6px',
+            background: 'rgba(10,8,4,0.6)', border: '1px solid #5c3a1e',
+            color: '#e8d5b0', fontFamily: 'var(--font-mono)', fontSize: '8px',
+          }}
+        />
+        <button onClick={createTask} disabled={creating || !input.trim()} style={{
+          fontFamily: 'var(--font-pixel)', fontSize: '5px',
+          padding: '3px 8px', cursor: 'pointer',
+          background: '#5c3a1e', border: '2px solid #8b5e3c', color: '#f0e68c',
+        }}>ASSIGN</button>
+      </div>
     </div>
   )
 }
 
-/** SHOP bottom — placeholder */
+/** SHOP bottom — search + filters */
 function ShopBottomInfo() {
+  const skills = useStore((s) => s.skills)
   return (
     <div style={{
-      fontFamily: 'var(--font-pixel)', fontSize: '6px',
-      color: '#6a5a3a', letterSpacing: '1px',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      width: '100%', padding: '0 4px',
+      fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#c8a87a',
     }}>
-      BROWSE SKILLS
+      <span>SKILLS LEARNED: <span style={{ color: 'var(--cyan)' }}>{skills.length}</span></span>
+      <span style={{ color: '#6a5a3a' }}>Click items on shelf to install</span>
     </div>
   )
 }
