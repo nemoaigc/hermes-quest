@@ -15,7 +15,7 @@ const PARCHMENT_SLOTS = [
 ]
 
 const RANK_COLOR: Record<string, string> = {
-  S: '#b8860b', A: '#6a3a8a', B: '#2a6a5a', C: '#3a6a2a', D: '#5a5a5a',
+  S: '#6b4c2a', A: '#6a3a8a', B: '#2a6a5a', C: '#3a6a2a', D: '#5a5a5a',
 }
 
 function QuestSlot({ quest, slot, onAccept, accepting }: {
@@ -156,7 +156,7 @@ export default function BulletinBoard() {
             disabled={page === 0}
             style={{
               fontFamily: 'var(--font-pixel)', fontSize: '7px',
-              background: 'rgba(40,25,10,0.85)', border: '1px solid #8b5e3c',
+              background: 'rgba(40,25,10,0.85)', border: '1px solid #6b4c2a',
               color: page === 0 ? '#5a4a3a' : '#f0e68c',
               cursor: 'pointer', padding: '2px 6px',
             }}
@@ -170,7 +170,7 @@ export default function BulletinBoard() {
             disabled={page >= totalPages - 1}
             style={{
               fontFamily: 'var(--font-pixel)', fontSize: '7px',
-              background: 'rgba(40,25,10,0.85)', border: '1px solid #8b5e3c',
+              background: 'rgba(40,25,10,0.85)', border: '1px solid #6b4c2a',
               color: page >= totalPages - 1 ? '#5a4a3a' : '#f0e68c',
               cursor: 'pointer', padding: '2px 6px',
             }}

@@ -46,7 +46,7 @@ function TavernScene({ onRumorsClick, rumors, rumorsLoading }: {
             fontFamily: 'var(--font-pixel)', fontSize: '7px',
             padding: '6px 14px',
             background: 'linear-gradient(180deg, #5a3a1e 0%, #3a2210 100%)',
-            border: '2px solid #8b5e3c',
+            border: '2px solid #6b4c2a',
             color: '#f0e68c', cursor: 'pointer',
             letterSpacing: '1px',
             boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
@@ -69,7 +69,7 @@ function TavernScene({ onRumorsClick, rumors, rumorsLoading }: {
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '6px 12px',
             background: 'rgba(58,42,26,0.9)',
-            borderBottom: '2px solid #8b5e3c',
+            borderBottom: '2px solid #6b4c2a',
           }}>
             <span style={{
               fontFamily: 'var(--font-pixel)', fontSize: '7px',
@@ -136,7 +136,7 @@ function TavernScene({ onRumorsClick, rumors, rumorsLoading }: {
                   display: 'flex', gap: '8px',
                 }}>
                   <span>— @{r.handle}</span>
-                  <span style={{ color: '#b8860b' }}>{r.likes} likes</span>
+                  <span style={{ color: '#6b4c2a' }}>{r.likes} likes</span>
                 </div>
               </a>
             ))}
@@ -207,7 +207,7 @@ function TavernNpcBar({ onNpcClick, activeNpc, onBioClick, bioNpc }: { onNpcClic
                 width: '100%', maxWidth: '80px', aspectRatio: '1',
                 objectFit: 'cover',
                 imageRendering: 'pixelated',
-                border: isActive ? '2px solid #f0e68c' : bioNpc === npc.id ? '2px solid #c8a87a' : '2px solid transparent',
+                border: 'none',
                 borderRadius: '2px',
                 cursor: 'pointer',
                 transition: 'border-color 0.15s',
@@ -296,7 +296,7 @@ function NpcBioPanel({ npc, bio, onClose }: {
       <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
         <img src={npc.img} alt="" style={{
           width: '80px', height: '80px', imageRendering: 'pixelated',
-          border: '2px solid #8b5e3c', borderRadius: '3px',
+          borderRadius: '3px',
         }} />
         <BackButton onClick={onClose} />
       </div>
@@ -370,7 +370,7 @@ function RpgDialogInline({ npc, onClose }: { npc: typeof NPCS[0]; onClose: () =>
       <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
         <img src={npc.img} alt="" style={{
           width: '80px', height: '80px', imageRendering: 'pixelated',
-          border: '2px solid #8b5e3c', borderRadius: '3px',
+          borderRadius: '3px',
         }} />
         <BackButton onClick={onClose} />
       </div>
@@ -472,7 +472,7 @@ function RpgButton({ children, onClick, disabled, small }: { children: React.Rea
       padding: small ? '4px 8px' : '6px 14px',
       cursor: disabled ? 'wait' : 'pointer',
       background: disabled ? 'rgba(10,8,4,0.5)' : 'linear-gradient(180deg, #6a4428 0%, #4a2a14 50%, #3a2210 100%)',
-      border: '2px solid #8b5e3c',
+      border: '2px solid #6b4c2a',
       color: '#f0e68c',
       boxShadow: disabled ? 'none' : '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,140,0.1)',
       textShadow: '0 1px 2px rgba(0,0,0,0.5)',
@@ -647,7 +647,7 @@ function ShopBottomInfo() {
               fontFamily: 'var(--font-pixel)', fontSize: '5px',
               padding: '4px 6px', cursor: 'pointer',
               background: sourceFilter === src ? 'rgba(90,60,20,0.6)' : 'transparent',
-              border: `1px solid ${sourceFilter === src ? SOURCE_COLOR[src] || '#8b5e3c' : '#3a2a1a'}`,
+              border: `1px solid ${sourceFilter === src ? SOURCE_COLOR[src] || '#6b4c2a' : '#3a2a1a'}`,
               color: SOURCE_COLOR[src] || '#c8a87a',
               opacity: sourceFilter === src ? 1 : 0.6,
             }}
@@ -693,7 +693,7 @@ export default function CenterTabs() {
       <div style={{
         display: 'flex', gap: '0', marginBottom: '0',
         background: 'linear-gradient(to bottom, #2a1a0e, #1a120a)',
-        borderBottom: '2px solid #8b5e3c',
+        borderBottom: '2px solid #6b4c2a',
       }}>
         {TABS.map((t) => {
           const isActive = activeTab === t.id
@@ -731,19 +731,22 @@ export default function CenterTabs() {
       <div style={{
         width: '100%', aspectRatio: '1024 / 572',
         flexShrink: 0, position: 'relative', overflow: 'hidden',
-        border: '2px solid #8b5e3c',
-        boxShadow: 'inset 0 0 8px rgba(0,0,0,0.5)',
+        border: '2px solid #6b4c2a',
+        boxShadow: 'inset 0 0 8px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(160,120,60,0.15)',
+        marginTop: '2px',
       }}>
         {activeTab === 'map' && <KnowledgeMap onContinentSelect={setMapSelectedContinent} />}
         {activeTab === 'guild' && <GuildPanel />}
         {activeTab === 'shop' && <Shop />}
         {activeTab === 'npc' && <TavernScene onRumorsClick={() => fetchRumors()} rumors={rumors} rumorsLoading={rumorsLoading} />}
       </div>
-      {/* Bottom bar — distinct material per tab */}
+      {/* Bottom bar */}
       <div style={{
         flex: 1, minHeight: '80px',
         background: 'linear-gradient(180deg, #3a2515 0%, #2a1a0c 40%, #1e1208 100%)',
-      border: '2px solid #8b5e3c',
+        border: '2px solid #6b4c2a',
+        boxShadow: 'inset 0 0 0 1px rgba(160,120,60,0.15)',
+        marginTop: '2px',
         display: 'flex',
         alignItems: 'stretch',
         justifyContent: 'center',

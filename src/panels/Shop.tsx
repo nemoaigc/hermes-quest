@@ -185,7 +185,7 @@ export default function Shop() {
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
           background: 'rgba(15,10,5,0.95)',
-          borderTop: '2px solid #8b5e3c',
+          borderTop: '2px solid #6b4c2a',
           padding: '8px 10px', zIndex: 20,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
@@ -224,7 +224,7 @@ export default function Shop() {
               style={{
                 fontFamily: 'var(--font-pixel)', fontSize: '6px',
                 padding: '2px 8px', cursor: 'pointer',
-                background: 'rgba(90,60,20,0.6)', border: '1px solid #8b5e3c', color: '#f0e68c',
+                background: 'rgba(90,60,20,0.6)', border: '1px solid #6b4c2a', color: '#f0e68c',
               }}
             >{installing === selected.identifier ? 'LEARNING...' : 'ACQUIRE SKILL'}</button>
           </div>
