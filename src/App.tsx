@@ -24,12 +24,10 @@ export default function App() {
         gap: '2px',
         minHeight: 0,
       }}>
-        {/* Left: Character (60%) + Chronicle (40%) */}
+        {/* Left: Character (auto height) + Chronicle (fill rest) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
-          <div style={{ flex: 6, minHeight: 0, overflow: 'auto' }}>
-            <CharacterPanel />
-          </div>
-          <div style={{ flex: 4, minHeight: 0, overflow: 'hidden' }}>
+          <CharacterPanel />
+          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
             <AdventureLog />
           </div>
         </div>

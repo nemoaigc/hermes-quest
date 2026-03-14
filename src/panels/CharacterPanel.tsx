@@ -1,7 +1,6 @@
 import { useStore } from '../store'
-import { ClassIcon, ItemIcon } from '../utils/icons'
+import { ClassIcon } from '../utils/icons'
 
-// Map legacy class names to AI-meaningful display names
 const CLASS_DISPLAY: Record<string, string> = {
   warrior: 'Artificer', artificer: 'Artificer',
   mage: 'Scholar', scholar: 'Scholar',
@@ -10,24 +9,24 @@ const CLASS_DISPLAY: Record<string, string> = {
   necromancer: 'Hivemind', hivemind: 'Hivemind',
 }
 
-const CLASS_DESC: Record<string, string> = {
-  warrior: 'Code-focused', artificer: 'Code-focused',
-  mage: 'Research-focused', scholar: 'Research-focused',
-  ranger: 'Automation-focused', automancer: 'Automation-focused',
-  paladin: 'Multi-domain', polymath: 'Multi-domain',
-  necromancer: 'Delegation-focused', hivemind: 'Delegation-focused',
-}
-
-function StatBar({ label, current, max, type }: { label: string; current: number; max: number; type: string }) {
+function Bar({ label, current, max, color }: { label: string; current: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min(100, (current / max) * 100) : 0
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', fontFamily: 'var(--font-pixel)', marginBottom: '2px' }}>
-        <span>{label}</span>
-        <span>{current}/{max}</span>
+    <div style={{ marginBottom: '4px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#c8a87a' }}>{label}</span>
+        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color }}>{current}/{max}</span>
       </div>
-      <div className="stat-bar">
-        <div className={`stat-bar-fill ${type}`} style={{ width: `${pct}%` }} />
+      <div style={{
+        height: '8px', background: 'rgba(10,8,4,0.6)',
+        border: '1px solid rgba(107,76,42,0.4)', borderRadius: '1px',
+      }}>
+        <div style={{
+          height: '100%', width: `${pct}%`, borderRadius: '1px',
+          background: `linear-gradient(180deg, ${color} 0%, ${color}99 100%)`,
+          boxShadow: `0 0 4px ${color}40`,
+          transition: 'width 0.5s ease',
+        }} />
       </div>
     </div>
   )
@@ -37,59 +36,83 @@ export default function CharacterPanel() {
   const state = useStore((s) => s.state)
 
   if (!state) return (
-    <div className="pixel-panel" style={{ height: '100%', overflow: 'auto' }}>
+    <div className="pixel-panel" style={{ flexShrink: 0 }}>
       <div className="pixel-panel-title" style={{ textAlign: 'center' }}>CHARACTER</div>
-      <div style={{ color: 'var(--text-dim)', fontSize: '10px' }}>Loading...</div>
+      <div style={{ color: 'var(--text-dim)', fontSize: '10px', textAlign: 'center', padding: '8px' }}>Loading...</div>
     </div>
   )
 
   return (
-    <div className="pixel-panel" style={{ height: '100%', overflow: 'auto' }}>
+    <div className="pixel-panel" style={{ flexShrink: 0 }}>
       <div className="pixel-panel-title" style={{ textAlign: 'center' }}>CHARACTER</div>
-      <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-        <ClassIcon cls={state.class} size={32} />
-        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: 'var(--gold)', marginTop: '4px' }}>
-          {state.name}
+
+      {/* Portrait + Identity — horizontal layout */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+        {/* Avatar — same size as NPC portraits */}
+        <div style={{
+          width: '80px', height: '80px', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(20,14,8,0.6)',
+          border: '1px solid rgba(107,76,42,0.4)',
+          borderRadius: '3px',
+        }}>
+          <ClassIcon cls={state.class} size={64} />
         </div>
-        <div style={{ fontSize: '9px', color: 'var(--text-dim)' }}>
-          Lv.{state.level} {CLASS_DISPLAY[state.class] || state.class}
-        </div>
-        <div style={{ fontSize: '8px', color: 'var(--purple)' }}>
-          {state.title} — {CLASS_DESC[state.class] || ''}
+
+        {/* Name + Class + Title */}
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: 'var(--gold)', letterSpacing: '1px' }}>
+            {state.name}
+          </div>
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: 'var(--cyan)', marginTop: '2px' }}>
+            Lv.{state.level} {CLASS_DISPLAY[state.class] || state.class}
+          </div>
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355', marginTop: '1px' }}>
+            {state.title}
+          </div>
         </div>
       </div>
 
-      <StatBar label="HP" current={state.hp} max={state.hp_max} type="stability" />
-      <StatBar label="MP" current={state.mp} max={state.mp_max} type="energy" />
-      <StatBar label="XP" current={state.xp} max={state.xp_to_next} type="xp" />
+      {/* Stat Bars */}
+      <Bar label="HP" current={state.hp} max={state.hp_max} color="#ff6b6b" />
+      <Bar label="MP" current={state.mp} max={state.mp_max} color="#4ecdc4" />
+      <Bar label="XP" current={state.xp} max={state.xp_to_next} color="#00ff88" />
 
       {/* Understanding */}
-      <div style={{ marginTop: '6px', fontSize: '8px', fontFamily: 'var(--font-pixel)', display: 'flex', justifyContent: 'space-between' }}>
-        <span>UNDERSTANDING</span>
-        <span style={{ color: 'var(--cyan)' }}>
-          {state.understanding < 0 ? 'Calibrating...' : `${Math.round(state.understanding * 100)}%`}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        marginTop: '6px', padding: '4px 0',
+        borderTop: '1px solid rgba(107,76,42,0.3)',
+      }}>
+        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#c8a87a' }}>UNDERSTANDING</span>
+        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '8px', color: 'var(--cyan)' }}>
+          {state.understanding < 0 ? '...' : `${Math.round(state.understanding * 100)}%`}
         </span>
       </div>
 
-      <div style={{ marginTop: '8px', fontSize: '9px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
-        <div><span style={{ color: 'var(--text-dim)' }}>Cycles: </span><span>{state.total_cycles}</span></div>
-        <div><span style={{ color: 'var(--text-dim)' }}>Skills: </span><span>{state.skills_count}</span></div>
-        <div><span style={{ color: 'var(--text-dim)' }}>Workflows: </span><span>{state.workflows_discovered ?? 0}</span></div>
-        <div><span style={{ color: 'var(--text-dim)' }}>Corrections: </span><span>{state.total_corrections ?? 0}</span></div>
-      </div>
-
-      {state.inventory && state.inventory.length > 0 && (
-        <div style={{ marginTop: '8px' }}>
-          <div style={{ fontSize: '8px', color: 'var(--text-dim)', marginBottom: '4px' }}>INVENTORY ({state.inventory.length})</div>
-          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
-            {state.inventory.slice(0, 8).map((item: any, i: number) => (
-              <div key={item.id || i} title={item.name || item.type || ''} style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                <ItemIcon item={item.type || 'scroll'} size={16} />
-              </div>
-            ))}
-          </div>
+      {/* Quick Stats */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: '1fr 1fr',
+        gap: '2px 8px', marginTop: '4px',
+        fontSize: '8px',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: '#8b7355' }}>Cycles</span>
+          <span style={{ color: '#e8d5b0' }}>{state.total_cycles}</span>
         </div>
-      )}
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: '#8b7355' }}>Skills</span>
+          <span style={{ color: '#e8d5b0' }}>{state.skills_count}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: '#8b7355' }}>Workflows</span>
+          <span style={{ color: '#e8d5b0' }}>{state.workflows_discovered ?? 0}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: '#8b7355' }}>Fixes</span>
+          <span style={{ color: '#e8d5b0' }}>{state.total_corrections ?? 0}</span>
+        </div>
+      </div>
     </div>
   )
 }
