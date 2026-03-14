@@ -3,6 +3,11 @@ import { useStore } from '../store'
 import { SkillIcon } from '../utils/icons'
 import { API_URL } from '../api'
 
+const CAT_COLOR: Record<string, string> = {
+  coding: 'var(--cyan)', research: 'var(--purple)',
+  automation: 'var(--gold)', creative: '#ff9944',
+}
+
 export default function SkillInventory() {
   const skills = useStore((s) => s.skills)
   const setSkills = useStore((s) => s.setSkills)
@@ -24,56 +29,68 @@ export default function SkillInventory() {
     setForgetting(false)
   }
 
-  return (
-    <div className="pixel-panel" style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
-      {/* Title moved to SkillPanel tab label */}
+  if (selectedSkill) {
+    return (
+      <div style={{ padding: '4px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <SkillIcon name={selectedSkill.name} category={selectedSkill.category || ''} size={28} />
+          <div>
+            <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '8px', color: 'var(--gold)' }}>
+              {selectedSkill.name}
+            </div>
+            <div style={{ fontSize: '7px', color: CAT_COLOR[selectedSkill.category || ''] || 'var(--text-dim)' }}>
+              {selectedSkill.category} · v{selectedSkill.version} · {selectedSkill.rarity}
+            </div>
+          </div>
+        </div>
+        <div style={{ fontSize: '9px', color: 'var(--text)', lineHeight: '1.5', maxHeight: '80px', overflow: 'auto' }}>
+          {selectedSkill.description || 'No description.'}
+        </div>
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <button className="pixel-btn" onClick={() => setSelected(null)} style={{ fontSize: '6px', padding: '3px 8px' }}>◀ BACK</button>
+          <button
+            className="pixel-btn"
+            onClick={() => forgetSkill(selectedSkill.name)}
+            disabled={forgetting}
+            style={{ fontSize: '6px', padding: '3px 8px', color: 'var(--red)', borderColor: 'var(--red)' }}
+          >{forgetting ? '...' : 'FORGET'}</button>
+        </div>
+      </div>
+    )
+  }
 
-      {selectedSkill ? (
-        <div style={{ padding: '4px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <SkillIcon name={selectedSkill.name} category={selectedSkill.category || ''} size={24} />
-            <div>
-              <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '8px', color: 'var(--gold)' }}>
-                {selectedSkill.name}
-              </div>
-              <div style={{ fontSize: '8px', color: 'var(--text-dim)' }}>
-                {selectedSkill.category} v{selectedSkill.version} [{selectedSkill.rarity}]
-              </div>
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+      {skills.map((skill) => (
+        <div
+          key={skill.name}
+          onClick={() => setSelected(skill.name)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            padding: '4px 6px', cursor: 'pointer',
+            borderLeft: `2px solid ${CAT_COLOR[skill.category || ''] || 'var(--border)'}`,
+            transition: 'background 0.1s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,94,60,0.1)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+        >
+          <SkillIcon name={skill.name} category={skill.category || ''} size={16} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: '9px', color: 'var(--text)',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+              {skill.name}
             </div>
           </div>
-          <div style={{ fontSize: '9px', color: 'var(--text)', lineHeight: '1.4', marginBottom: '8px', maxHeight: '60px', overflow: 'auto' }}>
-            {selectedSkill.description || 'No description available.'}
-          </div>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            <button className="pixel-btn" onClick={() => setSelected(null)} style={{ fontSize: '7px' }}>BACK</button>
-            <button
-              className="pixel-btn"
-              onClick={() => forgetSkill(selectedSkill.name)}
-              disabled={forgetting}
-              style={{ fontSize: '7px', color: 'var(--red)', borderColor: 'var(--red)' }}
-            >
-              {forgetting ? '...' : 'FORGET'}
-            </button>
-          </div>
+          <span style={{
+            fontFamily: 'var(--font-pixel)', fontSize: '4px',
+            color: CAT_COLOR[skill.category || ''] || 'var(--text-dim)',
+          }}>
+            {skill.category}
+          </span>
         </div>
-      ) : (
-        <div className="skill-grid">
-          {skills.map((skill) => (
-            <div
-              key={skill.name}
-              className={`skill-slot rarity-${skill.rarity}`}
-              title={skill.name}
-              onClick={() => setSelected(skill.name)}
-              style={{ cursor: 'pointer' }}
-            >
-              <SkillIcon name={skill.name} category={skill.category || ''} size={18} />
-            </div>
-          ))}
-          {Array.from({ length: Math.max(0, 12 - skills.length) }).map((_, i) => (
-            <div key={`empty-${i}`} className="skill-slot" style={{ opacity: 0.3 }} />
-          ))}
-        </div>
-      )}
+      ))}
     </div>
   )
 }
