@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useStore } from '../store'
 import { ClassIcon } from '../utils/icons'
+import { usePotion } from '../api'
 
 const CLASS_DISPLAY: Record<string, string> = {
   warrior: 'Artificer', artificer: 'Artificer',
@@ -28,6 +30,69 @@ function Bar({ label, current, max, color }: { label: string; current: number; m
           transition: 'width 0.5s ease',
         }} />
       </div>
+    </div>
+  )
+}
+
+function PotionButton({ type, label, cost, icon, stat, statMax, gold, color }: {
+  type: 'hp_potion' | 'mp_potion'
+  label: string
+  cost: number
+  icon: string
+  stat: number
+  statMax: number
+  gold: number
+  color: string
+}) {
+  const [loading, setLoading] = useState(false)
+  const [msg, setMsg] = useState('')
+  const disabled = loading || gold < cost || stat >= statMax
+
+  const handleClick = async () => {
+    setLoading(true)
+    setMsg('')
+    try {
+      const res = await usePotion(type)
+      setMsg(`+${res.healed} ${label}!`)
+      setTimeout(() => setMsg(''), 2000)
+    } catch (e: any) {
+      setMsg(e.message || 'Failed...')
+      setTimeout(() => setMsg(''), 3000)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+      <button
+        onClick={handleClick}
+        disabled={disabled}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '4px',
+          padding: '3px 6px',
+          background: disabled ? 'rgba(10,8,4,0.4)' : 'rgba(30,20,10,0.8)',
+          border: `1px solid ${disabled ? 'rgba(107,76,42,0.2)' : 'rgba(107,76,42,0.6)'}`,
+          borderRadius: '2px',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.5 : 1,
+          fontFamily: 'var(--font-pixel)',
+          fontSize: '6px',
+          color: disabled ? '#8b7355' : color,
+          transition: 'all 0.2s',
+        }}
+        title={gold < cost ? `Need ${cost}G` : stat >= statMax ? `${label} full` : `Use ${label} Potion (${cost}G)`}
+      >
+        <img src={icon} alt={label} style={{ width: '16px', height: '16px', imageRendering: 'pixelated' }} />
+        <span>{cost}G</span>
+      </button>
+      {msg && (
+        <span style={{
+          fontFamily: 'var(--font-pixel)', fontSize: '5px',
+          color: msg.startsWith('+') ? color : '#ff6b6b',
+          textShadow: `0 0 4px ${msg.startsWith('+') ? color : '#ff6b6b'}40`,
+        }}>{msg}</span>
+      )}
     </div>
   )
 }
@@ -109,6 +174,26 @@ export default function CharacterPanel() {
           <span style={{ color: '#8b7355' }}>Workflows</span>
           <span style={{ color: '#e8d5b0' }}>{state.workflows_discovered ?? 0}</span>
         </div>
+      </div>
+
+      {/* Potions */}
+      <div style={{
+        display: 'flex', justifyContent: 'center', gap: '8px',
+        marginTop: '6px', paddingTop: '6px',
+        borderTop: '1px solid rgba(107,76,42,0.3)',
+      }}>
+        <PotionButton
+          type="hp_potion" label="HP" cost={200}
+          icon="/items/potions/hp-potion.png"
+          stat={state.hp} statMax={state.hp_max}
+          gold={state.gold ?? 0} color="#ff6b6b"
+        />
+        <PotionButton
+          type="mp_potion" label="MP" cost={150}
+          icon="/items/potions/mp-potion.png"
+          stat={state.mp} statMax={state.mp_max}
+          gold={state.gold ?? 0} color="#4ecdc4"
+        />
       </div>
     </div>
   )

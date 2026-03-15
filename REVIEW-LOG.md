@@ -4,68 +4,47 @@
 
 ---
 
-## Round 1 (2026-03-16 ~05:30)
+## Round 1 (2026-03-16 ~05:30) — Commit `a20abdb`
+- 5 专家发现 ~58 issues，修复 16 (9 frontend + 7 server)
+- Critical: API_URL missing, xp_to_next fallback
+- High: shop install check, bag discard error, feedback HP removal
 
-| 专家 | 发现问题 | 修复 |
-|------|---------|------|
-| PM (产品经理) | 27 issues (4 high, 12 med, 11 low) | 6 fixed |
-| Agent Dev (开发) | 15 issues (3 crit, 3 high, 5 med, 4 low) | 7 fixed |
-| Context Eng (上下文) | 16 issues (3 high, 6 med, 7 low) | 4 fixed |
-| QA (测试) | 41 tests, 4 FAIL, 5 WARN | 2 fixed |
-| Algorithm (算法) | 17 issues (2 crit, 5 high, 5 med, 5 low) | 5 fixed |
+## Round 2 (2026-03-16 ~06:00) — Commit `c63c48a`
+- 修复 18 + NPC chat CLEAR button
+- Hub install fix, event dedup, duplicate quest prevention, gold sinks
+- Feedback persistence, connection indicator, RPG confirm dialog
 
-**Commit**: `a20abdb` — 16 fixes (9 frontend + 7 server)
+## Round 3 (2026-03-16 ~06:20) — Commit `9b4ac13`
+- 14 silent catch blocks → RPG-themed error messages
+- Server: jiter module, orphan process, tavern path fix
 
----
-
-## Round 2 (2026-03-16 ~06:00)
-
-| 专家 | 修复 |
-|------|------|
-| PM + Frontend | 6 fixes: feedback persistence, clear-log persistence, RPG confirm, connection indicator, page clamp, selection clear |
-| Server Backend | 6 fixes: hub install, event dedup, duplicate quest prevention, 404 catch-all, NPC instructions, empty board reset |
-| Algorithm 数值 | 5 fixes: gold sinks (refresh 50G, create 100G), level-up +30 MP, MP decay on read, HP feedback removed confirmed |
-| User Request | 1 fix: NPC chat CLEAR button |
-
-**Commit**: `c63c48a` — 18 fixes + NPC chat clear
-
----
-
-## Round 3 (2026-03-16 ~06:20)
-
-| 专家 | 发现/修复 |
-|------|---------|
-| PM Deep Review | 17 issues found (3 high, 8 med, 5 low) — all silent catch blocks |
-| QA 端到端 | 9 tests: 7 PASS, 1 FAIL (NPC jiter), 1 WARN (quest accept logic) |
-| Context Engineer | 3 issues found+fixed: jiter module, orphan process, tavern reply path |
-| Silent Catch Fix | 14 API calls now show RPG-themed error messages on failure |
-
-**Fixes Applied:**
-- Shop: "Could not load wares" error + retry, install error in detail panel
-- BulletinBoard: refresh "FAILED" button, accept error in overlay
-- Guild: create/cancel/edit all show error feedback
-- Tavern: ambient chat fetch/refresh/send all show error messages
-- Rumors: error state with "The rumor mill has gone silent..."
-- All API calls: `res.ok` check before `res.json()`
-- Server: jiter module installed, orphan process killed, tavern path fixed
-
-**Commit**: `9b4ac13` — 14 frontend error UX fixes + 3 server fixes
-**Push**: ✅ pushed to origin/main
+## Round 4 (2026-03-16 ~06:40) — Commits `469524c`, `597cd82`
+- Global ErrorBoundary ("A RIFT IN REALITY")
+- WebSocket exponential backoff (1s→30s)
+- Loading screen 4-stage smooth progress
+- **Quest gen randomized** — each REFRESH gives different quests
+- **Active quest title dedup** — no duplicate recommendations
+- **Gold cost display** — REFRESH button shows "-50G", error msg on insufficient gold
+- Quest accept logic fix, HTML tag stripping for XSS prevention
 
 ---
 
 ## Cumulative Stats
 - **Total issues found**: ~100+
-- **Total fixes applied**: 51
-- **Commits**: 3 (all pushed)
-- **Remaining known issues**:
-  - No global error boundary
-  - WebSocket reconnect: no exponential backoff
-  - Cross-process race condition on state.json (needs architectural change)
-  - Shop + bottom panel duplicated filter logic (should extract shared hook)
-  - Loading screen progress jumps from 20% to 100%
-  - Fixed pixel column widths not responsive
-  - Keyboard accessibility (no focus-visible styles, no focus traps)
+- **Total fixes applied**: 60+
+- **Commits**: 5 (all pushed to origin/main)
+- **Key improvements**:
+  - All API calls have error feedback (no more silent failures)
+  - Quest recommendations randomized + deduped
+  - Gold economy functional (refresh 50G, create 100G)
+  - NPC prompts with explicit role-play instructions
+  - Numerical systems balanced (HP=objective, MP=subjective)
+  - Error boundary, WS backoff, smooth loading
+- **Remaining low-priority**:
+  - Keyboard accessibility (focus-visible styles)
+  - Cross-process race on state.json (architectural)
+  - Shop filter logic duplication (shared hook)
+  - Red/blue potions as gold sink (user idea!)
 
 ---
 

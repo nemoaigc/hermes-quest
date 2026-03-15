@@ -59,4 +59,24 @@ export async function discardBagItem(itemId: string): Promise<void> {
   if (!res.ok) throw new Error(`Discard item failed: ${res.status}`)
 }
 
+export async function usePotion(type: 'hp_potion' | 'mp_potion'): Promise<{
+  ok: boolean
+  potion: string
+  cost: number
+  healed: number
+  new_value: number
+  gold_remaining: number
+}> {
+  const res = await fetch(`${API_URL}/api/potion/use`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Unknown error' }))
+    throw new Error(err.error || `Potion use failed: ${res.status}`)
+  }
+  return res.json()
+}
+
 export { API_URL }
