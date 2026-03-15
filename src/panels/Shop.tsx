@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { SkillIcon } from '../utils/icons'
 import { API_URL } from '../api'
 import { useStore } from '../store'
+import AnimatedBg from '../components/AnimatedBg'
 import type { HubSkill } from '../store'
 
 const SOURCE_COLOR: Record<string, string> = {
@@ -13,15 +14,19 @@ const SOURCE_COLOR: Record<string, string> = {
 }
 
 // 9 shelf slots — 3 rows × 3 columns aligned to shop-bg.png (1024x572)
-// Cabinet: ~20%-80% width, ~22%-88% height
+// Measured from pixel analysis: cols at 26.2/41.5/58.7%, rows at 26.2/46.7/65.7%
 const SHELF_SLOTS: Array<{ left: number; top: number; width: number; height: number }> = []
+const SHOP_COLS = [26.5, 41.8, 59.0]
+const SHOP_ROWS = [27.5, 47.5, 66.5]
+const SHOP_CW = 14.5  // cell width %
+const SHOP_CH = 17.5   // cell height %
 for (let row = 0; row < 3; row++) {
   for (let col = 0; col < 3; col++) {
     SHELF_SLOTS.push({
-      left: 21 + col * 20,
-      top: 22 + row * 22,
-      width: 18,
-      height: 20,
+      left: SHOP_COLS[col],
+      top: SHOP_ROWS[row],
+      width: SHOP_CW,
+      height: SHOP_CH,
     })
   }
 }
@@ -148,11 +153,7 @@ export default function Shop() {
       width: '100%', height: '100%',
       position: 'relative', overflow: 'hidden',
     }}>
-      <img src="/bg/shop-bg.png" alt="" draggable={false} style={{
-        width: '100%', height: '100%',
-        objectFit: 'fill', imageRendering: 'pixelated',
-        position: 'absolute', inset: 0,
-      }} />
+      <AnimatedBg prefix="shop" fallback="/bg/shop-bg.png" style={{ position: 'absolute', inset: 0 }} />
       {/* Items on shelf slots */}
       {!loading && pageItems.map((skill, i) => {
         const slot = SHELF_SLOTS[i]

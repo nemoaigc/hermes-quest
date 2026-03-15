@@ -15,7 +15,7 @@
   --green: #00ff88;
   --red: #ff6b6b;
   --cyan: #4ecdc4;
-  --gold: #ffe66d;
+  --gold: #f0e68c;
   --purple: #a855f7;
   --font-pixel: 'Press Start 2P', monospace;
   --font-mono: 'Courier New', monospace;
@@ -35,16 +35,10 @@ html, body, #root {
   font-family: var(--font-mono);
   font-size: 12px;
   overflow: hidden;
-  cursor: url('/cursor-arrow.png') 2 2, auto;
   caret-color: #f0e68c;
 }
 
-a, button, [role="button"], [onclick] {
-  cursor: url('/cursor-pointer.png') 8 2, pointer;
-}
-
 input, textarea {
-  cursor: url('/cursor-arrow.png') 2 2, text;
   caret-color: #f0e68c;
 }
 
@@ -194,3 +188,14 @@ input, textarea {
 .quest-rank.B { color: var(--cyan); }
 .quest-rank.C { color: var(--green); }
 .quest-rank.D { color: var(--text-dim); }
+
+/* Mobile responsive layout */
+@media (max-width: 768px) {
+  html, body, #root {
+    overflow: auto;
+  }
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto auto auto !important;
+  }
+}

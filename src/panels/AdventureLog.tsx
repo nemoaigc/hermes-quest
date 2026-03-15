@@ -1,9 +1,34 @@
+import { useState } from 'react'
 import { useStore } from '../store'
 import { formatEvent, formatTime } from '../utils/formatters'
 import { EVENT_ICONS } from '../utils/icons'
+import { API_URL } from '../api'
+
+const FEEDBACKABLE_TYPES = new Set(['skill_drop', 'cycle_end', 'quest_complete', 'train_start'])
+
+async function sendFeedback(type: 'positive' | 'negative', event_type: string, detail: string) {
+  try {
+    const res = await fetch(`${API_URL}/api/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, event_type, detail }),
+    })
+    if (!res.ok) throw new Error(`Feedback failed: ${res.status}`)
+    return await res.json()
+  } catch (e) {
+    console.error('Feedback error:', e)
+  }
+}
 
 export default function AdventureLog() {
   const events = useStore((s) => s.events)
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
+  const [sentFeedback, setSentFeedback] = useState<Record<string, 'positive' | 'negative'>>({})
+
+  const handleFeedback = (key: string, type: 'positive' | 'negative', event_type: string, detail: string) => {
+    setSentFeedback((prev) => ({ ...prev, [key]: type }))
+    sendFeedback(type, event_type, detail)
+  }
 
   return (
     <div className="pixel-panel" style={{ overflow: 'auto', height: '100%' }}>
@@ -25,13 +50,21 @@ export default function AdventureLog() {
 
           {events.map((event, i) => {
             const { type, color, text } = formatEvent(event)
+            const eventKey = `${event.ts}-${event.type}-${i}`
+            const canFeedback = FEEDBACKABLE_TYPES.has(type)
+            const alreadySent = sentFeedback[eventKey]
             return (
-              <div key={`${event.ts}-${event.type}-${i}`} style={{
-                display: 'flex', gap: '6px', alignItems: 'flex-start',
-                padding: '4px 4px 4px 8px',
-                position: 'relative',
-                marginBottom: '2px',
-              }}>
+              <div
+                key={eventKey}
+                onMouseEnter={() => setHoveredIdx(i)}
+                onMouseLeave={() => setHoveredIdx(null)}
+                style={{
+                  display: 'flex', gap: '6px', alignItems: 'flex-start',
+                  padding: '4px 4px 4px 8px',
+                  position: 'relative',
+                  marginBottom: '2px',
+                }}
+              >
                 {/* Timeline dot */}
                 <div style={{
                   position: 'absolute', left: '-10px', top: '6px',
@@ -55,6 +88,38 @@ export default function AdventureLog() {
                     {formatTime(event.ts)}
                   </div>
                 </div>
+
+                {/* Feedback buttons — only for certain event types, visible on hover */}
+                {canFeedback && (
+                  <div style={{
+                    display: 'flex', gap: '2px', alignItems: 'center',
+                    opacity: alreadySent ? 0.6 : (hoveredIdx === i ? 1 : 0),
+                    transition: 'opacity 0.15s',
+                    pointerEvents: alreadySent ? 'none' : 'auto',
+                    flexShrink: 0,
+                  }}>
+                    <button
+                      onClick={() => handleFeedback(eventKey, 'positive', type, text)}
+                      style={{
+                        background: alreadySent === 'positive' ? 'rgba(0,180,0,0.2)' : 'none',
+                        border: 'none', cursor: 'pointer', padding: '1px 2px',
+                        fontSize: '8px', lineHeight: 1,
+                        filter: alreadySent === 'negative' ? 'grayscale(1)' : 'none',
+                      }}
+                      title="Good outcome"
+                    >👍</button>
+                    <button
+                      onClick={() => handleFeedback(eventKey, 'negative', type, text)}
+                      style={{
+                        background: alreadySent === 'negative' ? 'rgba(180,0,0,0.2)' : 'none',
+                        border: 'none', cursor: 'pointer', padding: '1px 2px',
+                        fontSize: '8px', lineHeight: 1,
+                        filter: alreadySent === 'positive' ? 'grayscale(1)' : 'none',
+                      }}
+                      title="Bad outcome"
+                    >👎</button>
+                  </div>
+                )}
               </div>
             )
           })}

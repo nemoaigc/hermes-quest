@@ -4,10 +4,27 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>hermes-quest-dashboard</title>
+    <title>Hermes Quest — AI Self-Evolution RPG</title>
+    <meta name="description" content="Watch your AI agent grow like an RPG adventurer — learning skills, completing quests, and exploring a gamified knowledge map in real-time." />
+    <meta property="og:title" content="Hermes Quest" />
+    <meta property="og:description" content="An AI agent that learns and evolves like an RPG hero. Real-time dashboard with pixel art, NPC dialogue, skill constellations, and quest system." />
+    <meta property="og:image" content="/og-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Hermes Quest — AI Self-Evolution RPG" />
+    <meta name="twitter:description" content="Watch your AI agent level up like an RPG hero." />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div style="position:fixed;inset:0;background:#0d0a06;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;color:#f0e68c;">
+        <div style="font-size:16px;letter-spacing:4px;margin-bottom:8px;">HERMES QUEST</div>
+        <div style="font-size:10px;color:#8b7355;margin-bottom:24px;">AI Self-Evolution RPG</div>
+        <div style="width:120px;height:4px;background:#1a140c;border:1px solid #6b4c2a;border-radius:2px;overflow:hidden;">
+          <div style="width:60%;height:100%;background:linear-gradient(90deg,#f0e68c,#c8a87a);animation:load 1.5s ease-in-out infinite;"></div>
+        </div>
+        <style>@keyframes load{0%{width:20%}50%{width:80%}100%{width:20%}}</style>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

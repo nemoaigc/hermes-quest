@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useStore } from '../store'
+import { acceptFogQuest } from '../api'
+import AnimatedBg from '../components/AnimatedBg'
 import type { Continent, FogRegion } from '../types'
 import SubRegionGraph from './SubRegionGraph'
 
@@ -9,11 +11,44 @@ const CONTINENT_SPRITES: Record<string, string> = {
   'research-knowledge': '/sprites/continent-research-knowledge.png',
   'automation-tools': '/sprites/continent-automation-tools.png',
   'creative-arts': '/sprites/continent-creative-arts.png',
+  'data-analytics': '/sprites/continent-data-analytics.png',
+  'devops-infrastructure': '/sprites/continent-devops-infrastructure.png',
+  'security-defense': '/sprites/continent-security-defense.png',
+  'ai-machine-learning': '/sprites/continent-ai-machine-learning.png',
+  'web-frontend': '/sprites/continent-web-frontend.png',
 }
 
 // The parchment area within map-bg.png (1024x572)
-// Measured from the actual image: parchment starts ~12% from left, ~8% from top
 const PARCHMENT = { left: 14, top: 8, width: 68, height: 82 }
+
+// Fixed positions — well within 0.2-0.8 to avoid parchment edges
+const FIXED_POSITIONS: Record<string, { x: number; y: number }> = {
+  'software-engineering': { x: 0.25, y: 0.25 },
+  'software-engineering-flow': { x: 0.25, y: 0.25 },
+  'research-knowledge': { x: 0.6, y: 0.2 },
+  'research-knowledge-flow': { x: 0.6, y: 0.2 },
+  'automation-tools': { x: 0.25, y: 0.6 },
+  'automation-tools-flow': { x: 0.25, y: 0.6 },
+  'creative-arts': { x: 0.5, y: 0.5 },
+  'creative-arts-flow': { x: 0.5, y: 0.5 },
+  'data-analytics': { x: 0.7, y: 0.45 },
+  'data-analytics-flow': { x: 0.7, y: 0.45 },
+  'devops-infrastructure': { x: 0.42, y: 0.35 },
+  'devops-infrastructure-flow': { x: 0.42, y: 0.35 },
+  'security-defense': { x: 0.65, y: 0.65 },
+  'security-defense-flow': { x: 0.65, y: 0.65 },
+  'ai-machine-learning': { x: 0.45, y: 0.15 },
+  'ai-machine-learning-flow': { x: 0.45, y: 0.15 },
+  'web-frontend': { x: 0.3, y: 0.45 },
+  'web-frontend-flow': { x: 0.3, y: 0.45 },
+}
+
+// Fog positions — near edges but still visible
+const FOG_POSITIONS: Record<string, { x: number; y: number }> = {
+  'fog-data-science': { x: 0.78, y: 0.72 },
+}
+// Hidden fog IDs — don't render these
+const HIDDEN_FOG = new Set(['fog-devops'])
 
 function ContinentSprite({ continent, onClick, isActive }: {
   continent: Continent
@@ -26,11 +61,15 @@ function ContinentSprite({ continent, onClick, isActive }: {
     ? subNodes.reduce((a: number, s: any) => a + (s.mastery || 0), 0) / subNodes.length
     : 0)
   const skillCount = (continent as any).skills_involved?.length ?? subNodes.reduce((a: number, s: any) => a + (s.skills?.length || 0), 0)
+  // Match by id directly, or strip "-flow" suffix, or match by category
   const sprite = CONTINENT_SPRITES[continent.id]
+    || CONTINENT_SPRITES[continent.id.replace(/-flow$/, '')]
+    || CONTINENT_SPRITES[continent.category || '']
 
-  // Map 0-1 position to parchment area percentages
-  const left = PARCHMENT.left + continent.position.x * PARCHMENT.width
-  const top = PARCHMENT.top + continent.position.y * PARCHMENT.height
+  // Use fixed position if available, fallback to server data
+  const pos = FIXED_POSITIONS[continent.id] || continent.position
+  const left = PARCHMENT.left + pos.x * PARCHMENT.width
+  const top = PARCHMENT.top + pos.y * PARCHMENT.height
 
   return (
     <div
@@ -87,25 +126,42 @@ function ContinentSprite({ continent, onClick, isActive }: {
 }
 
 function FogSprite({ fog }: { fog: FogRegion }) {
-  const pos = fog.position || { x: 0.5, y: 0.5 }
+  const pos = FOG_POSITIONS[fog.id] || fog.position || { x: 0.9, y: 0.9 }
   const left = PARCHMENT.left + pos.x * PARCHMENT.width
   const top = PARCHMENT.top + pos.y * PARCHMENT.height
+  const [exploring, setExploring] = useState(false)
+
+  async function handleExplore() {
+    if (exploring) return
+    setExploring(true)
+    try {
+      await acceptFogQuest(fog.id)
+    } catch (e) {
+      console.warn('Failed to explore fog region:', e)
+    }
+    setExploring(false)
+  }
 
   return (
-    <div style={{
-      position: 'absolute',
-      left: `${left}%`,
-      top: `${top}%`,
-      transform: 'translate(-50%, -50%)',
-      textAlign: 'center',
-    }}>
+    <div
+      onClick={handleExplore}
+      style={{
+        position: 'absolute',
+        left: `${left}%`,
+        top: `${top}%`,
+        transform: 'translate(-50%, -50%)',
+        textAlign: 'center',
+        cursor: exploring ? 'wait' : 'pointer',
+      }}
+    >
       <img
         src="/sprites/fog.png"
         alt="?"
         draggable={false}
         style={{
           width: '6vmin', height: '6vmin',
-          imageRendering: 'pixelated', opacity: 0.8,
+          imageRendering: 'pixelated', opacity: exploring ? 0.4 : 0.8,
+          transition: 'opacity 0.3s',
         }}
       />
       <div style={{
@@ -113,7 +169,7 @@ function FogSprite({ fog }: { fog: FogRegion }) {
         color: '#8a7a5a',
         textShadow: '0 0 2px rgba(228,216,192,0.8)',
       }}>
-        {fog.hint}
+        {exploring ? 'EXPLORING...' : fog.hint}
       </div>
     </div>
   )
@@ -125,7 +181,8 @@ function RoadLines({ connections, containerW, containerH }: {
   containerW: number
   containerH: number
 }) {
-  function toPx(pos: { x: number; y: number }) {
+  function toPx(continent: Continent) {
+    const pos = FIXED_POSITIONS[continent.id] || continent.position
     return {
       x: (PARCHMENT.left + pos.x * PARCHMENT.width) / 100 * containerW,
       y: (PARCHMENT.top + pos.y * PARCHMENT.height) / 100 * containerH,
@@ -138,8 +195,8 @@ function RoadLines({ connections, containerW, containerH }: {
       style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}
     >
       {connections.map((cc, i) => {
-        const p1 = toPx(cc.from.position)
-        const p2 = toPx(cc.to.position)
+        const p1 = toPx(cc.from)
+        const p2 = toPx(cc.to)
         const dx = p2.x - p1.x
         const dy = p2.y - p1.y
         const wobble = ((i * 37 + 13) % 30) - 15
@@ -186,24 +243,27 @@ export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?
 
   // No longer switches to SubRegionGraph internally — bottom panel handles drill-down
 
-  // Build cross-continent connections
+  // Build roads between nearby continents
+  const allContinents = knowledgeMap ? (knowledgeMap.continents || knowledgeMap.workflows || []) : []
   const continentConnections: Array<{ from: Continent; to: Continent }> = []
-  if (knowledgeMap) {
-    for (const conn of knowledgeMap.connections) {
-      let fromC: Continent | undefined
-      let toC: Continent | undefined
-      for (const c of (knowledgeMap.continents || knowledgeMap.workflows || [])) {
-        const skills: string[] = (c as any).skills_involved || (c as any).sub_regions?.flatMap((s: any) => s.skills || []) || []
-        if (skills.includes(conn.from)) fromC = c
-        if (skills.includes(conn.to)) toC = c
-      }
-      if (fromC && toC && fromC.id !== toC.id) {
-        if (!continentConnections.some((cc) =>
-          (cc.from.id === fromC!.id && cc.to.id === toC!.id) ||
-          (cc.from.id === toC!.id && cc.to.id === fromC!.id)
-        )) {
-          continentConnections.push({ from: fromC, to: toC })
-        }
+  // Connect each continent to its 2 nearest neighbors
+  for (let i = 0; i < allContinents.length; i++) {
+    const ci = allContinents[i]
+    const pi = FIXED_POSITIONS[ci.id] || ci.position
+    const dists = allContinents
+      .map((cj, j) => {
+        if (i === j) return { j, d: Infinity }
+        const pj = FIXED_POSITIONS[cj.id] || cj.position
+        return { j, d: Math.sqrt((pi.x - pj.x) ** 2 + (pi.y - pj.y) ** 2) }
+      })
+      .sort((a, b) => a.d - b.d)
+    for (let k = 0; k < Math.min(2, dists.length); k++) {
+      const cj = allContinents[dists[k].j]
+      if (!continentConnections.some(cc =>
+        (cc.from.id === ci.id && cc.to.id === cj.id) ||
+        (cc.from.id === cj.id && cc.to.id === ci.id)
+      )) {
+        continentConnections.push({ from: ci, to: cj })
       }
     }
   }
@@ -219,17 +279,7 @@ export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?
       }}
     >
       {/* Background image — preserves aspect ratio, fills width */}
-      <img
-        src="/bg/map-bg.png"
-        alt=""
-        draggable={false}
-        style={{
-          width: '100%', height: '100%',
-          objectFit: 'fill',
-          imageRendering: 'pixelated',
-          position: 'absolute', inset: 0,
-        }}
-      />
+      <AnimatedBg prefix="map" fallback="/bg/map-bg.png" style={{ position: 'absolute', inset: 0 }} />
       {/* Empty state */}
       {!hasData && (
         <div style={{
@@ -262,7 +312,7 @@ export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?
           />
 
           {/* Fog regions */}
-          {knowledgeMap!.fog_regions.map((fog) => (
+          {knowledgeMap!.fog_regions.filter(f => !HIDDEN_FOG.has(f.id)).map((fog) => (
             <FogSprite key={fog.id} fog={fog} />
           ))}
 

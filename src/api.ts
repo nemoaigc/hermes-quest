@@ -32,4 +32,31 @@ export async function acceptFogQuest(fogRegionId: string): Promise<{ quest_id: s
   return res.json()
 }
 
+export async function fetchTavernAmbient(): Promise<{
+  messages: Array<{ npc: string; name: string; text: string }>
+  generated_at: string
+}> {
+  const res = await fetch(`${API_URL}/api/tavern/ambient`)
+  if (!res.ok) throw new Error(`Tavern ambient failed: ${res.status}`)
+  return res.json()
+}
+
+export async function generateTavernAmbient(): Promise<{
+  messages: Array<{ npc: string; name: string; text: string }>
+  generated_at: string
+}> {
+  const res = await fetch(`${API_URL}/api/tavern/generate`, { method: 'POST' })
+  if (!res.ok) throw new Error(`Tavern generate failed: ${res.status}`)
+  return res.json()
+}
+
+export async function discardBagItem(itemId: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/bag/discard`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ item_id: itemId }),
+  })
+  if (!res.ok) throw new Error(`Discard item failed: ${res.status}`)
+}
+
 export { API_URL }

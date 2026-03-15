@@ -10,7 +10,7 @@ const CLASS_DISPLAY: Record<string, string> = {
 }
 
 function Bar({ label, current, max, color }: { label: string; current: number; max: number; color: string }) {
-  const pct = max > 0 ? Math.min(100, (current / max) * 100) : 0
+  const pct = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0
   return (
     <div style={{ marginBottom: '4px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
@@ -105,12 +105,12 @@ export default function CharacterPanel() {
           <span style={{ color: '#e8d5b0' }}>{state.skills_count}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: '#8b7355' }}>Workflows</span>
-          <span style={{ color: '#e8d5b0' }}>{state.workflows_discovered ?? 0}</span>
+          <span style={{ color: '#8b7355' }}>Gold</span>
+          <span style={{ color: '#f0e68c' }}>{state.gold ?? 0}G</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: '#8b7355' }}>Fixes</span>
-          <span style={{ color: '#e8d5b0' }}>{state.total_corrections ?? 0}</span>
+          <span style={{ color: '#8b7355' }}>Workflows</span>
+          <span style={{ color: '#e8d5b0' }}>{state.workflows_discovered ?? 0}</span>
         </div>
       </div>
     </div>

@@ -1,32 +1,41 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useStore } from '../store'
-import { SkillIcon } from '../utils/icons'
 import KnowledgeMap from './KnowledgeMap'
 import SubRegionGraph from './SubRegionGraph'
 import GuildPanel from './GuildPanel'
 import Shop from './Shop'
+import TavernAmbientChat from '../components/TavernAmbientChat'
+import { API_URL } from '../api'
 import type { TabId, NpcId } from '../types'
+
+// Extend window for SHOW TO NPC bridge
+declare global {
+  interface Window {
+    __hermesShowToNpc?: (npcId: string, message: string) => void
+  }
+}
 
 const NPCS: Array<{ id: NpcId; name: string; title: string; img: string }> = [
   { id: 'guild_master', name: 'Lyra', title: 'Guild Master', img: '/npc/guild-master.png' },
   { id: 'cartographer', name: 'Aldric', title: 'Cartographer', img: '/npc/cartographer.png' },
   { id: 'quartermaster', name: 'Kael', title: 'Quartermaster', img: '/npc/quartermaster.png' },
-  { id: 'bartender' as NpcId, name: 'Rosa', title: 'Bartender', img: '/npc/bartender.png' },
+  { id: 'bartender' as NpcId, name: 'Gus', title: 'Bartender', img: '/npc/bartender.png' },
   { id: 'sage' as NpcId, name: 'Orin', title: 'Sage', img: '/npc/sage.png' },
 ]
 
 const TABS: Array<{ id: TabId; label: string; icon: string }> = [
-  { id: 'map', label: 'MAP', icon: '🗺' },
-  { id: 'guild', label: 'GUILD', icon: '⚔' },
-  { id: 'shop', label: 'SHOP', icon: '🏪' },
-  { id: 'npc', label: 'TAVERN', icon: '🍺' },
+  { id: 'map', label: 'MAP', icon: '\u{1F5FA}' },
+  { id: 'guild', label: 'GUILD', icon: '\u2694' },
+  { id: 'shop', label: 'SHOP', icon: '\u{1F3EA}' },
+  { id: 'npc', label: 'TAVERN', icon: '\u{1F37A}' },
 ]
 
-/** Tavern scene — background + rumors button + floating rumors */
-function TavernScene({ onRumorsClick, rumors, rumorsLoading }: {
+/** Tavern scene — background + centered rumors button + floating rumors */
+function TavernScene({ onRumorsClick, rumors, rumorsLoading, onCloseRumors }: {
   onRumorsClick: () => void
   rumors: Array<{ id: string; text: string; author: string; handle: string; likes: number }>
   rumorsLoading: boolean
+  onCloseRumors: () => void
 }) {
   const showRumors = rumors.length > 0 || rumorsLoading
 
@@ -37,12 +46,13 @@ function TavernScene({ onRumorsClick, rumors, rumorsLoading }: {
         imageRendering: 'pixelated',
       }} />
 
-      {/* RUMORS button — top right corner like a notice */}
+      {/* HEAR RUMORS button — centered on the tavern scene */}
       {!showRumors && (
         <button
           onClick={onRumorsClick}
           style={{
-            position: 'absolute', top: '8px', right: '8px',
+            position: 'absolute', top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
             fontFamily: 'var(--font-pixel)', fontSize: '7px',
             padding: '6px 14px',
             background: 'linear-gradient(180deg, #5a3a1e 0%, #3a2210 100%)',
@@ -84,7 +94,7 @@ function TavernScene({ onRumorsClick, rumors, rumorsLoading }: {
                 background: 'rgba(90,60,20,0.5)', border: '1px solid #5c3a1e',
                 color: '#c8a87a',
               }}>REFRESH</button>
-              <button onClick={() => { rumors.length = 0; }} style={{
+              <button onClick={onCloseRumors} style={{
                 fontFamily: 'var(--font-pixel)', fontSize: '5px',
                 padding: '2px 6px', cursor: 'pointer',
                 background: 'transparent', border: '1px solid #5c3a1e',
@@ -135,7 +145,7 @@ function TavernScene({ onRumorsClick, rumors, rumorsLoading }: {
                   color: '#8b7355', marginTop: '2px',
                   display: 'flex', gap: '8px',
                 }}>
-                  <span>— @{r.handle}</span>
+                  <span>-- @{r.handle}</span>
                   <span style={{ color: '#6b4c2a' }}>{r.likes} likes</span>
                 </div>
               </a>
@@ -150,123 +160,26 @@ function TavernScene({ onRumorsClick, rumors, rumorsLoading }: {
 const NPC_BIOS: Record<string, { lore: string; trait: string }> = {
   guild_master: {
     lore: 'Once a legendary adventurer herself, Lyra retired to manage the guild after a fateful expedition. She has an eye for potential and knows exactly which quest will push you to grow.',
-    trait: 'Assigns quests · Evaluates progress',
+    trait: 'Assigns quests \u00B7 Evaluates progress',
   },
   cartographer: {
     lore: 'Aldric has mapped every corner of the known world and several that shouldn\'t exist. His spectacles see not just places, but the connections between all things.',
-    trait: 'Maps knowledge · Finds weak spots',
+    trait: 'Maps knowledge \u00B7 Finds weak spots',
   },
   quartermaster: {
-    lore: 'Kael earned her silver hair in battle, not from age. She knows every weapon, tool, and skill in the armory — and exactly which one you need.',
-    trait: 'Manages skills · Recommends gear',
+    lore: 'Kael earned her silver hair in battle, not from age. She knows every weapon, tool, and skill in the armory \u2014 and exactly which one you need.',
+    trait: 'Manages skills \u00B7 Recommends gear',
   },
   bartender: {
     lore: 'Rosa hears everything. Every boast, every whisper, every secret spilled over a drink. She remembers it all and shares only what matters.',
-    trait: 'Shares gossip · Tells stories',
+    trait: 'Shares gossip \u00B7 Tells stories',
   },
   sage: {
     lore: 'No one knows how old Orin truly is. Some say he\'s read every book ever written. When the world feels too complex, his wisdom cuts through the fog.',
-    trait: 'Deep analysis · Reflection',
+    trait: 'Deep analysis \u00B7 Reflection',
   },
 }
 
-/** TAVERN bottom — 5 NPC cells with embedded panel style */
-function TavernNpcBar({ onNpcClick, activeNpc, onBioClick, bioNpc }: { onNpcClick: (id: string) => void; activeNpc: string | null; onBioClick: (id: string | null) => void; bioNpc: string | null }) {
-  return (
-    <div style={{
-      display: 'flex', width: '100%', height: '100%',
-      position: 'relative',
-    }}>
-      {NPCS.map((npc, i) => {
-        const isActive = activeNpc === npc.id
-        return (
-          <div
-            key={npc.id}
-            style={{
-              flex: 1,
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              background: isActive
-                ? 'linear-gradient(180deg, rgba(50,35,20,0.6) 0%, rgba(35,25,15,0.7) 100%)'
-                : 'linear-gradient(180deg, rgba(40,28,16,0.5) 0%, rgba(28,20,12,0.6) 100%)',
-              border: '1px solid rgba(139,94,60,0.3)',
-              borderTop: '1px solid rgba(180,140,80,0.15)',
-              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3), 0 1px 0 rgba(139,94,60,0.1)',
-              borderRadius: '2px',
-              margin: '2px',
-              transition: 'background 0.15s',
-              padding: '4px 2px',
-              overflow: 'hidden',
-            }}
-          >
-            <img
-              src={npc.img}
-              alt={npc.name}
-              onClick={() => onBioClick(bioNpc === npc.id ? null : npc.id)}
-              style={{
-                width: '100%', maxWidth: '80px', aspectRatio: '1',
-                objectFit: 'cover',
-                imageRendering: 'pixelated',
-                border: 'none',
-                borderRadius: '2px',
-                cursor: 'pointer',
-                transition: 'border-color 0.15s',
-              }}
-            />
-            <span style={{
-              fontFamily: 'var(--font-pixel)',
-              fontSize: 'clamp(4px, 0.6vw, 6px)',
-              color: isActive ? '#f0e68c' : '#c8a87a',
-              marginTop: '3px',
-              letterSpacing: '0.5px',
-            }}>
-              {npc.name}
-            </span>
-            <span style={{
-              fontFamily: 'var(--font-pixel)',
-              fontSize: 'clamp(3px, 0.4vw, 5px)',
-              color: '#6a5a3a',
-            }}>
-              {npc.title}
-            </span>
-            <button
-              onClick={(e) => { e.stopPropagation(); onNpcClick(npc.id) }}
-              style={{
-                fontFamily: 'var(--font-pixel)',
-                fontSize: 'clamp(3px, 0.4vw, 5px)',
-                padding: '2px 8px',
-                marginTop: '3px',
-                cursor: 'pointer',
-                background: isActive
-                  ? 'linear-gradient(180deg, #7a5030 0%, #5a3820 100%)'
-                  : 'transparent',
-                border: isActive ? '1px solid #f0e68c' : '1px solid rgba(139,94,60,0.4)',
-                color: isActive ? '#f0e68c' : '#8b7355',
-                borderRadius: '2px',
-                letterSpacing: '1px',
-                transition: 'all 0.15s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#f0e68c'
-                e.currentTarget.style.color = '#f0e68c'
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.borderColor = 'rgba(139,94,60,0.4)'
-                  e.currentTarget.style.color = '#8b7355'
-                }
-              }}
-            >CHAT</button>
-          </div>
-        )
-      })}
-
-      {/* Bio overlay removed — now handled by NpcBioPanel in bottom bar */}
-    </div>
-  )
-}
-
-/** NPC Bio Panel — replaces bottom bar when portrait is clicked */
 /** Shared back button style */
 function BackButton({ onClick }: { onClick: () => void }) {
   return (
@@ -278,10 +191,11 @@ function BackButton({ onClick }: { onClick: () => void }) {
     }}
     onMouseEnter={e => { e.currentTarget.style.borderColor = '#f0e68c'; e.currentTarget.style.color = '#f0e68c' }}
     onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(139,94,60,0.5)'; e.currentTarget.style.color = '#8b7355' }}
-    >◀ BACK</button>
+    >{'\u25C0'} BACK</button>
   )
 }
 
+/** NPC Bio Panel — replaces bottom bar when portrait is clicked */
 function NpcBioPanel({ npc, bio, onClose }: {
   npc: typeof NPCS[0]
   bio: { lore: string; trait: string }
@@ -327,16 +241,34 @@ function NpcBioPanel({ npc, bio, onClose }: {
   )
 }
 
-/** (old RpgDialog removed — replaced by RpgDialogInline) */
-
 /** RPG dialog inline — replaces NPC bar in the bottom area */
-function RpgDialogInline({ npc, onClose }: { npc: typeof NPCS[0]; onClose: () => void }) {
-  const [messages, setMessages] = useState<Array<{ role: 'npc' | 'user'; text: string }>>([
-    { role: 'npc', text: npcGreeting(npc) },
-  ])
+function RpgDialogInline({ npc, onClose, chatHistoryRef, prefillMessage }: {
+  npc: typeof NPCS[0]
+  onClose: () => void
+  chatHistoryRef: React.MutableRefObject<Record<string, Array<{ role: 'npc' | 'user'; text: string }>>>
+  prefillMessage?: string | null
+}) {
+  const existing = chatHistoryRef.current[npc.id]
+  const [messages, setMessages] = useState<Array<{ role: 'npc' | 'user'; text: string }>>(
+    existing && existing.length > 0 ? existing : [{ role: 'npc', text: npcGreeting(npc) }]
+  )
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const suggestions = npcSuggestions(npc)
+  const prefillHandled = useRef(false)
+
+  // Persist messages back to ref on every change
+  useEffect(() => {
+    chatHistoryRef.current[npc.id] = messages
+  }, [messages, npc.id, chatHistoryRef])
+
+  // Handle prefill message from bag "SHOW TO NPC"
+  useEffect(() => {
+    if (prefillMessage && !prefillHandled.current) {
+      prefillHandled.current = true
+      handleSend(prefillMessage)
+    }
+  }, [prefillMessage])
 
   async function handleSend(msg?: string) {
     const text = (msg || input).trim()
@@ -345,10 +277,16 @@ function RpgDialogInline({ npc, onClose }: { npc: typeof NPCS[0]; onClose: () =>
     setMessages((m) => [...m, { role: 'user', text }])
     setLoading(true)
     try {
-      const res = await fetch('/api/npc/chat', {
+      const history = messages.map(m => ({ role: m.role === 'npc' ? 'assistant' : 'user', content: m.text }))
+      const res = await fetch(`${API_URL}/api/npc/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ npc: npc.id, message: text, context: { active_tab: 'npc', selected_bag_items: [], selected_region: null } }),
+        body: JSON.stringify({
+          npc: npc.id,
+          message: text,
+          history,
+          context: { active_tab: 'npc', selected_bag_items: [], selected_region: null },
+        }),
       })
       const data = await res.json()
       setMessages((m) => [...m, { role: 'npc', text: data.reply || '...' }])
@@ -366,7 +304,7 @@ function RpgDialogInline({ npc, onClose }: { npc: typeof NPCS[0]; onClose: () =>
       width: '100%', height: '100%',
       padding: '8px 12px',
     }}>
-      {/* Left: portrait + back — matches bio panel exactly */}
+      {/* Left: portrait + back */}
       <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
         <img src={npc.img} alt="" style={{
           width: '80px', height: '80px', imageRendering: 'pixelated',
@@ -377,7 +315,7 @@ function RpgDialogInline({ npc, onClose }: { npc: typeof NPCS[0]; onClose: () =>
 
       {/* Right: dialog content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
-        {/* NPC name — matches bio panel */}
+        {/* NPC name */}
         <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: '#f0e68c', letterSpacing: '1px' }}>
           {npc.name}
         </div>
@@ -465,13 +403,13 @@ function PanelCard({ children, style }: { children: React.ReactNode; style?: Rea
 }
 
 /** Reusable RPG button */
-function RpgButton({ children, onClick, disabled, small }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; small?: boolean }) {
+function RpgButton({ children, onClick, disabled, small, color }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; small?: boolean; color?: string }) {
   return (
     <button onClick={onClick} disabled={disabled} style={{
       fontFamily: 'var(--font-pixel)', fontSize: small ? '5px' : '6px',
       padding: small ? '4px 8px' : '6px 14px',
       cursor: disabled ? 'wait' : 'pointer',
-      background: disabled ? 'rgba(10,8,4,0.5)' : 'linear-gradient(180deg, #6a4428 0%, #4a2a14 50%, #3a2210 100%)',
+      background: disabled ? 'rgba(10,8,4,0.5)' : color ? color : 'linear-gradient(180deg, #6a4428 0%, #4a2a14 50%, #3a2210 100%)',
       border: '2px solid #6b4c2a',
       color: '#f0e68c',
       boxShadow: disabled ? 'none' : '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,140,0.1)',
@@ -515,7 +453,7 @@ function MapBottomInfo() {
               const cy = 50 + Math.sin(angle) * r
               const catColor: Record<string, string> = { coding: 'var(--cyan)', research: 'var(--purple)', automation: 'var(--gold)', creative: '#ff9944' }
               return (
-                <div key={w.id} title={`${w.name} — ${Math.round((w.mastery || 0) * 100)}%`} style={{
+                <div key={w.id} title={`${w.name} \u2014 ${Math.round((w.mastery || 0) * 100)}%`} style={{
                   position: 'absolute',
                   left: `${cx}%`, top: `${cy}%`,
                   transform: 'translate(-50%, -50%)',
@@ -537,7 +475,7 @@ function MapBottomInfo() {
                 return <line key={i} x1={`${50 + Math.cos(a1) * 30}%`} y1={`${50 + Math.sin(a1) * 30}%`} x2={`${50 + Math.cos(a2) * 30}%`} y2={`${50 + Math.sin(a2) * 30}%`} stroke="rgba(139,94,60,0.3)" strokeWidth="1" strokeDasharray="3 2" />
               })}
             </svg>
-            {fogCount > 0 && <div style={{ position: 'absolute', bottom: '2px', right: '4px', fontSize: '4px', color: '#6a5a3a', fontFamily: 'var(--font-pixel)' }}>?×{fogCount}</div>}
+            {fogCount > 0 && <div style={{ position: 'absolute', bottom: '2px', right: '4px', fontSize: '4px', color: '#6a5a3a', fontFamily: 'var(--font-pixel)' }}>?x{fogCount}</div>}
           </>
         )}
       </PanelCard>
@@ -555,18 +493,19 @@ function MapBottomInfo() {
           </PanelCard>
         </div>
         <RpgButton onClick={startCycle} disabled={cycleLoading}>
-          {cycleLoading ? 'EXPLORING...' : '▶ START CYCLE'}
+          {cycleLoading ? 'EXPLORING...' : '\u25B6 START CYCLE'}
         </RpgButton>
       </div>
     </div>
   )
 }
 
-/** GUILD bottom — two columns: task list + input & Lyra */
+/** GUILD bottom — task list with DONE buttons */
 function GuildBottomInfo() {
   const quests = useStore((s) => s.quests)
   const [input, setInput] = useState('')
   const [creating, setCreating] = useState(false)
+  const [completing, setCompleting] = useState<string | null>(null)
   const activeQuests = quests.filter((q) => q.status === 'active' || q.status === 'in_progress' || q.status === 'pending')
 
   async function createTask() {
@@ -578,6 +517,18 @@ function GuildBottomInfo() {
       await fetch('/api/quest/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, source: 'user' }) })
     } catch {}
     setCreating(false)
+  }
+
+  async function completeQuest(questId: string) {
+    setCompleting(questId)
+    try {
+      await fetch(`${API_URL}/api/quest/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quest_id: questId }),
+      })
+    } catch {}
+    setCompleting(null)
   }
 
   return (
@@ -599,8 +550,25 @@ function GuildBottomInfo() {
             <div style={{ color: '#e8d5b0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.title}</div>
             <div style={{ fontSize: '6px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '1px' }}>{q.source === 'user' ? 'YOU' : 'AGENT'}</div>
           </div>
-          <div style={{ width: '60px', height: '6px', background: 'rgba(10,8,4,0.6)', border: '1px solid rgba(139,94,60,0.3)', borderRadius: '1px', marginLeft: '8px' }}>
-            <div style={{ height: '100%', width: `${q.progress * 100}%`, background: q.progress > 0.5 ? 'var(--green)' : 'var(--cyan)', borderRadius: '1px', transition: 'width 0.3s' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+            <div style={{ width: '60px', height: '6px', background: 'rgba(10,8,4,0.6)', border: '1px solid rgba(139,94,60,0.3)', borderRadius: '1px' }}>
+              <div style={{ height: '100%', width: `${q.progress * 100}%`, background: q.progress > 0.5 ? 'var(--green)' : 'var(--cyan)', borderRadius: '1px', transition: 'width 0.3s' }} />
+            </div>
+            <button
+              onClick={() => completeQuest(q.id)}
+              disabled={completing === q.id}
+              style={{
+                fontFamily: 'var(--font-pixel)', fontSize: '5px',
+                padding: '2px 6px', cursor: completing === q.id ? 'wait' : 'pointer',
+                background: 'linear-gradient(180deg, #2a6a28 0%, #1a4a14 100%)',
+                border: '1px solid #4a8a44',
+                color: '#90ee90',
+                borderRadius: '2px',
+                letterSpacing: '0.5px',
+              }}
+            >
+              {completing === q.id ? '...' : 'DONE'}
+            </button>
           </div>
         </div>
       ))}
@@ -683,6 +651,66 @@ function ShopBottomInfo() {
   )
 }
 
+/** TAVERN bottom panel — compact NPC head strip + TavernAmbientChat */
+function TavernBottomPanel({ onNpcClick, activeNpc, onBioClick, onRumorsClick, rumorsLoading }: {
+  onNpcClick: (id: string) => void
+  activeNpc: string | null
+  onBioClick: (id: string) => void
+  onRumorsClick: () => void
+  rumorsLoading: boolean
+}) {
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column',
+      width: '100%', height: '100%',
+      overflow: 'hidden',
+    }}>
+      {/* NPC head strip — 32px images in a row */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '4px',
+        padding: '4px 8px',
+        background: 'rgba(26,18,10,0.6)',
+        borderBottom: '1px solid rgba(139,94,60,0.3)',
+        flexShrink: 0,
+      }}>
+        <span style={{
+          fontFamily: 'var(--font-pixel)', fontSize: '5px',
+          color: '#5c4a2a', letterSpacing: '1px', marginRight: '4px',
+        }}>NPC</span>
+        {NPCS.map((npc) => {
+          const isActive = activeNpc === npc.id
+          return (
+            <img
+              key={npc.id}
+              src={npc.img}
+              alt={npc.name}
+              title={`${npc.name} - ${npc.title} (click to chat, right-click for bio)`}
+              onClick={() => onNpcClick(npc.id)}
+              onContextMenu={(e) => { e.preventDefault(); onBioClick(npc.id) }}
+              style={{
+                width: '32px', height: '32px',
+                objectFit: 'cover',
+                imageRendering: 'pixelated',
+                borderRadius: '2px',
+                border: isActive ? '2px solid #f0e68c' : '2px solid rgba(139,94,60,0.3)',
+                cursor: 'pointer',
+                transition: 'border-color 0.15s',
+              }}
+              onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.borderColor = '#8b7355' }}
+              onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = 'rgba(139,94,60,0.3)' }}
+            />
+          )
+        })}
+      </div>
+
+      {/* TavernAmbientChat fills the rest */}
+      <div style={{ flex: 1, overflow: 'hidden' }}>
+        <TavernAmbientChat onRumorsClick={onRumorsClick} rumorsLoading={rumorsLoading} />
+      </div>
+    </div>
+  )
+}
+
 export default function CenterTabs() {
   const activeTab = useStore((s) => s.activeTab)
   const setActiveTab = useStore((s) => s.setActiveTab)
@@ -694,18 +722,42 @@ export default function CenterTabs() {
   const knowledgeMap = useStore((s) => s.knowledgeMap)
   const [cycleLoading, setCycleLoading] = useState(false)
   const [rumors, setRumors] = useState<Array<{ id: string; text: string; author: string; handle: string; likes: number; time: string }>>([])
-  const [_rumorsOpen, setRumorsOpen] = useState(false)
   const [rumorsLoading, setRumorsLoading] = useState(false)
 
+  // Persist NPC chat history across open/close
+  const chatHistoryRef = useRef<Record<string, Array<{ role: 'npc' | 'user'; text: string }>>>({})
+
+  // Prefill message for "SHOW TO NPC" bag feature
+  const [npcPrefill, setNpcPrefill] = useState<string | null>(null)
+
+  // Register global bridge for SHOW TO NPC
+  useEffect(() => {
+    window.__hermesShowToNpc = (npcId: string, message: string) => {
+      setActiveTab('npc')
+      setNpcPrefill(message)
+      setActiveNpc(npcId)
+      setBioNpcId(null)
+    }
+    return () => { window.__hermesShowToNpc = undefined }
+  }, [setActiveTab])
+
+  // Clear prefill after NPC changes
+  useEffect(() => {
+    if (!activeNpc) setNpcPrefill(null)
+  }, [activeNpc])
+
   async function fetchRumors() {
-    setRumorsOpen(true)
     setRumorsLoading(true)
     try {
-      const res = await fetch('/api/rumors/feed?max=15')
+      const res = await fetch(`${API_URL}/api/rumors/feed?max=15`)
       const data = await res.json()
       if (data.ok) setRumors(data.rumors)
     } catch { /* ignore */ }
     setRumorsLoading(false)
+  }
+
+  function closeRumors() {
+    setRumors([])
   }
 
   return (
@@ -758,7 +810,7 @@ export default function CenterTabs() {
         {activeTab === 'map' && <KnowledgeMap onContinentSelect={setMapSelectedContinent} />}
         {activeTab === 'guild' && <GuildPanel />}
         {activeTab === 'shop' && <Shop />}
-        {activeTab === 'npc' && <TavernScene onRumorsClick={() => fetchRumors()} rumors={rumors} rumorsLoading={rumorsLoading} />}
+        {activeTab === 'npc' && <TavernScene onRumorsClick={() => fetchRumors()} rumors={rumors} rumorsLoading={rumorsLoading} onCloseRumors={closeRumors} />}
       </div>
       {/* Bottom bar */}
       <div style={{
@@ -770,14 +822,29 @@ export default function CenterTabs() {
         display: 'flex',
         alignItems: 'stretch',
         justifyContent: 'center',
-        padding: '10px 14px',
+        padding: activeTab === 'npc' && !selectedNpc && !bioNpcData ? '0' : '10px 14px',
         overflow: 'auto',
         position: 'relative',
       } as React.CSSProperties}>
-        {/* No edge line for MAP (knowledge graph fills it) */}
-        {activeTab === 'npc' && !selectedNpc && !bioNpcData && <TavernNpcBar onNpcClick={setActiveNpc} activeNpc={activeNpc} onBioClick={setBioNpcId} bioNpc={bioNpcId} />}
+        {/* TAVERN: compact head strip + ambient chat (default), or private chat, or bio */}
+        {activeTab === 'npc' && !selectedNpc && !bioNpcData && (
+          <TavernBottomPanel
+            onNpcClick={setActiveNpc}
+            activeNpc={activeNpc}
+            onBioClick={(id) => setBioNpcId(id)}
+            onRumorsClick={() => fetchRumors()}
+            rumorsLoading={rumorsLoading}
+          />
+        )}
         {activeTab === 'npc' && !selectedNpc && bioNpcData && <NpcBioPanel npc={bioNpcData} bio={NPC_BIOS[bioNpcId!]} onClose={() => setBioNpcId(null)} onChat={() => { setActiveNpc(bioNpcId!); setBioNpcId(null) }} />}
-        {activeTab === 'npc' && selectedNpc && <RpgDialogInline npc={selectedNpc} onClose={() => setActiveNpc(null)} />}
+        {activeTab === 'npc' && selectedNpc && (
+          <RpgDialogInline
+            npc={selectedNpc}
+            onClose={() => setActiveNpc(null)}
+            chatHistoryRef={chatHistoryRef}
+            prefillMessage={npcPrefill}
+          />
+        )}
         {activeTab === 'map' && (() => {
           const selected = mapSelectedContinent && knowledgeMap
             ? (knowledgeMap.continents || knowledgeMap.workflows || []).find((c) => c.id === mapSelectedContinent)
@@ -797,7 +864,7 @@ export default function CenterTabs() {
                       fetch('/api/cycle/start', { method: 'POST' }).catch(() => {})
                       setTimeout(() => setCycleLoading(false), 5000)
                     }} disabled={cycleLoading} small>
-                      {cycleLoading ? '...' : '▶ CYCLE'}
+                      {cycleLoading ? '...' : '\u25B6 CYCLE'}
                     </RpgButton>
                   }
                 />
@@ -809,8 +876,6 @@ export default function CenterTabs() {
         {activeTab === 'guild' && <GuildBottomInfo />}
         {activeTab === 'shop' && <ShopBottomInfo />}
       </div>
-
-      {/* Rumors floating overlay — shows on tavern scene */}
     </div>
   )
 }

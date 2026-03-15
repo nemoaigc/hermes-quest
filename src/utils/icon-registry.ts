@@ -26,50 +26,59 @@ const CAT_TO_CONTINENT: Record<string, string> = {
   'leisure': 'creative-arts',
 }
 
-// Hand-curated mapping: actual skill name → best matching icon filename
+// Hand-curated mapping: actual skill name → generated icon
 const EXACT_MAP: Record<string, string> = {
-  // coding / software-development
-  'code-review':              '/skills/software-engineering/code-review-eye-symbol-with-golden-frame.png',
-  'github-code-review':       '/skills/software-engineering/code-review-eye-symbol-with-golden-frame.png',
-  'requesting-code-review':   '/skills/software-engineering/code-review-eye-symbol-with-golden-frame.png',
-  'codebase-inspection':      '/skills/software-engineering/refactor-golden-wrench-reshaping-code-bl.png',
-  'systematic-debugging':     '/skills/software-engineering/debug-magnifying-glass-over-a-red-bug.png',
-  'test-driven-development':  '/skills/software-engineering/testing-green-checkmark-on-a-shield.png',
-  'writing-plans':            '/skills/software-engineering/architecture-blueprint-scroll-with-castl.png',
-  'subagent-driven-development': '/skills/software-engineering/microservices-cluster-of-small-connected.png',
-  'basic-programming':        '/skills/software-engineering/python-snake-coiled-around-a-code-scroll.png',
-  'codex':                    '/skills/software-engineering/typescript-blue-diamond-with-ts-rune.png',
-  'github-auth':              '/skills/software-engineering/oauth-golden-token-with-key-hole.png',
-  'github-issues':            '/skills/software-engineering/git-branching-tree-with-red-nodes.png',
-  'github-pr-workflow':       '/skills/software-engineering/git-branching-tree-with-red-nodes.png',
-  'github-repo-management':   '/skills/software-engineering/database-golden-cylinder-with-sparkle.png',
+  // coding / software-development (b1)
+  'code-review':              '/skills/generated/skill-review.png',
+  'github-code-review':       '/skills/generated/skill-review.png',
+  'requesting-code-review':   '/skills/generated/skill-review.png',
+  'codebase-inspection':      '/skills/generated/skill-inspect.png',
+  'systematic-debugging':     '/skills/generated/skill-debug.png',
+  'test-driven-development':  '/skills/generated/skill-test.png',
+  'writing-plans':            '/skills/generated/skill-plan.png',
+  'plan':                     '/skills/generated/skill-plan.png',
+  'subagent-driven-development': '/skills/generated/skill-agent.png',
+  'basic-programming':        '/skills/generated/skill-basic.png',
+  'codex':                    '/skills/generated/skill-codex.png',
+  'opencode':                 '/skills/generated/skill-opencode.png',
+  'github-auth':              '/skills/generated/skill-auth.png',
+  'github-issues':            '/skills/generated/skill-issues.png',
+  'github-pr-workflow':       '/skills/generated/skill-pr.png',
+  'github-repo-management':   '/skills/generated/skill-repo.png',
 
-  // research
-  'arxiv':                    '/skills/research-knowledge/literature-review-open-book-with-magnify.png',
-  'blogwatcher':              '/skills/research-knowledge/nlp-speech-bubble-with-neural-pattern.png',
-  'domain-intel':             '/skills/research-knowledge/data-analysis-bar-chart-crystal-ball.png',
-  'duckduckgo-search':        '/skills/research-knowledge/hypothesis-lightbulb-with-question-mark.png',
-  'ocr-and-documents':        '/skills/research-knowledge/academic-writing-quill-pen-on-paper.png',
+  // research (b3)
+  'arxiv':                    '/skills/generated/skill-arxiv.png',
+  'blogwatcher':              '/skills/generated/skill-blogs.png',
+  'domain-intel':             '/skills/generated/skill-intel.png',
+  'duckduckgo-search':        '/skills/generated/skill-search.png',
+  'ocr-and-documents':        '/skills/generated/skill-ocr.png',
+  'parallel-cli':             '/skills/generated/skill-parallel.png',
 
-  // automation
-  'google-workspace':         '/skills/automation-tools/integration-puzzle-pieces-connecting.png',
-  'himalaya':                 '/skills/automation-tools/email-envelope-with-wing-feathers.png',
-  'obsidian':                 '/skills/automation-tools/file-processing-folder-with-spinning-gea.png',
-  'nano-pdf':                 '/skills/automation-tools/pdf-red-document-with-seal-stamp.png',
-  'powerpoint':               '/skills/automation-tools/file-processing-folder-with-spinning-gea.png',
-  'mcporter':                 '/skills/automation-tools/mcp-server-crystal-server-tower-with-plu.png',
-  'native-mcp':               '/skills/automation-tools/mcp-server-crystal-server-tower-with-plu.png',
-  'hermes-agent-spawning':    '/skills/automation-tools/deploy-rocket-launching-upward.png',
+  // automation (b2)
+  'google-workspace':         '/skills/generated/skill-suite.png',
+  'himalaya':                 '/skills/generated/skill-email.png',
+  'obsidian':                 '/skills/generated/skill-obsidian.png',
+  'nano-pdf':                 '/skills/generated/skill-pdf-tool.png',
+  'powerpoint':               '/skills/generated/skill-ppt.png',
+  'mcporter':                 '/skills/generated/skill-porter.png',
+  'native-mcp':               '/skills/generated/skill-mcp.png',
+  'hermes-agent-spawning':    '/skills/generated/skill-spawn.png',
+  'linear':                   '/skills/generated/skill-linear.png',
 
-  // creative
-  'ascii-art':                '/skills/creative-arts/pixel-art-tiny-grid-with-colored-squares.png',
-  'ascii-video':              '/skills/creative-arts/animation-film-strip-with-movement-lines.png',
-  'excalidraw':               '/skills/creative-arts/drawing-pencil-with-rainbow-trail.png',
-  'find-nearby':              '/skills/creative-arts/photography-camera-lens-with-light-rays.png',
+  // creative (b3)
+  'ascii-art':                '/skills/generated/skill-ascii.png',
+  'ascii-video':              '/skills/generated/skill-ascii.png',
+  'excalidraw':               '/skills/generated/skill-draw.png',
+  'find-nearby':              '/skills/generated/skill-explore.png',
+  'jupyter-live-kernel':      '/skills/generated/skill-jupyter.png',
 
-  // other
-  'quest':                    '/skills/software-engineering/api-golden-key-with-gear-teeth.png',
-  'dogfood':                  '/skills/automation-tools/cli-tools-hammer-and-chisel.png',
+  // other (b4)
+  'quest':                    '/skills/generated/skill-quest.png',
+  'dogfood':                  '/skills/generated/skill-dogfood.png',
+  'xitter':                   '/skills/generated/skill-twitter.png',
+
+  // fallback coding icons (b1)
+  '':                         '/skills/generated/skill-code.png',
 }
 
 // Deterministic hash
@@ -109,19 +118,36 @@ export function getSkillIconPath(name: string, category?: string): string | null
   // 1. Exact curated match
   if (EXACT_MAP[key]) return EXACT_MAP[key]
 
-  // 2. Category-based hash fallback (for future/unknown skills)
-  if (!manifest) return null
-  const continent = CAT_TO_CONTINENT[category || ''] || 'software-engineering'
-  const files = manifest.skills[continent]
-  if (!files || files.length === 0) return null
-  const idx = hash(key) % files.length
-  return `/skills/${continent}/${files[idx]}`
+  // 2. Fallback to generated skill icons (hash-based)
+  const generatedIcons = [
+    'review','github','debug','test','plan','code','arch','git',
+    'obsidian','mcp','email','linear','pdf-tool','ppt','suite','spawn',
+    'arxiv','blogs','intel','search','ocr','ascii','draw','jupyter',
+    'quest','dogfood','twitter','explore','codex','opencode','pr','cli',
+    'parallel','agent','inspect','issues','repo','auth','porter','basic',
+  ]
+  const idx = hash(key) % generatedIcons.length
+  return `/skills/generated/skill-${generatedIcons[idx]}.png`
 }
 
 /**
  * Get icon path for an item by type.
  */
+// File extension icons available in /items/
+const FILE_TYPE_ICONS = new Set([
+  'md','txt','pdf','docx','xlsx','pptx','csv',
+  'py','js','ts','json','yaml','html','css',
+  'png','jpg','mp3','mp4','svg',
+  'zip','tar','log','sh','env','sql','docker','git',
+])
+
 export function getItemIconPath(type: string): string | null {
+  // Check for file extension icon first (e.g. icon="md" → /items/item-md.png)
+  const lower = (type || '').toLowerCase()
+  if (FILE_TYPE_ICONS.has(lower)) {
+    return `/items/item-${lower}.png`
+  }
+
   if (!manifest) return null
   const typeMap: Record<string, string> = {
     'scroll': 'scrolls', 'research_note': 'scrolls',
@@ -129,10 +155,10 @@ export function getItemIconPath(type: string): string | null {
     'code_snippet': 'scrolls', 'code': 'scrolls',
     'map_fragment': 'equipment', 'map': 'equipment',
   }
-  const cat = typeMap[type.toLowerCase()] || 'scrolls'
+  const cat = typeMap[lower] || 'scrolls'
   const files = manifest.items[cat]
   if (!files || files.length === 0) return null
-  const idx = hash(type.toLowerCase()) % files.length
+  const idx = hash(lower) % files.length
   return `/items/${cat}/${files[idx]}`
 }
 

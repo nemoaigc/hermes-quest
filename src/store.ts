@@ -159,8 +159,9 @@ export const useStore = create<Store>((set) => ({
     set({ state: compat })
   },
   addEvent: (e) => set((prev) => {
-    const key = `${e.ts}-${e.type}`
-    if (prev.events.some((x) => `${x.ts}-${x.type}` === key)) return prev
+    const dataFp = e.data ? JSON.stringify(e.data).slice(0, 60) : ''
+    const key = `${e.ts}-${e.type}-${dataFp}`
+    if (prev.events.some((x) => `${x.ts}-${x.type}-${(x.data ? JSON.stringify(x.data).slice(0, 60) : '')}` === key)) return prev
     return { events: [e, ...prev.events].slice(0, 200) }
   }),
   setEvents: (e) => set({ events: e }),

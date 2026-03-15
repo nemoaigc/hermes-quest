@@ -92,6 +92,42 @@ const EVENT_CONFIG: Record<string, { color: string; format: (data: Record<string
     color: 'var(--red)',
     format: (d) => `Cycle skipped: ${(d.reason as string) || 'unknown reason'}`,
   },
+  workflow_discover: {
+    color: 'var(--gold)',
+    format: (d) => `New workflow discovered: ${(d.name as string) || (d.workflow as string) || 'unknown'}!`,
+  },
+  fog_appear: {
+    color: 'var(--purple)',
+    format: (d) => `Mysterious fog appeared: ${(d.hint as string) || 'something stirs...'}`,
+  },
+  fog_clear: {
+    color: 'var(--cyan)',
+    format: (d) => `Fog cleared! Revealed: ${(d.name as string) || 'new territory'}`,
+  },
+  user_feedback: {
+    color: 'var(--gold)',
+    format: (d) => `Adventurer feedback: ${(d.feedback_type as string) === 'positive' || (d.feedback_type as string) === 'up' ? '👍' : '👎'}${d.reason ? ` — ${d.reason}` : ''}`,
+  },
+  reflection_letter: {
+    color: 'var(--purple)',
+    format: () => `Hermes has written a reflection letter...`,
+  },
+  mp_change: {
+    color: 'var(--cyan)',
+    format: (d) => `Morale ${(d.delta as number) > 0 ? 'boosted' : 'drained'}: ${(d.delta as number) > 0 ? '+' : ''}${d.delta} MP${d.reason ? ` — ${d.reason}` : ''}`,
+  },
+  understanding_update: {
+    color: 'var(--cyan)',
+    format: (d) => `Understanding updated: ${Math.round(((d.value as number) || 0) * 100)}%`,
+  },
+  positive_signal: {
+    color: 'var(--green)',
+    format: (d) => `Positive signal: ${(d.detail as string) || 'good progress'}`,
+  },
+  correction_signal: {
+    color: 'var(--red)',
+    format: (d) => `Correction needed: ${(d.detail as string) || 'adjustment required'}`,
+  },
 }
 
 export function formatEvent(event: GameEvent) {

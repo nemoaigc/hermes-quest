@@ -84,20 +84,19 @@ export interface Quest {
 
 // --- Bag Items ---
 
-export type BagItemType = 'research_note' | 'training_report' | 'code_snippet' | 'map_fragment' | 'reflection_letter'
-export type BagItemIcon = 'scroll' | 'book' | 'code' | 'map'
-export type Rarity = 'common' | 'rare' | 'epic' | 'legendary'
+export type BagItemType = 'research_note' | 'training_report' | 'code_snippet' | 'map_fragment' | 'reflection_letter' | 'file'
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
 
 export interface BagItem {
   id: string
-  type: BagItemType
+  type?: BagItemType
   name: string
   description: string
   workflow_id?: string | null
-  source_quest: string | null
-  created_at: string
-  file_path: string
-  icon: BagItemIcon
+  source_quest?: string | null
+  created_at?: string
+  file_path?: string
+  icon?: string
   rarity: Rarity
 }
 
@@ -110,6 +109,7 @@ export type TabId = 'map' | 'guild' | 'shop' | 'npc'
 export interface NpcChatRequest {
   npc: NpcId
   message: string
+  history?: Array<{ role: string; content: string }>
   context: {
     active_tab: TabId
     selected_bag_items: string[]

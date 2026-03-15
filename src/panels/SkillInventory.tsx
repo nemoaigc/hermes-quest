@@ -20,8 +20,10 @@ export default function SkillInventory() {
   async function forgetSkill(name: string) {
     setForgetting(true)
     try {
-      await fetch(`${API_URL}/api/skills/${encodeURIComponent(name)}`, { method: 'DELETE' })
+      const del = await fetch(`${API_URL}/api/skills/${encodeURIComponent(name)}`, { method: 'DELETE' })
+      if (!del.ok) throw new Error(`Delete failed: ${del.status}`)
       const res = await fetch(`${API_URL}/api/skills`)
+      if (!res.ok) throw new Error(`Refresh failed: ${res.status}`)
       setSkills(await res.json())
       setSelected(null)
     } catch (e) {
@@ -51,7 +53,7 @@ export default function SkillInventory() {
           <button className="pixel-btn" onClick={() => setSelected(null)} style={{ fontSize: '6px', padding: '3px 8px' }}>◀ BACK</button>
           <button
             className="pixel-btn"
-            onClick={() => forgetSkill(selectedSkill.name)}
+            onClick={() => { if (confirm(`Forget "${selectedSkill.name}"? This cannot be undone.`)) forgetSkill(selectedSkill.name) }}
             disabled={forgetting}
             style={{ fontSize: '6px', padding: '3px 8px', color: 'var(--red)', borderColor: 'var(--red)' }}
           >{forgetting ? '...' : 'FORGET'}</button>

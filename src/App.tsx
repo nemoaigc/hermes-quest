@@ -1,15 +1,147 @@
+import { useState, useEffect } from 'react'
 import { useWebSocket } from './websocket'
+import { useStore } from './store'
 import TopBar from './panels/TopBar'
 import CharacterPanel from './panels/CharacterPanel'
 import AdventureLog from './panels/AdventureLog'
 import CenterTabs from './panels/CenterTabs'
 import SkillPanel from './panels/SkillPanel'
 import BagPanel from './panels/BagPanel'
+import ReflectionLetter from './components/ReflectionLetter'
+
+// Pre-load all background images + NPC portraits
+const PRELOAD_IMAGES = [
+  '/bg/map-bg.png',
+  '/bg/npc-bg.png',
+  '/bg/guild-bg.png',
+  '/bg/shop-bg.png',
+  '/bg/anim/map-1.png', '/bg/anim/map-2.png', '/bg/anim/map-3.png',
+  '/bg/anim/tavern-1.png', '/bg/anim/tavern-2.png', '/bg/anim/tavern-3.png',
+  '/bg/anim/guild-1.png', '/bg/anim/guild-2.png', '/bg/anim/guild-3.png',
+  '/bg/anim/shop-1.png', '/bg/anim/shop-2.png', '/bg/anim/shop-3.png',
+  '/npc/guild-master.png', '/npc/cartographer.png', '/npc/quartermaster.png',
+  '/npc/bartender.png', '/npc/sage.png',
+  '/sprites/fog.png',
+]
+
+function preloadImages(): Promise<void> {
+  return new Promise(resolve => {
+    let loaded = 0
+    const total = PRELOAD_IMAGES.length
+    if (total === 0) { resolve(); return }
+
+    PRELOAD_IMAGES.forEach(src => {
+      const img = new Image()
+      img.onload = img.onerror = () => {
+        loaded++
+        if (loaded >= total) resolve()
+      }
+      img.src = src
+    })
+
+    // Safety timeout — don't block forever
+    setTimeout(resolve, 5000)
+  })
+}
+
+function LoadingScreen({ progress }: { progress: number }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: '#0d0a06',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      fontFamily: 'var(--font-pixel)',
+      zIndex: 99999,
+    }}>
+      <div style={{ fontSize: '14px', letterSpacing: '4px', color: '#f0e68c', marginBottom: '6px' }}>
+        HERMES QUEST
+      </div>
+      <div style={{ fontSize: '6px', color: '#8b7355', marginBottom: '24px', letterSpacing: '2px' }}>
+        AI Self-Evolution RPG
+      </div>
+      <div style={{
+        width: '160px', height: '8px',
+        background: '#1a140c',
+        border: '2px solid #3a2210',
+        boxShadow: 'inset 0 1px 0 #0d0a06',
+      }}>
+        <div style={{
+          height: '100%',
+          width: `${progress}%`,
+          background: 'linear-gradient(90deg, #5c3a1e, #f0e68c)',
+          transition: 'width 0.3s',
+        }} />
+      </div>
+      <div style={{ fontSize: '5px', color: '#5c4a2a', marginTop: '8px' }}>
+        {progress < 30 ? 'LOADING ASSETS...' : progress < 70 ? 'PREPARING WORLD...' : 'ENTERING TAVERN...'}
+      </div>
+    </div>
+  )
+}
+
+function InventoryWrapper() {
+  const count = useStore((s) => s.bagItems.length)
+  return (
+    <div className="pixel-panel" style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+      <div className="pixel-panel-title" style={{ textAlign: 'center' }}>INVENTORY ({count})</div>
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        <BagPanel />
+      </div>
+    </div>
+  )
+}
 
 export default function App() {
+  const [ready, setReady] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const state = useStore((s) => s.state)
+
   useWebSocket()
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      // Phase 1: start progress
+      setProgress(10)
+      await new Promise(r => setTimeout(r, 300))
+      if (cancelled) return
+
+      // Phase 2: preload images
+      setProgress(30)
+      await preloadImages()
+      if (cancelled) return
+      setProgress(70)
+
+      // Phase 3: wait for initial data (state from WebSocket)
+      await new Promise<void>(resolve => {
+        const check = () => {
+          if (useStore.getState().state) { resolve(); return }
+          setTimeout(check, 200)
+        }
+        check()
+        setTimeout(resolve, 3000) // Safety timeout
+      })
+      if (cancelled) return
+      setProgress(100)
+
+      // Phase 4: small delay for visual polish
+      await new Promise(r => setTimeout(r, 400))
+      if (cancelled) return
+      setReady(true)
+    }
+
+    load()
+    return () => { cancelled = true }
+  }, [])
+
+  if (!ready) {
+    return <LoadingScreen progress={progress} />
+  }
+
   return (
+    <>
+    <ReflectionLetter />
     <div style={{
       display: 'grid',
       gridTemplateRows: 'auto 1fr',
@@ -18,7 +150,7 @@ export default function App() {
       padding: '2px',
     }}>
       <TopBar />
-      <div style={{
+      <div className="dashboard-grid" style={{
         display: 'grid',
         gridTemplateColumns: '240px 1fr 280px',
         gap: '2px',
@@ -38,14 +170,10 @@ export default function App() {
         {/* Right: Skills + Inventory (equal height) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
           <SkillPanel />
-          <div className="pixel-panel" style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-            <div className="pixel-panel-title" style={{ textAlign: 'center' }}>INVENTORY</div>
-            <div style={{ flex: 1, overflow: 'auto' }}>
-              <BagPanel />
-            </div>
-          </div>
+          <InventoryWrapper />
         </div>
       </div>
     </div>
+    </>
   )
 }

@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import { useStore } from '../store'
-import { acceptQuest } from '../api'
+import { acceptQuest, API_URL } from '../api'
+import AnimatedBg from '../components/AnimatedBg'
 import type { RecommendedQuest } from '../types'
 
-// 6 parchment slot positions — mapped to bulletin-bg.png (1024x572)
-// Cork board area: ~22%-78% left, ~12%-82% top
+// 6 parchment slot positions — pixel-measured from bulletin-bg.png (1024x572)
+// Parchment cols: 30.3-39.7%, 45.2-54.8%, 60.3-69.7%
+// Parchment rows: 25.9-48.4%, 52.3-75.0%
 const PARCHMENT_SLOTS = [
-  { left: 23, top: 12, width: 16, height: 33 },  // row 1 col 1
-  { left: 41, top: 12, width: 16, height: 33 },  // row 1 col 2
-  { left: 59, top: 12, width: 16, height: 33 },  // row 1 col 3
-  { left: 23, top: 48, width: 16, height: 33 },  // row 2 col 1
-  { left: 41, top: 48, width: 16, height: 33 },  // row 2 col 2
-  { left: 59, top: 48, width: 16, height: 33 },  // row 2 col 3
+  { left: 30.3, top: 25.9, width: 9.4, height: 22.5 },  // row 1 col 1
+  { left: 45.2, top: 25.9, width: 9.6, height: 22.5 },  // row 1 col 2
+  { left: 60.3, top: 25.9, width: 9.4, height: 22.5 },  // row 1 col 3
+  { left: 30.3, top: 52.3, width: 9.4, height: 22.7 },  // row 2 col 1
+  { left: 45.2, top: 52.3, width: 9.6, height: 22.7 },  // row 2 col 2
+  { left: 60.3, top: 52.3, width: 9.4, height: 22.7 },  // row 2 col 3
 ]
 
 const RANK_COLOR: Record<string, string> = {
@@ -94,6 +96,7 @@ function QuestSlot({ quest, slot, onAccept, accepting }: {
 
 export default function BulletinBoard() {
   const knowledgeMap = useStore((s) => s.knowledgeMap)
+  const setQuests = useStore((s) => s.setQuests)
   const [accepting, setAccepting] = useState<string | null>(null)
   const [page, setPage] = useState(0)
 
@@ -104,7 +107,12 @@ export default function BulletinBoard() {
 
   async function handleAccept(questId: string) {
     setAccepting(questId)
-    try { await acceptQuest(questId) } catch (e) { console.error(e) }
+    try {
+      await acceptQuest(questId)
+      // Refresh quests after accept
+      const res = await fetch(`${API_URL}/api/quest/active`)
+      if (res.ok) { const d = await res.json(); setQuests(d.quests || []) }
+    } catch (e) { console.error(e) }
     setAccepting(null)
   }
 
@@ -113,11 +121,7 @@ export default function BulletinBoard() {
       width: '100%', height: '100%',
       position: 'relative', overflow: 'hidden',
     }}>
-      <img src="/bg/bulletin-bg.png" alt="" draggable={false} style={{
-        width: '100%', height: '100%',
-        objectFit: 'fill', imageRendering: 'pixelated',
-        position: 'absolute', inset: 0,
-      }} />
+      <AnimatedBg prefix="guild" fallback="/bg/bulletin-bg.png" style={{ position: 'absolute', inset: 0 }} />
       {displayed.map((quest, i) => {
         const slot = PARCHMENT_SLOTS[i]
         if (!slot) return null
