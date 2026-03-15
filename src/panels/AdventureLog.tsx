@@ -31,8 +31,9 @@ export default function AdventureLog() {
   }
 
   return (
-    <div className="pixel-panel" style={{ overflow: 'auto', height: '100%' }}>
+    <div className="pixel-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div className="pixel-panel-title" style={{ textAlign: 'center' }}>CHRONICLE</div>
+      <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
       {events.length === 0 ? (
         <div style={{
           color: 'var(--text-dim)', fontSize: '10px', padding: '12px', textAlign: 'center',
@@ -123,6 +124,23 @@ export default function AdventureLog() {
               </div>
             )
           })}
+        </div>
+      )}
+      </div>
+      {events.length > 0 && (
+        <div style={{
+          flexShrink: 0, padding: '4px 8px',
+          borderTop: '1px solid rgba(107,76,42,0.3)',
+          display: 'flex', justifyContent: 'center',
+        }}>
+          <button onClick={() => { if (confirm('Clear all chronicle entries?')) useStore.getState().setEvents([]) }} style={{
+            fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '3px 12px',
+            background: 'rgba(90,60,20,0.3)', border: '1px solid rgba(139,94,60,0.4)',
+            color: '#8b7355', cursor: 'pointer', letterSpacing: '1px', width: '100%',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = '#ff6b6b'; e.currentTarget.style.color = '#ff6b6b' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(139,94,60,0.4)'; e.currentTarget.style.color = '#8b7355' }}
+          >CLEAR LOG</button>
         </div>
       )}
     </div>

@@ -737,6 +737,8 @@ function GuildBottomInfo() {
 
   const [questTab, setQuestTab] = useState<'active' | 'cancelled' | 'failed'>('active')
   const [cancelling, setCancelling] = useState<string | null>(null)
+  const [editingQuest, setEditingQuest] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
 
   async function cancelQuest(questId: string) {
     setCancelling(questId)
@@ -787,16 +789,45 @@ function GuildBottomInfo() {
             borderLeft: `3px solid ${questTab === 'active' ? '#f0e68c' : questTab === 'cancelled' ? '#6b7280' : '#ff6b6b'}`,
           }}>
             <div style={{ flex: 1, overflow: 'hidden' }}>
-              <div style={{
-                color: questTab === 'active' ? '#e8d5b0' : questTab === 'cancelled' ? '#7a7a7a' : '#ff8a8a',
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                textDecoration: questTab === 'cancelled' ? 'line-through' : 'none',
-                opacity: questTab === 'cancelled' ? 0.6 : 1,
-              }}>{q.title || '(untitled)'}</div>
+              {editingQuest === q.id ? (
+                <input
+                  autoFocus
+                  defaultValue={q.title}
+                  onKeyDown={async (e) => {
+                    if (e.key === 'Enter') {
+                      const val = e.currentTarget.value.trim()
+                      if (val && val !== q.title) {
+                        await fetch(`${API_URL}/api/quest/edit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ quest_id: q.id, title: val }) })
+                        await refreshQuests()
+                      }
+                      setEditingQuest(null)
+                    } else if (e.key === 'Escape') setEditingQuest(null)
+                  }}
+                  onBlur={() => setEditingQuest(null)}
+                  style={{
+                    width: '100%', padding: '2px 4px', fontSize: '10px',
+                    fontFamily: 'var(--font-pixel)',
+                    background: 'rgba(10,8,4,0.8)', border: '1px solid #38bdf8',
+                    color: '#f0e68c', outline: 'none',
+                  }}
+                />
+              ) : (
+                <div style={{
+                  color: questTab === 'active' ? '#e8d5b0' : questTab === 'cancelled' ? '#7a7a7a' : '#ff8a8a',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  textDecoration: questTab === 'cancelled' ? 'line-through' : 'none',
+                  opacity: questTab === 'cancelled' ? 0.6 : 1,
+                }}>{q.title || '(untitled)'}</div>
+              )}
               <div style={{ fontSize: '5px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '1px' }}>{q.source === 'user' ? 'YOU' : 'AGENT'}</div>
             </div>
             {questTab === 'active' && (
               <div style={{ display: 'flex', gap: '3px', flexShrink: 0 }}>
+                <button onClick={() => setEditingQuest(editingQuest === q.id ? null : q.id)} style={{
+                  fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '2px 5px', cursor: 'pointer',
+                  background: editingQuest === q.id ? 'rgba(56,152,236,0.15)' : 'transparent',
+                  border: '1px solid rgba(56,152,236,0.5)', color: '#38bdf8', borderRadius: '2px',
+                }}>{editingQuest === q.id ? 'ESC' : 'EDIT'}</button>
                 <button onClick={() => cancelQuest(q.id)} disabled={cancelling === q.id} style={{
                   fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '2px 5px', cursor: 'pointer',
                   background: 'transparent', border: '1px solid rgba(255,107,107,0.4)', color: '#ff6b6b', borderRadius: '2px',
