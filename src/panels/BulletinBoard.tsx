@@ -51,14 +51,14 @@ function QuestSlot({ quest, slot, onAccept, accepting }: {
       {/* Title */}
       <div style={{
         fontFamily: 'var(--font-pixel)',
-        fontSize: 'clamp(4px, 0.55vw, 6px)',
+        fontSize: 'clamp(5px, 0.8vw, 8px)',
         color: '#3a1e0a',
-        lineHeight: '1.2',
+        lineHeight: '1.3',
         textAlign: 'center',
-        margin: '4% 0',
+        margin: '3% 0',
         overflow: 'hidden',
         display: '-webkit-box',
-        WebkitLineClamp: 3,
+        WebkitLineClamp: 2,
         WebkitBoxOrient: 'vertical',
         wordBreak: 'break-word',
       } as React.CSSProperties}>
@@ -68,10 +68,13 @@ function QuestSlot({ quest, slot, onAccept, accepting }: {
       {/* Rewards */}
       <div style={{
         fontFamily: 'var(--font-pixel)',
-        fontSize: 'clamp(3px, 0.45vw, 5px)',
+        fontSize: 'clamp(4px, 0.55vw, 6px)',
         color: '#6a4a2a',
+        textAlign: 'center',
+        lineHeight: '1.4',
       }}>
-        {quest.reward_gold}G / {quest.reward_xp}XP
+        <div>{quest.reward_gold}G</div>
+        <div>{quest.reward_xp}XP</div>
       </div>
 
       {/* Accept */}

@@ -1,73 +1,57 @@
-# React + TypeScript + Vite
+# Hermes Quest Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A self-evolving RPG adventure dashboard for the Hermes AI agent. Track your adventurer's growth, interact with tavern NPCs, explore knowledge maps, and complete quests -- all rendered as a pixel-art RPG experience.
 
-Currently, two official plugins are available:
+![Screenshot](docs/screenshot-placeholder.png)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- **Tavern NPCs** -- Chat with 5 unique characters (Guild Master, Cartographer, Quartermaster, Bartender, Sage), each with distinct personalities and powered by LLM
+- **Knowledge Map** -- Visualize skill domains as explorable RPG regions with fog-of-war
+- **Quest Board** -- Accept, track, and complete learning quests with XP/gold rewards
+- **Adventurer Stats** -- HP, MP, XP, level, class, and title progression
+- **Inventory Bag** -- Collect items, research notes, and skill drops
+- **Tavern Ambient Chat** -- NPCs discuss your progress among themselves
+- **Rumors Board** -- Real-time X/Twitter integration as tavern gossip
+- **Reflection System** -- HP depletion triggers introspective letters from your guild
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Quick Start
 
-## Expanding the ESLint configuration
+```bash
+# Install dependencies
+npm install
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+# Development server
+npm run dev
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# Build for production
+npm run build
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Run tests
+npm test
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Tech Stack
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- **Framework**: React 19 + TypeScript
+- **Build**: Vite 8
+- **State**: Zustand
+- **Testing**: Vitest + Testing Library
+- **Backend**: FastAPI (Python) at port 8420
+- **LLM**: GPT via Codex OAuth
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Project Structure
+
 ```
+src/
+  components/   # React UI components
+  hooks/        # Custom React hooks
+  store/        # Zustand state management
+  types/        # TypeScript type definitions
+  utils/        # Utility functions
+  assets/       # Pixel art sprites and backgrounds
+```
+
+## License
+
+MIT -- see [LICENSE](LICENSE).
