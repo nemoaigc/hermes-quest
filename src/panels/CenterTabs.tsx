@@ -407,9 +407,14 @@ function RpgDialogInline({ npc, onClose, chatHistoryRef, prefillMessage }: {
   const selectedBagItems = useStore((s) => s.selectedBagItems)
   const selectedRegion = useStore((s) => s.selectedRegion)
 
-  // Persist messages back to ref on every change
+  // Persist messages back to ref + localStorage on every change
   useEffect(() => {
-    chatHistoryRef.current[npc.id] = messages
+    // Keep max 20 messages per NPC to avoid localStorage bloat
+    const trimmed = messages.length > 20 ? messages.slice(-20) : messages
+    chatHistoryRef.current[npc.id] = trimmed
+    try {
+      localStorage.setItem('hermes-npc-chat-history', JSON.stringify(chatHistoryRef.current))
+    } catch {}
   }, [messages, npc.id, chatHistoryRef])
 
   // Auto-scroll to bottom when messages change
@@ -1089,8 +1094,14 @@ export default function CenterTabs() {
   const [rumors, setRumors] = useState<Array<{ id: string; text: string; author: string; handle: string; likes: number; time: string }>>([])
   const [rumorsLoading, setRumorsLoading] = useState(false)
 
-  // Persist NPC chat history across open/close
-  const chatHistoryRef = useRef<Record<string, Array<{ role: 'npc' | 'user'; text: string }>>>({})
+  // Persist NPC chat history across open/close (+ localStorage)
+  const chatHistoryRef = useRef<Record<string, Array<{ role: 'npc' | 'user'; text: string }>>>(() => {
+    try {
+      const saved = localStorage.getItem('hermes-npc-chat-history')
+      if (saved) return JSON.parse(saved)
+    } catch {}
+    return {}
+  })()
 
   // Ref for gossip refresh callback (avoids DOM querySelector hack)
   const gossipRefreshRef = useRef<(() => void) | null>(null)
