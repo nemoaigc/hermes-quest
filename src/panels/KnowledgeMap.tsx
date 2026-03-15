@@ -177,7 +177,7 @@ function FogSprite({ fog }: { fog: FogRegion }) {
         color: '#8a7a5a',
         textShadow: '0 0 2px rgba(228,216,192,0.8)',
       }}>
-        {exploring ? 'EXPLORING...' : fog.hint}
+        {exploring ? 'EXPLORING...' : '???'}
       </div>
     </div>
   )

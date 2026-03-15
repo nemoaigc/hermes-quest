@@ -64,8 +64,9 @@ export default function CharacterPanel() {
   )
 
   return (
-    <div className="pixel-panel" style={{ flexShrink: 0, padding: '10px 12px' }}>
+    <div className="pixel-panel" style={{ flexShrink: 0 }}>
       <div className="pixel-panel-title" style={{ textAlign: 'center' }}>CHARACTER</div>
+      <div style={{ padding: '2px 4px 0' }}>
 
       {/* Portrait + Identity — horizontal layout */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', alignItems: 'center' }}>
@@ -158,6 +159,7 @@ export default function CharacterPanel() {
           <span style={{ color: '#8b7355' }}>Workflows</span>
           <span style={{ color: '#e8d5b0' }}>{state.workflows_discovered ?? 0}</span>
         </div>
+      </div>
       </div>
     </div>
   )
