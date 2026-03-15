@@ -7,14 +7,12 @@ import {
   editQuest as apiEditQuest,
   fetchActiveQuests,
   fetchAllQuests,
-  fetchMap,
 } from '../api'
 
 /** GUILD bottom — task list with DONE buttons */
 export default function GuildBottomInfo() {
   const quests = useStore((s) => s.quests)
   const setQuests = useStore((s) => s.setQuests)
-  const setKnowledgeMap = useStore((s) => s.setKnowledgeMap)
   const [input, setInput] = useState('')
   const [creating, setCreating] = useState(false)
   const [expandedQuest, setExpandedQuest] = useState<string | null>(null)
@@ -28,12 +26,8 @@ export default function GuildBottomInfo() {
 
   async function refreshQuests() {
     try {
-      const [questData, mapData] = await Promise.all([
-        fetchActiveQuests(),
-        fetchMap(),
-      ])
+      const questData = await fetchActiveQuests()
       setQuests(questData.quests || [])
-      setKnowledgeMap(mapData)
     } catch (e) { console.error('refreshQuests failed', e) }
   }
 
@@ -115,51 +109,24 @@ export default function GuildBottomInfo() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
-      {/* Quest Ledger Tabs — parchment bookmark style */}
-      <div style={{
-        display: 'flex', gap: '0', flexShrink: 0,
-        borderBottom: '2px solid #5c3a1e',
-        position: 'relative',
-      }}>
+      {/* Tabs: ACTIVE / CANCELLED / FAILED */}
+      <div style={{ display: 'flex', gap: '2px', marginBottom: '4px', flexShrink: 0 }}>
         {([
-          { key: 'active' as const, label: 'ACTIVE', count: activeQuests.length, color: '#f0e68c', bgActive: 'rgba(90,65,25,0.7)', icon: '⚔' },
-          { key: 'cancelled' as const, label: 'VOID', count: cancelledQuests.length, color: '#7a7a7a', bgActive: 'rgba(60,60,60,0.5)', icon: '✕' },
-          { key: 'failed' as const, label: 'FALLEN', count: failedQuests.length, color: '#e85050', bgActive: 'rgba(90,30,20,0.5)', icon: '☠' },
-        ]).map((tab, i) => {
-          const isActive = questTab === tab.key
-          return (
-            <button key={tab.key} onClick={() => setQuestTab(tab.key)} style={{
-              fontFamily: 'var(--font-pixel)',
-              fontSize: '7px',
-              padding: '6px 12px 5px',
-              background: isActive ? tab.bgActive : 'transparent',
-              border: 'none',
-              borderBottom: isActive ? `3px solid ${tab.color}` : '3px solid transparent',
-              color: isActive ? tab.color : '#6a5a3a',
-              cursor: 'pointer',
-              letterSpacing: '2px',
-              transition: 'all 0.2s',
-              position: 'relative',
-              marginBottom: isActive ? '-2px' : '0',
-              textShadow: isActive ? `0 0 8px ${tab.color}40` : 'none',
-              flex: 1,
-            }}>
-              <span style={{ marginRight: '4px', fontSize: '8px', opacity: isActive ? 1 : 0.4 }}>{tab.icon}</span>
-              {tab.label}
-              {tab.count > 0 && (
-                <span style={{
-                  marginLeft: '5px',
-                  fontSize: '6px',
-                  color: isActive ? tab.color : '#5a4a3a',
-                  background: isActive ? `${tab.color}15` : 'transparent',
-                  padding: '1px 4px',
-                  borderRadius: '6px',
-                  border: `1px solid ${isActive ? `${tab.color}30` : 'transparent'}`,
-                }}>{tab.count}</span>
-              )}
-            </button>
-          )
-        })}
+          { key: 'active' as const, label: 'ACTIVE', count: activeQuests.length, color: '#f0e68c' },
+          { key: 'cancelled' as const, label: 'CANCELLED', count: cancelledQuests.length, color: '#6b7280' },
+          { key: 'failed' as const, label: 'FAILED', count: failedQuests.length, color: '#ff6b6b' },
+        ]).map(tab => (
+          <button key={tab.key} onClick={() => setQuestTab(tab.key)} style={{
+            fontFamily: 'var(--font-pixel)', fontSize: '6px', padding: '3px 8px',
+            background: questTab === tab.key ? 'rgba(90,60,20,0.4)' : 'transparent',
+            border: 'none',
+            borderBottom: questTab === tab.key ? `2px solid ${tab.color}` : '2px solid transparent',
+            color: questTab === tab.key ? tab.color : '#6a5a3a',
+            cursor: 'pointer', letterSpacing: '1px',
+          }}>
+            {tab.label} ({tab.count})
+          </button>
+        ))}
       </div>
 
       {/* Scrollable quest list */}

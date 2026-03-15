@@ -180,6 +180,17 @@ export default function CenterTabs() {
           />
         )}
         {activeTab === 'map' && (() => {
+          // Handle fog region selection — show empty "unknown" state
+          if (mapSelectedContinent?.startsWith('fog:')) {
+            return (
+              <PanelCard style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '14px', color: '#8a7a5a', marginBottom: '8px' }}>???</div>
+                <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '11px', color: '#6a5a3a', textAlign: 'center', maxWidth: '250px', lineHeight: '1.6' }}>
+                  This region remains shrouded in mystery. Complete quests to unveil its secrets.
+                </div>
+              </PanelCard>
+            )
+          }
           const selected = mapSelectedContinent && knowledgeMap
             ? (knowledgeMap.continents || knowledgeMap.workflows || []).find((c) => c.id === mapSelectedContinent)
             : null

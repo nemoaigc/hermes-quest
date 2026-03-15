@@ -133,33 +133,22 @@ function ContinentSprite({ continent, onClick, isActive }: {
   )
 }
 
-function FogSprite({ fog }: { fog: FogRegion }) {
+function FogSprite({ fog, onClick, isActive }: { fog: FogRegion; onClick: () => void; isActive: boolean }) {
   const pos = FOG_POSITIONS[fog.id] || fog.position || { x: 0.9, y: 0.9 }
   const left = PARCHMENT.left + pos.x * PARCHMENT.width
   const top = PARCHMENT.top + pos.y * PARCHMENT.height
-  const [exploring, setExploring] = useState(false)
-
-  async function handleExplore() {
-    if (exploring) return
-    setExploring(true)
-    try {
-      await acceptFogQuest(fog.id)
-    } catch (e) {
-      console.warn('Failed to explore fog region:', e)
-    }
-    setExploring(false)
-  }
 
   return (
     <div
-      onClick={handleExplore}
+      onClick={onClick}
       style={{
         position: 'absolute',
         left: `${left}%`,
         top: `${top}%`,
         transform: 'translate(-50%, -50%)',
         textAlign: 'center',
-        cursor: exploring ? 'wait' : 'pointer',
+        cursor: 'pointer',
+        zIndex: isActive ? 10 : 1,
       }}
     >
       <img
@@ -168,8 +157,9 @@ function FogSprite({ fog }: { fog: FogRegion }) {
         draggable={false}
         style={{
           width: '6vmin', height: '6vmin',
-          imageRendering: 'pixelated', opacity: exploring ? 0.4 : 0.8,
+          imageRendering: 'pixelated', opacity: isActive ? 1 : 0.8,
           transition: 'opacity 0.3s',
+          filter: isActive ? 'drop-shadow(0 0 6px rgba(255,220,100,0.5))' : 'none',
         }}
       />
       <div style={{
@@ -177,7 +167,7 @@ function FogSprite({ fog }: { fog: FogRegion }) {
         color: '#8a7a5a',
         textShadow: '0 0 2px rgba(228,216,192,0.8)',
       }}>
-        {exploring ? 'EXPLORING...' : '???'}
+        ???
       </div>
     </div>
   )
@@ -321,7 +311,12 @@ export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?
 
           {/* Fog regions */}
           {knowledgeMap!.fog_regions.filter(f => !HIDDEN_FOG.has(f.id)).map((fog) => (
-            <FogSprite key={fog.id} fog={fog} />
+            <FogSprite
+              key={fog.id}
+              fog={fog}
+              onClick={() => handleContinentClick(`fog:${fog.id}`)}
+              isActive={selectedContinent === `fog:${fog.id}`}
+            />
           ))}
 
           {/* Continent sprites */}
