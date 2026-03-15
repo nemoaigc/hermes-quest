@@ -21,36 +21,39 @@ const CONTINENT_SPRITES: Record<string, string> = {
 // The parchment area within map-bg.png (1024x572)
 const PARCHMENT = { left: 14, top: 8, width: 68, height: 82 }
 
-// Fixed positions — 2x3 grid layout, centered in parchment, generous spacing
-// Row 1: 3 slots across the top, Row 2: 3 slots across the bottom
+// Fixed positions — honeycomb layout centered on parchment
+// Row 1 (top):     1 site centered
+// Row 2 (middle):  3 sites — left, center, right (fills the middle!)
+// Row 3 (bottom):  2 sites — offset left & right
 const FIXED_POSITIONS: Record<string, { x: number; y: number }> = {
-  // Row 1 — top
-  'software-engineering': { x: 0.18, y: 0.25 },
-  'software-engineering-flow': { x: 0.18, y: 0.25 },
-  'creative-arts': { x: 0.50, y: 0.20 },
-  'creative-arts-flow': { x: 0.50, y: 0.20 },
-  'research-knowledge': { x: 0.80, y: 0.25 },
-  'research-knowledge-flow': { x: 0.80, y: 0.25 },
-  // Row 2 — bottom
-  'automation-tools': { x: 0.18, y: 0.70 },
-  'automation-tools-flow': { x: 0.18, y: 0.70 },
-  'data-analytics': { x: 0.50, y: 0.72 },
-  'data-analytics-flow': { x: 0.50, y: 0.72 },
-  'devops-infrastructure': { x: 0.80, y: 0.70 },
-  'devops-infrastructure-flow': { x: 0.80, y: 0.70 },
+  // Row 1 — top center
+  'creative-arts': { x: 0.50, y: 0.15 },
+  'creative-arts-flow': { x: 0.50, y: 0.15 },
+  // Row 2 — middle row (3 sites, fills center)
+  'software-engineering': { x: 0.22, y: 0.42 },
+  'software-engineering-flow': { x: 0.22, y: 0.42 },
+  'automation-tools': { x: 0.50, y: 0.45 },
+  'automation-tools-flow': { x: 0.50, y: 0.45 },
+  'research-knowledge': { x: 0.78, y: 0.42 },
+  'research-knowledge-flow': { x: 0.78, y: 0.42 },
+  // Row 3 — bottom (2 fog/sites, offset)
+  'data-analytics': { x: 0.33, y: 0.75 },
+  'data-analytics-flow': { x: 0.33, y: 0.75 },
+  'devops-infrastructure': { x: 0.67, y: 0.75 },
+  'devops-infrastructure-flow': { x: 0.67, y: 0.75 },
   // Extra slots if more workflows are discovered
-  'security-defense': { x: 0.35, y: 0.47 },
-  'security-defense-flow': { x: 0.35, y: 0.47 },
-  'ai-machine-learning': { x: 0.65, y: 0.47 },
-  'ai-machine-learning-flow': { x: 0.65, y: 0.47 },
-  'web-frontend': { x: 0.50, y: 0.47 },
-  'web-frontend-flow': { x: 0.50, y: 0.47 },
+  'security-defense': { x: 0.22, y: 0.75 },
+  'security-defense-flow': { x: 0.22, y: 0.75 },
+  'ai-machine-learning': { x: 0.78, y: 0.75 },
+  'ai-machine-learning-flow': { x: 0.78, y: 0.75 },
+  'web-frontend': { x: 0.50, y: 0.75 },
+  'web-frontend-flow': { x: 0.50, y: 0.75 },
 }
 
-// Fog positions — match the fixed positions for their corresponding workflow
+// Fog positions — match the fixed positions layout
 const FOG_POSITIONS: Record<string, { x: number; y: number }> = {
-  'fog-data-science': { x: 0.50, y: 0.72 },
-  'fog-devops': { x: 0.80, y: 0.70 },
+  'fog-data-science': { x: 0.33, y: 0.75 },
+  'fog-devops': { x: 0.67, y: 0.75 },
 }
 // Hidden fog IDs — don't render these
 const HIDDEN_FOG = new Set<string>() // show all fog regions
