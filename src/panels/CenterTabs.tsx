@@ -32,12 +32,13 @@ const TABS: Array<{ id: TabId; label: string; icon: string }> = [
 ]
 
 /** Tavern SCENE area — 3 modes: default / chatter / rumors */
-function TavernSceneArea({ sceneMode, onSceneMode, rumors, rumorsLoading, onFetchRumors }: {
+function TavernSceneArea({ sceneMode, onSceneMode, rumors, rumorsLoading, onFetchRumors, gossipRefreshRef }: {
   sceneMode: 'default' | 'chatter' | 'rumors'
   onSceneMode: (mode: 'default' | 'chatter' | 'rumors') => void
   rumors: Array<{ id: string; text: string; author: string; handle: string; likes: number; time: string }>
   rumorsLoading: boolean
   onFetchRumors: () => void
+  gossipRefreshRef: React.MutableRefObject<(() => void) | null>
 }) {
   const dimmed = sceneMode !== 'default'
   return (
@@ -89,10 +90,10 @@ function TavernSceneArea({ sceneMode, onSceneMode, rumors, rumorsLoading, onFetc
               TAVERN CHATTER
             </span>
             <span style={{ flex: 1 }} />
-            <RpgButton onClick={() => { /* refresh gossip */ const el = document.querySelector('[data-refresh-gossip]') as HTMLButtonElement; el?.click() }} small>NEW GOSSIP</RpgButton>
+            <RpgButton onClick={() => gossipRefreshRef.current?.()} small>NEW GOSSIP</RpgButton>
           </div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            <TavernAmbientChat hideHeader />
+            <TavernAmbientChat hideHeader refreshRef={gossipRefreshRef} />
           </div>
         </div>
       )}
@@ -384,11 +385,23 @@ function RpgDialogInline({ npc, onClose, chatHistoryRef, prefillMessage }: {
   const [loading, setLoading] = useState(false)
   const suggestions = npcSuggestions(npc)
   const prefillHandled = useRef(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  const activeTab = useStore((s) => s.activeTab)
+  const selectedBagItems = useStore((s) => s.selectedBagItems)
+  const selectedRegion = useStore((s) => s.selectedRegion)
 
   // Persist messages back to ref on every change
   useEffect(() => {
     chatHistoryRef.current[npc.id] = messages
   }, [messages, npc.id, chatHistoryRef])
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+    })
+  }, [messages, loading])
 
   // Handle prefill message from bag "SHOW TO NPC"
   useEffect(() => {
@@ -413,7 +426,7 @@ function RpgDialogInline({ npc, onClose, chatHistoryRef, prefillMessage }: {
           npc: npc.id,
           message: text,
           history,
-          context: { active_tab: 'npc', selected_bag_items: [], selected_region: null },
+          context: { active_tab: activeTab, selected_bag_items: selectedBagItems, selected_region: selectedRegion },
         }),
       })
       const data = await res.json()
@@ -423,8 +436,6 @@ function RpgDialogInline({ npc, onClose, chatHistoryRef, prefillMessage }: {
     }
     setLoading(false)
   }
-
-  const lastNpcMsg = [...messages].reverse().find((m) => m.role === 'npc')
 
   return (
     <div style={{
@@ -448,13 +459,42 @@ function RpgDialogInline({ npc, onClose, chatHistoryRef, prefillMessage }: {
           {npc.name}
         </div>
 
-        <div style={{
+        {/* Scrollable message history */}
+        <div ref={scrollRef} style={{
           flex: 1, overflow: 'auto',
-          fontSize: '13px', lineHeight: '1.7', color: '#e8d5b0',
-          fontFamily: 'Georgia, serif',
+          display: 'flex', flexDirection: 'column', gap: '4px',
         }}>
-          {lastNpcMsg && lastNpcMsg.text}
-          {loading && <span style={{ color: '#8b7355', fontStyle: 'italic' }}> ...</span>}
+          {messages.map((m, i) => (
+            <div key={i} style={{
+              fontSize: '12px', lineHeight: '1.6',
+              fontFamily: m.role === 'user' ? 'var(--font-mono)' : 'Georgia, serif',
+              color: m.role === 'user' ? '#90ee90' : '#e8d5b0',
+              padding: '3px 6px',
+              borderLeft: m.role === 'user' ? '2px solid rgba(144,238,144,0.3)' : '2px solid rgba(240,230,140,0.3)',
+              background: m.role === 'user' ? 'rgba(144,238,144,0.05)' : 'transparent',
+            }}>
+              <span style={{
+                fontFamily: 'var(--font-pixel)', fontSize: '6px',
+                color: m.role === 'user' ? '#90ee90' : '#f0e68c',
+                marginRight: '6px', letterSpacing: '0.5px',
+              }}>
+                {m.role === 'user' ? 'YOU' : npc.name.toUpperCase()}
+              </span>
+              {m.text}
+            </div>
+          ))}
+          {loading && (
+            <div style={{
+              fontSize: '12px', lineHeight: '1.6', fontFamily: 'Georgia, serif',
+              color: '#8b7355', fontStyle: 'italic', padding: '3px 6px',
+              borderLeft: '2px solid rgba(240,230,140,0.3)',
+            }}>
+              <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#f0e68c', marginRight: '6px' }}>
+                {npc.name.toUpperCase()}
+              </span>
+              ...
+            </div>
+          )}
         </div>
 
         {!loading && messages.length <= 2 && (
@@ -797,6 +837,9 @@ export default function CenterTabs() {
   // Persist NPC chat history across open/close
   const chatHistoryRef = useRef<Record<string, Array<{ role: 'npc' | 'user'; text: string }>>>({})
 
+  // Ref for gossip refresh callback (avoids DOM querySelector hack)
+  const gossipRefreshRef = useRef<(() => void) | null>(null)
+
   // Prefill message for "SHOW TO NPC" bag feature
   const [npcPrefill, setNpcPrefill] = useState<string | null>(null)
 
@@ -884,6 +927,7 @@ export default function CenterTabs() {
             rumors={rumors}
             rumorsLoading={rumorsLoading}
             onFetchRumors={fetchRumors}
+            gossipRefreshRef={gossipRefreshRef}
           />
         )}
       </div>

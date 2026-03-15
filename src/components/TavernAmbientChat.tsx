@@ -16,10 +16,11 @@ const NPC_STYLE: Record<string, { color: string; mark: string }> = {
   you:    { color: '#90ee90', mark: '>' },
 }
 
-export default function TavernAmbientChat({ onRumorsClick, rumorsLoading, hideHeader }: {
+export default function TavernAmbientChat({ onRumorsClick, rumorsLoading, hideHeader, refreshRef }: {
   onRumorsClick?: () => void
   rumorsLoading?: boolean
   hideHeader?: boolean
+  refreshRef?: React.MutableRefObject<(() => void) | null>
 }) {
   const [messages, setMessages] = useState<TavernMessage[]>([])
   const [visibleCount, setVisibleCount] = useState(0)
@@ -66,6 +67,12 @@ export default function TavernAmbientChat({ onRumorsClick, rumorsLoading, hideHe
     setLoading(false)
   }
 
+  // Register handleRefresh on parent ref so external buttons can trigger it
+  useEffect(() => {
+    if (refreshRef) refreshRef.current = handleRefresh
+    return () => { if (refreshRef) refreshRef.current = null }
+  })
+
   async function handleUserSend() {
     const text = userInput.trim()
     if (!text || sending) return
@@ -102,9 +109,6 @@ export default function TavernAmbientChat({ onRumorsClick, rumorsLoading, hideHe
       display: 'flex', flexDirection: 'column',
       background: 'transparent',
     }}>
-      {/* Hidden refresh trigger for external control */}
-      <button data-refresh-gossip onClick={handleRefresh} style={{ display: 'none' }} />
-
       {!hideHeader && (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
