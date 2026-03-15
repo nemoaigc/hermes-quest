@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../store'
-import { ClassIcon } from '../utils/icons'
+
 import { API_URL } from '../api'
 
 const CLASS_DISPLAY: Record<string, string> = {

@@ -57,7 +57,7 @@ export default function GuildBottomInfo() {
   const [questTab, setQuestTab] = useState<'active' | 'cancelled' | 'failed'>('active')
   const [cancelling, setCancelling] = useState<string | null>(null)
   const [editingQuest, setEditingQuest] = useState<string | null>(null)
-  const [editTitle, setEditTitle] = useState('')
+
 
   async function cancelQuest(questId: string) {
     setCancelling(questId)
