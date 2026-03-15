@@ -102,64 +102,51 @@ A fantasy continent with **6 explorable regions**, each mapped to real AI capabi
 
 ---
 
-## 🎨 Dashboard Features / 仪表盘功能
+## 🎨 Screenshots / 截图
 
 <table>
 <tr>
-<td width="50%">
-
-**🧙 Character Panel / 角色面板**
-- Real-time HP/MP/XP bars with pixel animations
-- Dynamic class system (Warrior, Mage, Ranger, Paladin, Necromancer)
-- Level, gold, title display
-
-</td>
-<td width="50%">
-
-**📜 Bulletin Board / 公告板**
-- Quest recommendation engine
-- Accept / cancel / track quests
-- Gold & XP reward preview
-
-</td>
-</tr>
-<tr>
-<td>
-
-**🏪 Skill Shop / 技能商店**
-- Browse Hermes Skills Hub marketplace
-- Install skills directly from dashboard
-- Rarity system (common → legendary)
-
-</td>
-<td>
+<td width="50%" align="center">
 
 **🗺️ Knowledge Map / 知识地图**
-- Interactive continent map
-- Region unlock progression
-- Skill distribution visualization
+
+<img src="assets/screenshots/map.png" alt="Knowledge Map" width="100%"/>
+
+</td>
+<td width="50%" align="center">
+
+**⚔️ Guild / 公会**
+
+<img src="assets/screenshots/guild.png" alt="Guild" width="100%"/>
 
 </td>
 </tr>
 <tr>
-<td>
+<td align="center">
 
-**🍺 NPC Tavern / NPC 酒馆**
-- LLM-powered NPC conversations
-- 5 unique NPCs with distinct personalities
-- Animated pixel-art bartender, sage, cartographer...
+**🏪 Skill Shop / 技能商店**
+
+<img src="assets/screenshots/shop.png" alt="Shop" width="100%"/>
 
 </td>
-<td>
+<td align="center">
 
-**⚔️ Guild Panel / 公会面板**
-- Active quest slots with parchment UI
-- Quest status tracking
-- Cancelled/failed quest history
+**🍺 NPC Tavern / NPC 酒馆**
+
+<img src="assets/screenshots/tavern.png" alt="Tavern" width="100%"/>
 
 </td>
 </tr>
 </table>
+
+### Feature Highlights / 功能亮点
+
+- **Character Panel** — Real-time HP/MP/XP, dynamic class system, level & title / 实时属性条、动态职业、等级头衔
+- **Bulletin Board** — Quest recommendations with gold & XP preview / 任务推荐，金币经验预览
+- **Skill Shop** — Browse & install from Hermes Skills Hub / 浏览并安装 Hermes 技能中心的技能
+- **Knowledge Map** — Interactive continent with region progression / 可交互大陆地图，区域解锁进度
+- **NPC Tavern** — LLM-powered conversations with 5 unique NPCs / LLM 驱动的 5 位 NPC 对话
+- **Guild Panel** — Quest slots, status tracking, history / 任务槽位、状态追踪、历史记录
 
 ---
 

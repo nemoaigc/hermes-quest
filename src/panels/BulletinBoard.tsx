@@ -199,6 +199,11 @@ function QuestDetailOverlay({ quest, onClose, onAccept, accepting }: {
             }}
           >{accepting ? '...' : 'ACCEPT QUEST'}</button>
         </div>
+        {acceptError && (
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.6vw, 7px)', color: '#ff6b6b', marginTop: '6px' }}>
+            {acceptError}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -212,6 +217,8 @@ export default function BulletinBoard() {
   const [page, setPage] = useState(0)
   const [selectedQuest, setSelectedQuest] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [refreshError, setRefreshError] = useState(false)
+  const [acceptError, setAcceptError] = useState<string | null>(null)
 
   const recommendations = (knowledgeMap?.recommended_quests || []) as Array<RecommendedQuest | null>
   const pageSize = 6
@@ -233,7 +240,11 @@ export default function BulletinBoard() {
         const d = await res.json()
         setKnowledgeMap(d)
       }
-    } catch (e) { console.error(e) }
+    } catch (e) {
+      console.error(e)
+      setRefreshError(true)
+      setTimeout(() => setRefreshError(false), 3000)
+    }
     setRefreshing(false)
   }
 
@@ -250,7 +261,11 @@ export default function BulletinBoard() {
       // Then refresh from server
       const questRes = await fetch(`${API_URL}/api/quest/active`)
       if (questRes.ok) { const d = await questRes.json(); setQuests(d.quests || []) }
-    } catch (e) { console.error(e) }
+    } catch (e) {
+      console.error(e)
+      setAcceptError('The guild clerk fumbles the paperwork...')
+      setTimeout(() => setAcceptError(null), 3000)
+    }
     setAccepting(null)
   }
 
@@ -317,7 +332,7 @@ export default function BulletinBoard() {
           textShadow: '0 1px 2px rgba(0,0,0,0.5)',
         }}
       >
-        {refreshing ? '...' : 'REFRESH'}
+        {refreshing ? '...' : refreshError ? 'FAILED' : 'REFRESH'}
       </button>
 
       {totalPages > 1 && (

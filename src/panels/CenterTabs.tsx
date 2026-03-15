@@ -32,11 +32,12 @@ const TABS: Array<{ id: TabId; label: string; icon: string }> = [
 ]
 
 /** Tavern SCENE area — 3 modes: default / chatter / rumors */
-function TavernSceneArea({ sceneMode, onSceneMode, rumors, rumorsLoading, onFetchRumors, gossipRefreshRef }: {
+function TavernSceneArea({ sceneMode, onSceneMode, rumors, rumorsLoading, rumorsError, onFetchRumors, gossipRefreshRef }: {
   sceneMode: 'default' | 'chatter' | 'rumors'
   onSceneMode: (mode: 'default' | 'chatter' | 'rumors') => void
   rumors: Array<{ id: string; text: string; author: string; handle: string; likes: number; time: string }>
   rumorsLoading: boolean
+  rumorsError?: string | null
   onFetchRumors: () => void
   gossipRefreshRef: React.MutableRefObject<(() => void) | null>
 }) {
@@ -137,6 +138,15 @@ function TavernSceneArea({ sceneMode, onSceneMode, rumors, rumorsLoading, onFetc
                 marginTop: '20px',
               }}>
                 You lean in and listen...
+              </div>
+            ) : rumorsError ? (
+              <div style={{
+                textAlign: 'center', color: '#ff6b6b',
+                fontSize: '6px', fontFamily: 'var(--font-pixel)',
+                marginTop: '20px',
+                textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+              }}>
+                {rumorsError}
               </div>
             ) : rumors.length === 0 ? (
               <div style={{
@@ -743,6 +753,8 @@ function GuildBottomInfo() {
   const [input, setInput] = useState('')
   const [creating, setCreating] = useState(false)
   const [expandedQuest, setExpandedQuest] = useState<string | null>(null)
+  const [createError, setCreateError] = useState<string | null>(null)
+  const [cancelError, setCancelError] = useState<string | null>(null)
   const activeQuests = quests.filter((q) => q.status === 'active' || q.status === 'in_progress' || q.status === 'pending')
 
   async function refreshQuests() {
@@ -759,7 +771,7 @@ function GuildBottomInfo() {
         const d = await mapRes.json()
         setKnowledgeMap(d)
       }
-    } catch {}
+    } catch (e) { console.error('refreshQuests failed', e) }
   }
 
   async function createTask() {
@@ -768,10 +780,16 @@ function GuildBottomInfo() {
     setInput('')
     setCreating(true)
     try {
-      await fetch(`${API_URL}/api/quest/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, source: 'user' }) })
+      const res = await fetch(`${API_URL}/api/quest/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, source: 'user' }) })
+      if (!res.ok) throw new Error(`Create failed: ${res.status}`)
       await refreshQuests()
       setAllQuestsTrigger(t => t + 1)
-    } catch {}
+    } catch (e) {
+      console.error('createTask failed', e)
+      setInput(title)
+      setCreateError('Quest scroll was lost in transit...')
+      setTimeout(() => setCreateError(null), 3000)
+    }
     setCreating(false)
   }
 
@@ -783,10 +801,15 @@ function GuildBottomInfo() {
   async function cancelQuest(questId: string) {
     setCancelling(questId)
     try {
-      await fetch(`${API_URL}/api/quest/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ quest_id: questId }) })
+      const res = await fetch(`${API_URL}/api/quest/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ quest_id: questId }) })
+      if (!res.ok) throw new Error(`Cancel failed: ${res.status}`)
       await refreshQuests()
       setAllQuestsTrigger(t => t + 1)
-    } catch {}
+    } catch (e) {
+      console.error('cancelQuest failed', e)
+      setCancelError(questId)
+      setTimeout(() => setCancelError(null), 3000)
+    }
     setCancelling(null)
   }
 
@@ -794,7 +817,7 @@ function GuildBottomInfo() {
   const [allQuests, setAllQuests] = useState<any[]>([])
   const [allQuestsTrigger, setAllQuestsTrigger] = useState(0)
   useEffect(() => {
-    fetch(`${API_URL}/api/quests`).then(r => r.ok ? r.json() : []).then(d => setAllQuests(Array.isArray(d) ? d : [])).catch(() => {})
+    fetch(`${API_URL}/api/quests`).then(r => { if (!r.ok) throw new Error(`Quests fetch: ${r.status}`); return r.json() }).then(d => setAllQuests(Array.isArray(d) ? d : [])).catch(e => console.error('allQuests fetch failed', e))
   }, [allQuestsTrigger])
   const cancelledQuests = allQuests.filter(q => q.status === 'cancelled')
   const failedQuests = allQuests.filter(q => q.status === 'failed')
@@ -847,8 +870,11 @@ function GuildBottomInfo() {
                     if (e.key === 'Enter') {
                       const val = e.currentTarget.value.trim()
                       if (val && val !== q.title) {
-                        await fetch(`${API_URL}/api/quest/edit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ quest_id: q.id, title: val }) })
-                        await refreshQuests()
+                        try {
+                          const res = await fetch(`${API_URL}/api/quest/edit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ quest_id: q.id, title: val }) })
+                          if (!res.ok) throw new Error(`Edit failed: ${res.status}`)
+                          await refreshQuests()
+                        } catch (err) { console.error('quest edit failed', err) }
                       }
                       setEditingQuest(null)
                     } else if (e.key === 'Escape') setEditingQuest(null)
@@ -881,7 +907,7 @@ function GuildBottomInfo() {
                 <button onClick={() => cancelQuest(q.id)} disabled={cancelling === q.id} style={{
                   fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '2px 5px', cursor: 'pointer',
                   background: 'transparent', border: '1px solid rgba(255,107,107,0.4)', color: '#ff6b6b', borderRadius: '2px',
-                }}>{cancelling === q.id ? '...' : 'CANCEL'}</button>
+                }}>{cancelling === q.id ? '...' : cancelError === q.id ? 'FAILED' : 'CANCEL'}</button>
               </div>
             )}
             </div>
@@ -939,6 +965,11 @@ function GuildBottomInfo() {
           }}
         >{creating ? '...' : 'POST'}</button>
       </div>
+      {createError && (
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#ff6b6b', padding: '2px 6px' }}>
+          {createError}
+        </div>
+      )}
     </div>
   )
 }
@@ -1106,6 +1137,7 @@ export default function CenterTabs() {
   const [cycleLoading, setCycleLoading] = useState(false)
   const [rumors, setRumors] = useState<Array<{ id: string; text: string; author: string; handle: string; likes: number; time: string }>>([])
   const [rumorsLoading, setRumorsLoading] = useState(false)
+  const [rumorsError, setRumorsError] = useState<string | null>(null)
 
   // Persist NPC chat history across open/close (+ localStorage)
   const chatHistoryRef = useRef<Record<string, Array<{ role: 'npc' | 'user'; text: string }>>>(
@@ -1137,11 +1169,18 @@ export default function CenterTabs() {
 
   async function fetchRumors() {
     setRumorsLoading(true)
+    setRumorsError(null)
     try {
       const res = await fetch(`${API_URL}/api/rumors/feed?max=15`)
+      if (!res.ok) throw new Error(`Rumors fetch: ${res.status}`)
       const data = await res.json()
       if (data.ok) setRumors(data.rumors)
-    } catch { /* ignore */ }
+      else throw new Error('Rumors data not ok')
+    } catch (e) {
+      console.error('fetchRumors failed', e)
+      setRumorsError('The rumor mill has gone silent...')
+      setTimeout(() => setRumorsError(null), 5000)
+    }
     setRumorsLoading(false)
   }
 
@@ -1204,6 +1243,7 @@ export default function CenterTabs() {
             onSceneMode={setSceneMode}
             rumors={rumors}
             rumorsLoading={rumorsLoading}
+            rumorsError={rumorsError}
             onFetchRumors={fetchRumors}
             gossipRefreshRef={gossipRefreshRef}
           />

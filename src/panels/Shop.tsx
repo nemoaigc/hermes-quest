@@ -88,13 +88,20 @@ export default function Shop() {
   const sourceFilter = useStore((s) => s.shopSourceFilter)
   const page = useStore((s) => s.shopPage)
   const [selected, setSelected] = useState<HubSkill | null>(null)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [installError, setInstallError] = useState<string | null>(null)
 
   useEffect(() => {
     (async () => {
       try {
         const res = await fetch(`${API_URL}/api/hub/search?q=`)
+        if (!res.ok) throw new Error(`Hub returned ${res.status}`)
         setAllSkills(await res.json())
-      } catch { setAllSkills([]) }
+        setFetchError(null)
+      } catch {
+        setAllSkills([])
+        setFetchError('Could not load wares... The shopkeep shrugs.')
+      }
       setLoading(false)
     })()
   }, [])
@@ -162,7 +169,11 @@ export default function Shop() {
       const currentSkills = useStore.getState().hubSkills
       setAllSkills(currentSkills.filter((s) => s.identifier !== identifier))
       setSelected(null)
-    } catch (e) { console.error('Install failed', e) }
+    } catch (e) {
+      console.error('Install failed', e)
+      setInstallError('The scroll crumbles... Install failed.')
+      setTimeout(() => setInstallError(null), 3000)
+    }
     setInstalling(null)
   }
 
@@ -194,6 +205,21 @@ export default function Shop() {
           color: '#f0e68c', textShadow: '0 1px 3px rgba(0,0,0,0.8)',
         }}>
           Arranging wares...
+        </div>
+      )}
+
+      {fetchError && !loading && (
+        <div
+          onClick={() => { setFetchError(null); setLoading(true); fetch(`${API_URL}/api/hub/search?q=`).then(r => { if (!r.ok) throw new Error(); return r.json() }).then(d => { setAllSkills(d); setFetchError(null) }).catch(() => setFetchError('Could not load wares... The shopkeep shrugs.')).finally(() => setLoading(false)) }}
+          style={{
+            position: 'absolute', left: '50%', top: '50%',
+            transform: 'translate(-50%, -50%)',
+            fontFamily: 'var(--font-pixel)', fontSize: '7px',
+            color: '#ff6b6b', textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+            cursor: 'pointer', textAlign: 'center',
+          }}
+        >
+          {fetchError}<br /><span style={{ color: '#f0e68c', fontSize: '6px' }}>Click to retry</span>
         </div>
       )}
 
@@ -247,6 +273,11 @@ export default function Shop() {
               }}
             >{installing === selected.identifier ? 'LEARNING...' : 'ACQUIRE SKILL'}</button>
           </div>
+          {installError && (
+            <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#ff6b6b', marginTop: '4px' }}>
+              {installError}
+            </div>
+          )}
         </div>
       )}
 

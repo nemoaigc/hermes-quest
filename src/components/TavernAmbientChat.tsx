@@ -26,6 +26,7 @@ export default function TavernAmbientChat({ onRumorsClick, rumorsLoading, hideHe
   const [loading, setLoading] = useState(false)
   const [userInput, setUserInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [chatError, setChatError] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -39,14 +40,21 @@ export default function TavernAmbientChat({ onRumorsClick, rumorsLoading, hideHe
           })
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        setChatError('Could not reach the tavern...')
+        setTimeout(() => setChatError(null), 5000)
+      })
   }, [])
 
   async function handleRefresh() {
     setLoading(true)
+    setChatError(null)
     try {
       const res = await fetch(`${API_URL}/api/tavern/generate`, { method: 'POST' })
-      if (res.ok) {
+      if (!res.ok) {
+        setChatError('The bard lost his voice... Try again.')
+        setTimeout(() => setChatError(null), 3000)
+      } else {
         const d = await res.json()
         if (d.messages?.length > 0) {
           setMessages(d.messages)
@@ -55,7 +63,10 @@ export default function TavernAmbientChat({ onRumorsClick, rumorsLoading, hideHe
           })
         }
       }
-    } catch {}
+    } catch {
+      setChatError('The tavern door is jammed... Try again.')
+      setTimeout(() => setChatError(null), 3000)
+    }
     setLoading(false)
   }
 
@@ -83,6 +94,7 @@ export default function TavernAmbientChat({ onRumorsClick, rumorsLoading, hideHe
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, history: updatedMessages }),
       })
+      if (!res.ok) throw new Error(`Reply failed: ${res.status}`)
       const data = await res.json()
       if (data.messages?.length > 0) {
         setMessages(prev => [...prev, ...data.messages])
@@ -123,6 +135,17 @@ export default function TavernAmbientChat({ onRumorsClick, rumorsLoading, hideHe
           >
             {loading ? '...' : 'NEW GOSSIP'}
           </button>
+        </div>
+      )}
+
+      {/* Error message */}
+      {chatError && (
+        <div style={{
+          padding: '4px 8px', fontFamily: 'var(--font-pixel)',
+          fontSize: '5px', color: '#ff6b6b', textAlign: 'center',
+          flexShrink: 0,
+        }}>
+          {chatError}
         </div>
       )}
 
