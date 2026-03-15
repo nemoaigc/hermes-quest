@@ -37,6 +37,7 @@ export function useWebSocket() {
 
     let reconnectTimer: ReturnType<typeof setTimeout>
     let isMounted = true
+    let reconnectDelay = 1000
 
     function connect() {
       if (!isMounted) return
@@ -44,6 +45,7 @@ export function useWebSocket() {
       wsRef.current = ws
 
       ws.onopen = () => {
+        reconnectDelay = 1000 // Reset backoff on successful connection
         useStore.getState().setConnected(true)
         fetchInitialData() // Refresh all data on reconnect
       }
@@ -74,7 +76,8 @@ export function useWebSocket() {
       ws.onclose = () => {
         useStore.getState().setConnected(false)
         if (isMounted) {
-          reconnectTimer = setTimeout(connect, 3000)
+          reconnectTimer = setTimeout(connect, reconnectDelay)
+          reconnectDelay = Math.min(reconnectDelay * 2, 30000)
         }
       }
 

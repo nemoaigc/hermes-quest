@@ -28,14 +28,36 @@
 | User Request | 1 fix: NPC chat CLEAR button |
 
 **Commit**: `c63c48a` — 18 fixes + NPC chat clear
+
+---
+
+## Round 3 (2026-03-16 ~06:20)
+
+| 专家 | 发现/修复 |
+|------|---------|
+| PM Deep Review | 17 issues found (3 high, 8 med, 5 low) — all silent catch blocks |
+| QA 端到端 | 9 tests: 7 PASS, 1 FAIL (NPC jiter), 1 WARN (quest accept logic) |
+| Context Engineer | 3 issues found+fixed: jiter module, orphan process, tavern reply path |
+| Silent Catch Fix | 14 API calls now show RPG-themed error messages on failure |
+
+**Fixes Applied:**
+- Shop: "Could not load wares" error + retry, install error in detail panel
+- BulletinBoard: refresh "FAILED" button, accept error in overlay
+- Guild: create/cancel/edit all show error feedback
+- Tavern: ambient chat fetch/refresh/send all show error messages
+- Rumors: error state with "The rumor mill has gone silent..."
+- All API calls: `res.ok` check before `res.json()`
+- Server: jiter module installed, orphan process killed, tavern path fixed
+
+**Commit**: `9b4ac13` — 14 frontend error UX fixes + 3 server fixes
 **Push**: ✅ pushed to origin/main
 
 ---
 
 ## Cumulative Stats
-- **Total issues found**: ~80+
-- **Total fixes applied**: 34
-- **Commits**: 2
+- **Total issues found**: ~100+
+- **Total fixes applied**: 51
+- **Commits**: 3 (all pushed)
 - **Remaining known issues**:
   - No global error boundary
   - WebSocket reconnect: no exponential backoff
@@ -43,7 +65,7 @@
   - Shop + bottom panel duplicated filter logic (should extract shared hook)
   - Loading screen progress jumps from 20% to 100%
   - Fixed pixel column widths not responsive
-  - Tavern ambient chat and NPC chat are independent (by design)
+  - Keyboard accessibility (no focus-visible styles, no focus traps)
 
 ---
 

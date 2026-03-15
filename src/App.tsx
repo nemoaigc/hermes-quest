@@ -8,6 +8,7 @@ import CenterTabs from './panels/CenterTabs'
 import SkillPanel from './panels/SkillPanel'
 import BagPanel from './panels/BagPanel'
 import ReflectionLetter from './components/ReflectionLetter'
+import ErrorBoundary from './components/ErrorBoundary'
 
 // Pre-load all background images + NPC portraits
 // Only preload the default tab (MAP) background — others load on demand
@@ -163,8 +164,17 @@ export default function App() {
 
     async function load() {
       setProgress(20)
-      // Preload images + wait for state in parallel, with fast timeout
-      const imgPromise = preloadImages()
+
+      // Step 1: Preload images (20 -> 50)
+      const imgPromise = Promise.race([
+        preloadImages(),
+        new Promise<void>(r => setTimeout(r, 3000)),
+      ])
+      await imgPromise
+      if (cancelled) return
+      setProgress(50)
+
+      // Step 2: Wait for state (50 -> 80)
       const statePromise = new Promise<void>(resolve => {
         const check = () => {
           if (useStore.getState().state) { resolve(); return }
@@ -173,10 +183,12 @@ export default function App() {
         check()
         setTimeout(resolve, 1500)
       })
-      await Promise.race([
-        Promise.all([imgPromise, statePromise]),
-        new Promise(r => setTimeout(r, 2000)), // Max 2s total
-      ])
+      await statePromise
+      if (cancelled) return
+      setProgress(80)
+
+      // Step 3: Final ready (80 -> 100)
+      await new Promise(r => setTimeout(r, 150))
       if (cancelled) return
       setProgress(100)
       await new Promise(r => setTimeout(r, 200))
@@ -193,7 +205,7 @@ export default function App() {
   }
 
   return (
-    <>
+    <ErrorBoundary>
     <ReflectionLetter />
     <ConnectionIndicator />
     <div style={{
@@ -228,6 +240,6 @@ export default function App() {
         </div>
       </div>
     </div>
-    </>
+    </ErrorBoundary>
   )
 }
