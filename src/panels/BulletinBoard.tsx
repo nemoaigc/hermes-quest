@@ -232,13 +232,21 @@ export default function BulletinBoard() {
 
   const selectedQuestData = selectedQuest ? recommendations.find(q => q?.id === selectedQuest) : null
 
+  const [refreshMsg, setRefreshMsg] = useState<string | null>(null)
+
   async function refreshMap() {
     setRefreshing(true)
+    setRefreshMsg(null)
     try {
       const res = await fetch(`${API_URL}/api/map?refresh=true`)
       if (res.ok) {
         const d = await res.json()
         setKnowledgeMap(d)
+      } else {
+        const err = await res.json().catch(() => ({}))
+        const msg = err.error || `Refresh failed (${res.status})`
+        setRefreshMsg(msg)
+        setTimeout(() => setRefreshMsg(null), 3000)
       }
     } catch (e) {
       console.error(e)
@@ -332,8 +340,19 @@ export default function BulletinBoard() {
           textShadow: '0 1px 2px rgba(0,0,0,0.5)',
         }}
       >
-        {refreshing ? '...' : refreshError ? 'FAILED' : 'REFRESH'}
+        {refreshing ? '...' : refreshError ? 'FAILED' : `REFRESH (-50G)`}
       </button>
+      {refreshMsg && (
+        <div style={{
+          position: 'absolute', top: '10%', right: '3%', zIndex: 10,
+          fontFamily: 'var(--font-pixel)', fontSize: 'clamp(4px, 0.5vw, 6px)',
+          color: '#ff6b6b', textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+          background: 'rgba(10,8,4,0.9)', padding: '3px 6px',
+          border: '1px solid rgba(255,107,107,0.3)', borderRadius: '2px',
+        }}>
+          {refreshMsg}
+        </div>
+      )}
 
       {totalPages > 1 && (
         <div style={{
