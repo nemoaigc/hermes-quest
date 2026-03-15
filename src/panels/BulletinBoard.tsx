@@ -20,23 +20,36 @@ const RANK_COLOR: Record<string, string> = {
   S: '#6b4c2a', A: '#6a3a8a', B: '#2a6a5a', C: '#3a6a2a', D: '#5a5a5a',
 }
 
-function QuestSlot({ quest, slot, onAccept, accepting }: {
+function abbrev(title: string, max = 10): string {
+  if (title.length <= max) return title
+  return title.slice(0, max) + '...'
+}
+
+function QuestSlot({ quest, slot, onAccept, accepting, onSelect, selected }: {
   quest: RecommendedQuest
   slot: typeof PARCHMENT_SLOTS[0]
   onAccept: (id: string) => void
   accepting: boolean
+  onSelect: (id: string) => void
+  selected: boolean
 }) {
   return (
-    <div style={{
-      position: 'absolute',
-      left: `${slot.left}%`, top: `${slot.top}%`,
-      width: `${slot.width}%`, height: `${slot.height}%`,
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      padding: '3% 4%',
-      overflow: 'hidden',
-      cursor: 'pointer',
-    }}>
+    <div
+      title={`${quest.title}\n${quest.description || ''}`}
+      onClick={() => onSelect(quest.id)}
+      style={{
+        position: 'absolute',
+        left: `${slot.left}%`, top: `${slot.top}%`,
+        width: `${slot.width}%`, height: `${slot.height}%`,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '3% 4%',
+        overflow: 'hidden',
+        cursor: 'pointer',
+        outline: selected ? '2px solid #f0e68c' : 'none',
+        outlineOffset: '-1px',
+        borderRadius: '2px',
+      }}>
       {/* Rank */}
       <div style={{
         fontFamily: 'var(--font-pixel)',
@@ -49,31 +62,29 @@ function QuestSlot({ quest, slot, onAccept, accepting }: {
         [{quest.rank || 'C'}]
       </div>
 
-      {/* Title */}
+      {/* Title — abbreviated to prevent one-letter-per-line */}
       <div style={{
-        fontFamily: 'monospace',
-        fontSize: 'clamp(4px, 0.55vw, 6px)',
+        fontFamily: 'var(--font-pixel)',
+        fontSize: 'clamp(3px, 0.45vw, 5px)',
         color: '#3a1e0a',
-        lineHeight: '1.3',
+        lineHeight: '1.2',
         textAlign: 'center',
         margin: '2% 0',
         width: '100%',
         overflow: 'hidden',
-        display: '-webkit-box',
-        WebkitLineClamp: 3,
-        WebkitBoxOrient: 'vertical',
-        wordBreak: 'break-word',
-      } as React.CSSProperties}>
-        {quest.title}
+        whiteSpace: 'nowrap',
+        textOverflow: 'ellipsis',
+      }}>
+        {abbrev(quest.title, 10)}
       </div>
 
       {/* Rewards */}
       <div style={{
         fontFamily: 'var(--font-pixel)',
-        fontSize: 'clamp(3px, 0.45vw, 5px)',
+        fontSize: 'clamp(3px, 0.4vw, 4px)',
         color: '#6a4a2a',
         textAlign: 'center',
-        lineHeight: '1.3',
+        lineHeight: '1.2',
       }}>
         <div>{quest.reward_gold}G</div>
         <div>{quest.reward_xp}XP</div>
@@ -99,24 +110,140 @@ function QuestSlot({ quest, slot, onAccept, accepting }: {
   )
 }
 
+/** Expanded detail overlay for a selected quest */
+function QuestDetailOverlay({ quest, onClose, onAccept, accepting }: {
+  quest: RecommendedQuest
+  onClose: () => void
+  onAccept: (id: string) => void
+  accepting: boolean
+}) {
+  return (
+    <div
+      onClick={(e) => { e.stopPropagation(); onClose() }}
+      style={{
+        position: 'absolute', inset: 0, zIndex: 20,
+        background: 'rgba(10,8,4,0.85)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'linear-gradient(180deg, #3a2a18 0%, #2a1c0e 100%)',
+          border: '2px solid #8b6a3c',
+          borderRadius: '4px',
+          padding: '14px 18px',
+          maxWidth: '70%',
+          maxHeight: '80%',
+          overflow: 'auto',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+          cursor: 'default',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+          <span style={{
+            fontFamily: 'var(--font-pixel)', fontSize: 'clamp(6px, 0.8vw, 10px)',
+            color: RANK_COLOR[quest.rank || 'C'] || '#5a5a5a',
+            fontWeight: 'bold',
+          }}>
+            [{quest.rank || 'C'}]
+          </span>
+          <span style={{
+            fontFamily: 'var(--font-pixel)', fontSize: 'clamp(6px, 0.8vw, 10px)',
+            color: '#f0e68c',
+          }}>
+            {quest.title}
+          </span>
+        </div>
+        {quest.description && (
+          <div style={{
+            fontSize: 'clamp(8px, 1vw, 12px)',
+            color: '#c8a87a',
+            lineHeight: '1.5',
+            fontFamily: 'Georgia, serif',
+            fontStyle: 'italic',
+            marginBottom: '10px',
+          }}>
+            {quest.description}
+          </div>
+        )}
+        <div style={{
+          display: 'flex', gap: '12px', alignItems: 'center',
+          fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.6vw, 8px)',
+          color: '#8b7355',
+        }}>
+          <span>{quest.reward_gold}G / {quest.reward_xp}XP</span>
+          {quest.region && <span>Region: {quest.region}</span>}
+        </div>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '12px', justifyContent: 'flex-end' }}>
+          <button
+            onClick={onClose}
+            style={{
+              fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.6vw, 7px)',
+              padding: '4px 12px', cursor: 'pointer',
+              background: 'transparent', border: '1px solid rgba(139,94,60,0.5)',
+              color: '#8b7355',
+            }}
+          >CLOSE</button>
+          <button
+            onClick={() => onAccept(quest.id)}
+            disabled={accepting}
+            style={{
+              fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.6vw, 7px)',
+              padding: '4px 12px', cursor: 'pointer',
+              background: 'linear-gradient(180deg, #6a4428 0%, #4a2a14 50%, #3a2210 100%)',
+              border: '2px solid #6b4c2a',
+              color: '#f0e68c',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.4)',
+            }}
+          >{accepting ? '...' : 'ACCEPT QUEST'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function BulletinBoard() {
   const knowledgeMap = useStore((s) => s.knowledgeMap)
+  const setKnowledgeMap = useStore((s) => s.setKnowledgeMap)
   const setQuests = useStore((s) => s.setQuests)
   const [accepting, setAccepting] = useState<string | null>(null)
   const [page, setPage] = useState(0)
+  const [selectedQuest, setSelectedQuest] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
 
   const recommendations = knowledgeMap?.recommended_quests || []
   const pageSize = 6
   const totalPages = Math.max(1, Math.ceil(recommendations.length / pageSize))
   const displayed = recommendations.slice(page * pageSize, (page + 1) * pageSize)
 
+  const selectedQuestData = selectedQuest ? recommendations.find(q => q.id === selectedQuest) : null
+
+  async function refreshMap() {
+    setRefreshing(true)
+    try {
+      const res = await fetch(`${API_URL}/api/map`)
+      if (res.ok) {
+        const d = await res.json()
+        setKnowledgeMap(d)
+      }
+    } catch (e) { console.error(e) }
+    setRefreshing(false)
+  }
+
   async function handleAccept(questId: string) {
     setAccepting(questId)
     try {
       await acceptQuest(questId)
-      // Refresh quests after accept
-      const res = await fetch(`${API_URL}/api/quest/active`)
-      if (res.ok) { const d = await res.json(); setQuests(d.quests || []) }
+      // Refresh both: active quests + map (to update recommended_quests)
+      const [questRes, mapRes] = await Promise.all([
+        fetch(`${API_URL}/api/quest/active`),
+        fetch(`${API_URL}/api/map`),
+      ])
+      if (questRes.ok) { const d = await questRes.json(); setQuests(d.quests || []) }
+      if (mapRes.ok) { const d = await mapRes.json(); setKnowledgeMap(d) }
+      setSelectedQuest(null)
     } catch (e) { console.error(e) }
     setAccepting(null)
   }
@@ -136,9 +263,21 @@ export default function BulletinBoard() {
             quest={quest} slot={slot}
             onAccept={handleAccept}
             accepting={accepting === quest.id}
+            onSelect={setSelectedQuest}
+            selected={selectedQuest === quest.id}
           />
         )
       })}
+
+      {/* Quest detail overlay */}
+      {selectedQuestData && (
+        <QuestDetailOverlay
+          quest={selectedQuestData}
+          onClose={() => setSelectedQuest(null)}
+          onAccept={handleAccept}
+          accepting={accepting === selectedQuestData.id}
+        />
+      )}
 
       {displayed.length === 0 && (
         <div style={{
@@ -153,6 +292,26 @@ export default function BulletinBoard() {
           No quests posted yet.
         </div>
       )}
+
+      {/* Refresh button */}
+      <button
+        onClick={refreshMap}
+        disabled={refreshing}
+        style={{
+          position: 'absolute', top: '3%', right: '3%', zIndex: 10,
+          fontFamily: 'var(--font-pixel)',
+          fontSize: 'clamp(4px, 0.5vw, 6px)',
+          padding: '3px 8px',
+          cursor: refreshing ? 'wait' : 'pointer',
+          background: 'linear-gradient(180deg, #6a4428 0%, #4a2a14 50%, #3a2210 100%)',
+          border: '2px solid #6b4c2a',
+          color: '#f0e68c',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.4)',
+          textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+        }}
+      >
+        {refreshing ? '...' : 'REFRESH'}
+      </button>
 
       {totalPages > 1 && (
         <div style={{

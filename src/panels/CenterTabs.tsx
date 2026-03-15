@@ -445,10 +445,18 @@ function RpgDialogInline({ npc, onClose, chatHistoryRef, prefillMessage }: {
           context: { active_tab: activeTab, selected_bag_items: selectedBagItems, selected_region: selectedRegion },
         }),
       })
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '')
+        console.error(`[NPC chat] HTTP ${res.status}:`, errText)
+        setMessages((m) => [...m, { role: 'npc', text: `*looks confused* (Error ${res.status})` }])
+        setLoading(false)
+        return
+      }
       const data = await res.json()
       setMessages((m) => [...m, { role: 'npc', text: data.reply || '...' }])
-    } catch {
-      setMessages((m) => [...m, { role: 'npc', text: '*stares silently*' }])
+    } catch (err: any) {
+      console.error('[NPC chat] fetch error:', err?.message || err)
+      setMessages((m) => [...m, { role: 'npc', text: `*stares silently* (${err?.message || 'Connection error'})` }])
     }
     setLoading(false)
   }
@@ -709,16 +717,25 @@ function MapBottomInfo() {
 function GuildBottomInfo() {
   const quests = useStore((s) => s.quests)
   const setQuests = useStore((s) => s.setQuests)
+  const setKnowledgeMap = useStore((s) => s.setKnowledgeMap)
   const [input, setInput] = useState('')
   const [creating, setCreating] = useState(false)
+  const [expandedQuest, setExpandedQuest] = useState<string | null>(null)
   const activeQuests = quests.filter((q) => q.status === 'active' || q.status === 'in_progress' || q.status === 'pending')
 
   async function refreshQuests() {
     try {
-      const res = await fetch(`${API_URL}/api/quest/active`)
-      if (res.ok) {
-        const d = await res.json()
+      const [questRes, mapRes] = await Promise.all([
+        fetch(`${API_URL}/api/quest/active`),
+        fetch(`${API_URL}/api/map`),
+      ])
+      if (questRes.ok) {
+        const d = await questRes.json()
         setQuests(d.quests || [])
+      }
+      if (mapRes.ok) {
+        const d = await mapRes.json()
+        setKnowledgeMap(d)
       }
     } catch {}
   }
@@ -782,17 +799,25 @@ function GuildBottomInfo() {
           <div style={{ fontSize: '10px', color: '#6a5a3a', fontStyle: 'italic', fontFamily: 'Georgia, serif', padding: '8px' }}>
             {questTab === 'active' ? 'No active quests.' : questTab === 'cancelled' ? 'No cancelled quests.' : 'No failed quests.'}
           </div>
-        ) : tabQuests.map((q) => (
+        ) : tabQuests.map((q) => {
+          const isExpanded = expandedQuest === q.id
+          return (
           <div key={q.id} style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             marginBottom: '3px', fontSize: '10px', padding: '3px 6px',
             borderLeft: `3px solid ${questTab === 'active' ? '#f0e68c' : questTab === 'cancelled' ? '#6b7280' : '#ff6b6b'}`,
-          }}>
+            cursor: 'pointer',
+            background: isExpanded ? 'rgba(90,60,20,0.15)' : 'transparent',
+            transition: 'background 0.1s',
+          }}
+          onClick={() => setExpandedQuest(isExpanded ? null : q.id)}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ flex: 1, overflow: 'hidden' }}>
               {editingQuest === q.id ? (
                 <input
                   autoFocus
                   defaultValue={q.title}
+                  onClick={(e) => e.stopPropagation()}
                   onKeyDown={async (e) => {
                     if (e.key === 'Enter') {
                       const val = e.currentTarget.value.trim()
@@ -822,7 +847,7 @@ function GuildBottomInfo() {
               <div style={{ fontSize: '5px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '1px' }}>{q.source === 'user' ? 'YOU' : 'AGENT'}</div>
             </div>
             {questTab === 'active' && (
-              <div style={{ display: 'flex', gap: '3px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: '3px', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
                 <button onClick={() => setEditingQuest(editingQuest === q.id ? null : q.id)} style={{
                   fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '2px 5px', cursor: 'pointer',
                   background: editingQuest === q.id ? 'rgba(56,152,236,0.15)' : 'transparent',
@@ -834,8 +859,27 @@ function GuildBottomInfo() {
                 }}>{cancelling === q.id ? '...' : 'CANCEL'}</button>
               </div>
             )}
+            </div>
+            {/* Expanded description */}
+            {isExpanded && q.description && (
+              <div style={{
+                marginTop: '4px', padding: '4px 6px',
+                fontSize: '9px', color: '#c8a87a', lineHeight: '1.5',
+                fontFamily: 'Georgia, serif', fontStyle: 'italic',
+                borderTop: '1px solid rgba(107,76,42,0.3)',
+              }}>
+                {q.description}
+                {(q.reward_xp || q.reward_gold) && (
+                  <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355', marginTop: '3px', fontStyle: 'normal' }}>
+                    {q.reward_gold ? `${q.reward_gold}G` : ''}{q.reward_gold && q.reward_xp ? ' / ' : ''}{q.reward_xp ? `${q.reward_xp}XP` : ''}
+                    {q.rank ? ` [${q.rank}]` : ''}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Fixed input at bottom */}
