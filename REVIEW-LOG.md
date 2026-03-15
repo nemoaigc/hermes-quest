@@ -1,50 +1,63 @@
 # Hermes Quest — 持续审查修复日志
 
-> 自动化 5 专家闭环审查，每轮并行执行，修复后 commit + push
+> 自动化 5+1 专家闭环审查（Round 6 起加入 Codex 代码质量审查员）
 
 ---
 
-## Round 1 (2026-03-16 ~05:30) — Commit `a20abdb`
-- 5 专家发现 ~58 issues，修复 16 (9 frontend + 7 server)
-- Critical: API_URL missing, xp_to_next fallback
-- High: shop install check, bag discard error, feedback HP removal
+## Round 1–4 Summary (60+ fixes)
+- API_URL missing, shop install, bag discard, feedback HP removal
+- Event dedup, duplicate quests, hub install, NPC instructions
+- All silent catch → RPG error messages, res.ok checks
+- ErrorBoundary, WS backoff, smooth loading, quest gen randomization
+- Gold sinks, level-up MP restore, MP decay, mastery clamp
 
-## Round 2 (2026-03-16 ~06:00) — Commit `c63c48a`
-- 修复 18 + NPC chat CLEAR button
-- Hub install fix, event dedup, duplicate quest prevention, gold sinks
-- Feedback persistence, connection indicator, RPG confirm dialog
+## Round 5 (2026-03-16 ~07:00) — Commit `9f6835e`
+- HP/MP potion system (200G/150G gold sinks)
+- Pixel art potion icons
+- jiter module fix for NPC chat
+- acceptError scope bug fix
 
-## Round 3 (2026-03-16 ~06:20) — Commit `9b4ac13`
-- 14 silent catch blocks → RPG-themed error messages
-- Server: jiter module, orphan process, tavern path fix
+## Round 6: Code Quality (2026-03-16 ~07:20) — Commit `0e29aa2`
 
-## Round 4 (2026-03-16 ~06:40) — Commits `469524c`, `597cd82`
-- Global ErrorBoundary ("A RIFT IN REALITY")
-- WebSocket exponential backoff (1s→30s)
-- Loading screen 4-stage smooth progress
-- **Quest gen randomized** — each REFRESH gives different quests
-- **Active quest title dedup** — no duplicate recommendations
-- **Gold cost display** — REFRESH button shows "-50G", error msg on insufficient gold
-- Quest accept logic fix, HTML tag stripping for XSS prevention
+**Codex 前端审查**: 37 issues (2 critical, 6 high, 17 medium, 12 low)
+**Codex 后端审查**: 33 issues (6 high, 16 medium, 11 low)
+
+### Fixes Applied:
+
+**Frontend — Constants Extraction:**
+- `constants/theme.ts`: COLORS, FONTS, GRADIENTS, TIMING, SIZES, SOURCE_COLOR
+- `constants/api.ts`: ENDPOINTS (all API paths centralized)
+- `constants/storage.ts`: LS_KEYS (localStorage keys)
+- Removed duplicate SOURCE_COLOR from Shop.tsx + CenterTabs.tsx
+- Replaced hardcoded localStorage keys
+
+**Backend — GAME_BALANCE Config:**
+- `config.py`: 40+ game balance constants (potions, costs, rewards, formulas, thresholds)
+- `config.py`: MODEL, PROXY_URL centralized
+- `main.py`: All magic numbers → GAME_BALANCE references
+- `main.py`: Consolidated JSONResponse import (removed 15+ scattered imports)
+
+### Remaining Code Quality Issues (for future rounds):
+- **CenterTabs.tsx split** (1321 lines → 8+ files) — biggest refactor needed
+- **Shared components**: RpgButton, PanelCard, RpgInput, Pagination, OverlayMessage
+- **API consolidation**: Route all fetch calls through api.ts functions
+- **`any` types**: Replace with proper types
+- **Inline hover handlers**: Move to CSS :hover
+- **Sub-component error boundaries**: Wrap each panel separately
+- **Backend**: _update_state helper, _run_twitter_cli helper, _parse_npc_dialogue helper
+- **Backend security**: CORS restrict, API key bypass fix, LLM timeout
 
 ---
 
 ## Cumulative Stats
-- **Total issues found**: ~100+
-- **Total fixes applied**: 60+
-- **Commits**: 5 (all pushed to origin/main)
-- **Key improvements**:
-  - All API calls have error feedback (no more silent failures)
-  - Quest recommendations randomized + deduped
-  - Gold economy functional (refresh 50G, create 100G)
-  - NPC prompts with explicit role-play instructions
-  - Numerical systems balanced (HP=objective, MP=subjective)
-  - Error boundary, WS backoff, smooth loading
-- **Remaining low-priority**:
-  - Keyboard accessibility (focus-visible styles)
-  - Cross-process race on state.json (architectural)
-  - Shop filter logic duplication (shared hook)
-  - Red/blue potions as gold sink (user idea!)
+- **Total issues found**: ~170+
+- **Total fixes applied**: 75+
+- **Commits**: 7 (all pushed)
+- **Key architectural improvements**:
+  - All game balance values in config (not hardcoded)
+  - Shared theme constants (colors, fonts, sizes)
+  - Centralized API endpoints
+  - Centralized localStorage keys
 
 ---
 
