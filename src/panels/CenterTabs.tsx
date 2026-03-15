@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useStore } from '../store'
 import KnowledgeMap from './KnowledgeMap'
 import SubRegionGraph from './SubRegionGraph'
@@ -696,11 +696,31 @@ function MapBottomInfo() {
 /** GUILD bottom — task list with DONE buttons */
 function GuildBottomInfo() {
   const quests = useStore((s) => s.quests)
+  const setQuests = useStore((s) => s.setQuests)
   const [input, setInput] = useState('')
   const [creating, setCreating] = useState(false)
   const [completing, setCompleting] = useState<string | null>(null)
   const [completed, setCompleted] = useState<string | null>(null)
+  const [doneCount, setDoneCount] = useState(0)
   const activeQuests = quests.filter((q) => q.status === 'active' || q.status === 'in_progress' || q.status === 'pending')
+
+  // Fetch completed count on mount
+  useEffect(() => {
+    fetch(`${API_URL}/api/quest/active`).then(r => r.json()).then(d => {
+      if (typeof d.completed_count === 'number') setDoneCount(d.completed_count)
+    }).catch(() => {})
+  }, [])
+
+  async function refreshQuests() {
+    try {
+      const res = await fetch(`${API_URL}/api/quest/active`)
+      if (res.ok) {
+        const d = await res.json()
+        setQuests(d.quests || [])
+        if (typeof d.completed_count === 'number') setDoneCount(d.completed_count)
+      }
+    } catch {}
+  }
 
   async function createTask() {
     const title = input.trim()
@@ -708,7 +728,8 @@ function GuildBottomInfo() {
     setInput('')
     setCreating(true)
     try {
-      await fetch('/api/quest/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, source: 'user' }) })
+      await fetch(`${API_URL}/api/quest/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, source: 'user' }) })
+      await refreshQuests()
     } catch {}
     setCreating(false)
   }
@@ -724,6 +745,13 @@ function GuildBottomInfo() {
       if (res.ok) {
         setCompleted(questId)
         setTimeout(() => setCompleted(null), 1000)
+        // Refresh quests and state
+        await refreshQuests()
+        const stateRes = await fetch(`${API_URL}/api/state`)
+        if (stateRes.ok) {
+          const stateData = await stateRes.json()
+          useStore.getState().setState(stateData)
+        }
       }
     } catch {}
     setCompleting(null)
@@ -732,7 +760,7 @@ function GuildBottomInfo() {
   return (
     <PanelCard style={{ width: '100%', overflow: 'auto' }}>
       <div style={{ fontSize: '8px', color: '#c8a87a', marginBottom: '6px', letterSpacing: '1px', fontFamily: 'var(--font-pixel)' }}>
-        ACTIVE TASKS ({activeQuests.length})
+        ACTIVE ({activeQuests.length}){doneCount > 0 ? <span style={{ color: '#6a8a4a', marginLeft: '8px' }}>DONE ({doneCount})</span> : null}
       </div>
       {activeQuests.length === 0 ? (
         <div style={{ fontSize: '11px', color: '#6a5a3a', fontStyle: 'italic', fontFamily: 'Georgia, serif' }}>
@@ -749,9 +777,6 @@ function GuildBottomInfo() {
             <div style={{ fontSize: '6px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '1px' }}>{q.source === 'user' ? 'YOU' : 'AGENT'}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-            <div style={{ width: '60px', height: '6px', background: 'rgba(10,8,4,0.6)', border: '1px solid rgba(139,94,60,0.3)', borderRadius: '1px' }}>
-              <div style={{ height: '100%', width: `${q.progress * 100}%`, background: q.progress > 0.5 ? 'var(--green)' : 'var(--cyan)', borderRadius: '1px', transition: 'width 0.3s' }} />
-            </div>
             <button
               onClick={() => completeQuest(q.id)}
               disabled={completing === q.id || completed === q.id}
@@ -812,35 +837,76 @@ function GuildBottomInfo() {
 
 /** SHOP bottom — left: source shops, right: skills from selected source */
 function ShopBottomInfo() {
-  const skills = useStore((s) => s.skills)
+  const shopFilter = useStore((s) => s.shopFilter)
+  const setShopFilter = useStore((s) => s.setShopFilter)
   const sourceFilter = useStore((s) => s.shopSourceFilter)
   const setSourceFilter = useStore((s) => s.setShopSourceFilter)
+  const shopPage = useStore((s) => s.shopPage)
+  const setShopPage = useStore((s) => s.setShopPage)
+
+  const [hubSkills, setHubSkills] = useState<Array<{ name: string; source: string; trust_level: string; identifier: string; description: string; tags: string[] }>>([])
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/hub/search?q=`)
+        setHubSkills(await res.json())
+      } catch { /* ignore */ }
+    })()
+  }, [])
 
   const SOURCE_COLOR: Record<string, string> = {
     official: 'var(--green)', github: 'var(--cyan)',
     'claude-marketplace': '#b48eff', clawhub: '#ff9944', lobehub: '#55bbff',
-    filesystem: '#8b7355',
   }
 
-  // Count skills per source
-  const sourceCounts = new Map<string, number>()
-  skills.forEach(s => {
-    const src = s.source || 'other'
-    sourceCounts.set(src, (sourceCounts.get(src) || 0) + 1)
-  })
-  const sources = Array.from(sourceCounts.entries()).sort((a, b) => b[1] - a[1])
+  // Filtered list (same logic as Shop.tsx shelf)
+  const displayed = useMemo(() => {
+    let list = hubSkills
+    if (sourceFilter) {
+      list = list.filter((s) => {
+        const src = s.trust_level === 'builtin' ? 'official' : s.source
+        return src === sourceFilter
+      })
+    }
+    if (shopFilter.trim()) {
+      const q = shopFilter.toLowerCase()
+      list = list.filter(
+        (s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q)
+      )
+    }
+    return list
+  }, [hubSkills, shopFilter, sourceFilter])
 
-  // Skills from selected source
-  const filteredSkills = sourceFilter
-    ? skills.filter(s => (s.source || 'other') === sourceFilter)
-    : skills.slice(0, 8)
+  // Count sources for filter chips
+  const sourceCounts = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const sk of hubSkills) {
+      const src = sk.trust_level === 'builtin' ? 'official' : sk.source
+      m.set(src, (m.get(src) || 0) + 1)
+    }
+    return Array.from(m.entries()).sort((a, b) => b[1] - a[1])
+  }, [hubSkills])
+
+  const pageSize = 9
+  const totalPages = Math.max(1, Math.ceil(displayed.length / pageSize))
+  const safePage = Math.min(shopPage, totalPages - 1)
+  const pageItems = displayed.slice(safePage * pageSize, (safePage + 1) * pageSize)
+
+  const btnStyle: React.CSSProperties = {
+    fontFamily: 'var(--font-pixel)', fontSize: '6px',
+    padding: '2px 6px', cursor: 'pointer',
+    background: 'rgba(90,60,20,0.4)', border: '1px solid #5c3a1e', color: '#f0e68c',
+    lineHeight: 1,
+  }
+  const btnDisabled: React.CSSProperties = { ...btnStyle, opacity: 0.3, cursor: 'default' }
 
   return (
     <div style={{ display: 'flex', gap: '6px', width: '100%', height: '100%' }}>
-      {/* Left: source shops */}
+      {/* Left: source filter + search */}
       <PanelCard style={{ minWidth: '110px', overflow: 'auto' }}>
         <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355', marginBottom: '4px', letterSpacing: '1px' }}>SOURCES</div>
-        {sources.map(([src, count]) => (
+        {sourceCounts.map(([src, count]) => (
           <div
             key={src}
             onClick={() => setSourceFilter(sourceFilter === src ? null : src)}
@@ -860,26 +926,54 @@ function ShopBottomInfo() {
             <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355' }}>{count}</span>
           </div>
         ))}
+        {/* Search input */}
+        <input
+          value={shopFilter}
+          onChange={e => setShopFilter(e.target.value)}
+          placeholder="Search..."
+          style={{
+            width: '100%', marginTop: '4px', padding: '2px 4px',
+            fontFamily: 'var(--font-pixel)', fontSize: '5px',
+            background: 'rgba(15,10,5,0.6)', border: '1px solid #5c3a1e',
+            color: '#f0e68c', outline: 'none', boxSizing: 'border-box',
+          }}
+        />
       </PanelCard>
 
-      {/* Right: skills from selected source */}
-      <PanelCard style={{ flex: 1, overflow: 'auto' }}>
-        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355', marginBottom: '4px', letterSpacing: '1px' }}>
-          {sourceFilter ? sourceFilter.toUpperCase() : 'ALL'} ({filteredSkills.length})
+      {/* Right: current page items + pagination */}
+      <PanelCard style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355', marginBottom: '3px', letterSpacing: '1px' }}>
+          WARES ({displayed.length})
         </div>
-        {filteredSkills.map(s => (
-          <div key={s.name} style={{
-            fontSize: '8px', color: '#e8d5b0', padding: '2px 0',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>
-            {s.name}
-          </div>
-        ))}
-        {!sourceFilter && skills.length > 8 && (
-          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '4px', color: '#6a5a3a', marginTop: '2px' }}>
-            Select a source to see all
-          </div>
-        )}
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          {pageItems.map(s => (
+            <div key={s.identifier} style={{
+              fontSize: '7px', color: '#e8d5b0', padding: '1px 0',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+              <span style={{ color: SOURCE_COLOR[s.trust_level === 'builtin' ? 'official' : s.source] || '#8a8a8a', marginRight: '4px', fontSize: '5px' }}>
+                {(s.trust_level === 'builtin' ? 'official' : s.source).slice(0, 3).toUpperCase()}
+              </span>
+              {s.name}
+            </div>
+          ))}
+        </div>
+        {/* Pagination */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '3px', paddingTop: '3px', borderTop: '1px solid rgba(107,76,42,0.3)' }}>
+          <button
+            onClick={() => safePage > 0 && setShopPage(safePage - 1)}
+            style={safePage > 0 ? btnStyle : btnDisabled}
+            disabled={safePage <= 0}
+          >&#9664;</button>
+          <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#c8a87a' }}>
+            {safePage + 1} / {totalPages}
+          </span>
+          <button
+            onClick={() => safePage < totalPages - 1 && setShopPage(safePage + 1)}
+            style={safePage < totalPages - 1 ? btnStyle : btnDisabled}
+            disabled={safePage >= totalPages - 1}
+          >&#9654;</button>
+        </div>
       </PanelCard>
     </div>
   )
