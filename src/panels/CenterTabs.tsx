@@ -7,6 +7,8 @@ import Shop from './Shop'
 import TavernAmbientChat from '../components/TavernAmbientChat'
 import AnimatedBg from '../components/AnimatedBg'
 import { API_URL } from '../api'
+import { SOURCE_COLOR } from '../constants/theme'
+import { LS_KEYS } from '../constants/storage'
 import type { TabId, NpcId } from '../types'
 
 // Extend window for SHOW TO NPC bridge
@@ -423,7 +425,7 @@ function RpgDialogInline({ npc, onClose, chatHistoryRef, prefillMessage }: {
     const trimmed = messages.length > 20 ? messages.slice(-20) : messages
     chatHistoryRef.current[npc.id] = trimmed
     try {
-      localStorage.setItem('hermes-npc-chat-history', JSON.stringify(chatHistoryRef.current))
+      localStorage.setItem(LS_KEYS.npcHistory, JSON.stringify(chatHistoryRef.current))
     } catch {}
   }, [messages, npc.id, chatHistoryRef])
 
@@ -495,7 +497,7 @@ function RpgDialogInline({ npc, onClose, chatHistoryRef, prefillMessage }: {
             const fresh = [{ role: 'npc' as const, text: npcGreeting(npc) }]
             setMessages(fresh)
             chatHistoryRef.current[npc.id] = fresh
-            try { localStorage.setItem('hermes-npc-chat-history', JSON.stringify(chatHistoryRef.current)) } catch {}
+            try { localStorage.setItem(LS_KEYS.npcHistory, JSON.stringify(chatHistoryRef.current)) } catch {}
           }} style={{
             fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '2px 6px',
             background: 'transparent', border: '1px solid rgba(255,107,107,0.4)',
@@ -985,11 +987,6 @@ function ShopBottomInfo() {
 
   const hubSkills = useStore((s) => s.hubSkills)
 
-  const SOURCE_COLOR: Record<string, string> = {
-    official: 'var(--green)', github: 'var(--cyan)',
-    'claude-marketplace': '#b48eff', clawhub: '#ff9944', lobehub: '#55bbff',
-  }
-
   // Dedup + filter
   const displayed = useMemo(() => {
     // Deduplicate by identifier (unique per skill)
@@ -1141,7 +1138,7 @@ export default function CenterTabs() {
 
   // Persist NPC chat history across open/close (+ localStorage)
   const chatHistoryRef = useRef<Record<string, Array<{ role: 'npc' | 'user'; text: string }>>>(
-    (() => { try { const s = localStorage.getItem('hermes-npc-chat-history'); return s ? JSON.parse(s) : {} } catch { return {} } })()
+    (() => { try { const s = localStorage.getItem(LS_KEYS.npcHistory); return s ? JSON.parse(s) : {} } catch { return {} } })()
   )
 
   // Ref for gossip refresh callback (avoids DOM querySelector hack)

@@ -3,15 +3,8 @@ import { SkillIcon } from '../utils/icons'
 import { API_URL } from '../api'
 import { useStore } from '../store'
 import AnimatedBg from '../components/AnimatedBg'
+import { SOURCE_COLOR } from '../constants/theme'
 import type { HubSkill } from '../store'
-
-const SOURCE_COLOR: Record<string, string> = {
-  official: 'var(--green)',
-  github: 'var(--cyan)',
-  'claude-marketplace': '#b48eff',
-  clawhub: '#ff9944',
-  lobehub: '#55bbff',
-}
 
 // 9 shelf slots — 3 rows × 3 columns aligned to shop-bg.png (1024x572)
 // Measured from pixel analysis: cols at 26.2/41.5/58.7%, rows at 26.2/46.7/65.7%

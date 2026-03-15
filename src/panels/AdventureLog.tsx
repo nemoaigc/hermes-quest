@@ -3,26 +3,24 @@ import { useStore } from '../store'
 import { formatEvent, formatTime } from '../utils/formatters'
 import { EVENT_ICONS } from '../utils/icons'
 import { API_URL } from '../api'
+import { LS_KEYS } from '../constants/storage'
 
 const FEEDBACKABLE_TYPES = new Set(['skill_drop', 'cycle_end', 'quest_complete', 'train_start'])
 
-const FEEDBACK_LS_KEY = 'hermes-feedback-state'
-const CLEARED_LS_KEY = 'hermes-log-cleared-at'
-
 function loadFeedback(): Record<string, 'positive' | 'negative'> {
   try {
-    const raw = localStorage.getItem(FEEDBACK_LS_KEY)
+    const raw = localStorage.getItem(LS_KEYS.feedback)
     return raw ? JSON.parse(raw) : {}
   } catch { return {} }
 }
 
 function saveFeedback(state: Record<string, 'positive' | 'negative'>) {
-  try { localStorage.setItem(FEEDBACK_LS_KEY, JSON.stringify(state)) } catch {}
+  try { localStorage.setItem(LS_KEYS.feedback, JSON.stringify(state)) } catch {}
 }
 
 function loadClearedAt(): number {
   try {
-    const v = localStorage.getItem(CLEARED_LS_KEY)
+    const v = localStorage.getItem(LS_KEYS.logCleared)
     return v ? Number(v) : 0
   } catch { return 0 }
 }
@@ -64,7 +62,7 @@ export default function AdventureLog() {
 
   const handleClear = useCallback(() => {
     const now = Date.now()
-    localStorage.setItem(CLEARED_LS_KEY, String(now))
+    localStorage.setItem(LS_KEYS.logCleared, String(now))
     setClearedAt(now)
     useStore.getState().setEvents([])
     setShowConfirm(false)
