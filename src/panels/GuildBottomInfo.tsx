@@ -8,8 +8,15 @@ import {
   fetchActiveQuests,
   fetchAllQuests,
 } from '../api'
+import RpgButton from '../components/RpgButton'
 
-/** GUILD bottom — task list with DONE buttons */
+const TAB_CONFIG = [
+  { key: 'active' as const, label: 'ACTIVE', color: '#f0e68c', dim: '#6a5a3a' },
+  { key: 'cancelled' as const, label: 'CANCELLED', color: '#6b7280', dim: '#4a4a5a' },
+  { key: 'failed' as const, label: 'FAILED', color: '#ff6b6b', dim: '#5a3a3a' },
+] as const
+
+/** GUILD bottom — quest ledger */
 export default function GuildBottomInfo() {
   const quests = useStore((s) => s.quests)
   const setQuests = useStore((s) => s.setQuests)
@@ -53,7 +60,6 @@ export default function GuildBottomInfo() {
   const [cancelling, setCancelling] = useState<string | null>(null)
   const [editingQuest, setEditingQuest] = useState<string | null>(null)
 
-
   async function handleCancelQuest(questId: string) {
     setCancelling(questId)
     try {
@@ -96,7 +102,6 @@ export default function GuildBottomInfo() {
     setRetrying(null)
   }
 
-  // Fetch all quests (including done/cancelled) for tab display
   const [allQuests, setAllQuests] = useState<any[]>([])
   const [allQuestsTrigger, setAllQuestsTrigger] = useState(0)
   useEffect(() => {
@@ -104,173 +109,200 @@ export default function GuildBottomInfo() {
   }, [allQuestsTrigger])
   const cancelledQuests = allQuests.filter(q => q.status === 'cancelled')
   const failedQuests = allQuests.filter(q => q.status === 'failed')
-
   const tabQuests = questTab === 'active' ? activeQuests : questTab === 'cancelled' ? cancelledQuests : failedQuests
+  const tabColor = TAB_CONFIG.find(t => t.key === questTab)?.color || '#f0e68c'
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
-      {/* Tabs: ACTIVE / CANCELLED / FAILED */}
-      <div style={{ display: 'flex', gap: '2px', marginBottom: '4px', flexShrink: 0 }}>
-        {([
-          { key: 'active' as const, label: 'ACTIVE', count: activeQuests.length, color: '#f0e68c' },
-          { key: 'cancelled' as const, label: 'CANCELLED', count: cancelledQuests.length, color: '#6b7280' },
-          { key: 'failed' as const, label: 'FAILED', count: failedQuests.length, color: '#ff6b6b' },
-        ]).map(tab => (
-          <button key={tab.key} onClick={() => setQuestTab(tab.key)} style={{
-            fontFamily: 'var(--font-pixel)', fontSize: '6px', padding: '3px 8px',
-            background: questTab === tab.key ? 'rgba(90,60,20,0.4)' : 'transparent',
-            border: 'none',
-            borderBottom: questTab === tab.key ? `2px solid ${tab.color}` : '2px solid transparent',
-            color: questTab === tab.key ? tab.color : '#6a5a3a',
-            cursor: 'pointer', letterSpacing: '1px',
-          }}>
-            {tab.label} ({tab.count})
-          </button>
-        ))}
+      {/* Header: title + tabs inline */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '12px',
+        paddingBottom: '6px', marginBottom: '6px', flexShrink: 0,
+        borderBottom: '1px solid rgba(107,76,42,0.3)',
+      }}>
+        <span style={{
+          fontFamily: 'var(--font-pixel)', fontSize: '8px',
+          color: '#c8a87a', letterSpacing: '2px', flexShrink: 0,
+        }}>QUESTS</span>
+        <div style={{ display: 'flex', gap: '2px' }}>
+          {TAB_CONFIG.map(tab => {
+            const count = tab.key === 'active' ? activeQuests.length : tab.key === 'cancelled' ? cancelledQuests.length : failedQuests.length
+            const isActive = questTab === tab.key
+            return (
+              <button key={tab.key} onClick={() => setQuestTab(tab.key)} style={{
+                fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '3px 8px',
+                background: isActive ? 'rgba(90,60,20,0.35)' : 'transparent',
+                border: `1px solid ${isActive ? tab.color + '50' : 'transparent'}`,
+                borderRadius: '2px',
+                color: isActive ? tab.color : tab.dim,
+                cursor: 'pointer', letterSpacing: '1px',
+                transition: 'all 0.15s',
+              }}>
+                {tab.label} {count > 0 ? `(${count})` : ''}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
-      {/* Scrollable quest list */}
+      {/* Quest list */}
       <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
         {tabQuests.length === 0 ? (
-          <div style={{ fontSize: '10px', color: '#6a5a3a', fontStyle: 'italic', fontFamily: 'Georgia, serif', padding: '8px' }}>
-            {questTab === 'active' ? 'No active quests.' : questTab === 'cancelled' ? 'No cancelled quests.' : 'No failed quests.'}
+          <div style={{
+            fontSize: '10px', color: '#5a4a3a', fontStyle: 'italic',
+            fontFamily: 'Georgia, serif', padding: '12px', textAlign: 'center',
+          }}>
+            {questTab === 'active' ? 'The quest board is empty...' : questTab === 'cancelled' ? 'No abandoned quests.' : 'No fallen quests.'}
           </div>
         ) : tabQuests.map((q) => {
           const isExpanded = expandedQuest === q.id
           return (
-          <div key={q.id} style={{
-            marginBottom: '3px', fontSize: '10px', padding: '3px 6px',
-            borderLeft: `3px solid ${questTab === 'active' ? '#f0e68c' : questTab === 'cancelled' ? '#6b7280' : '#ff6b6b'}`,
-            cursor: 'pointer',
-            background: isExpanded ? 'rgba(90,60,20,0.15)' : 'transparent',
-            transition: 'background 0.1s',
-          }}
-          onClick={() => setExpandedQuest(isExpanded ? null : q.id)}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ flex: 1, overflow: 'hidden' }}>
-              {editingQuest === q.id ? (
-                <input
-                  autoFocus
-                  defaultValue={q.title}
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={async (e) => {
-                    if (e.key === 'Enter') {
-                      const val = e.currentTarget.value.trim()
-                      if (val && val !== q.title) {
-                        try {
-                          await apiEditQuest(q.id, val)
-                          await refreshQuests()
-                        } catch (err) { console.error('quest edit failed', err) }
-                      }
-                      setEditingQuest(null)
-                    } else if (e.key === 'Escape') setEditingQuest(null)
-                  }}
-                  onBlur={() => setEditingQuest(null)}
-                  style={{
-                    width: '100%', padding: '2px 4px', fontSize: '10px',
-                    fontFamily: 'var(--font-pixel)',
-                    background: 'rgba(10,8,4,0.8)', border: '1px solid #38bdf8',
-                    color: '#f0e68c', outline: 'none',
-                  }}
-                />
-              ) : (
-                <div style={{
-                  color: questTab === 'active' ? '#e8d5b0' : questTab === 'cancelled' ? '#7a7a7a' : '#ff8a8a',
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  textDecoration: questTab === 'cancelled' ? 'line-through' : 'none',
-                  opacity: questTab === 'cancelled' ? 0.6 : 1,
-                }}>{q.title || '(untitled)'}</div>
-              )}
-              <div style={{ fontSize: '5px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '1px' }}>{q.source === 'user' ? 'YOU' : 'AGENT'}</div>
-            </div>
-            {questTab === 'active' && (
-              <div style={{ display: 'flex', gap: '3px', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-                <button onClick={() => setEditingQuest(editingQuest === q.id ? null : q.id)} style={{
-                  fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '2px 5px', cursor: 'pointer',
-                  background: editingQuest === q.id ? 'rgba(56,152,236,0.15)' : 'transparent',
-                  border: '1px solid rgba(56,152,236,0.5)', color: '#38bdf8', borderRadius: '2px',
-                }}>{editingQuest === q.id ? 'ESC' : 'EDIT'}</button>
-                <button onClick={() => handleFailQuest(q.id)} disabled={failing === q.id} style={{
-                  fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '2px 5px', cursor: 'pointer',
-                  background: 'transparent', border: '1px solid rgba(255,140,50,0.4)', color: '#ff8c32', borderRadius: '2px',
-                }}>{failing === q.id ? '...' : failError === q.id ? 'ERROR' : 'FAIL'}</button>
-                <button onClick={() => handleCancelQuest(q.id)} disabled={cancelling === q.id} style={{
-                  fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '2px 5px', cursor: 'pointer',
-                  background: 'transparent', border: '1px solid rgba(255,107,107,0.4)', color: '#ff6b6b', borderRadius: '2px',
-                }}>{cancelling === q.id ? '...' : cancelError === q.id ? 'FAILED' : 'CANCEL'}</button>
-              </div>
-            )}
-            {questTab === 'failed' && (
-              <div style={{ display: 'flex', gap: '3px', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-                <button
-                  onClick={() => retryQuest(q.title)}
-                  disabled={retrying === q.title}
-                  style={{
-                    fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '2px 6px', cursor: 'pointer',
-                    background: 'rgba(240,230,140,0.1)', border: '1px solid rgba(240,230,140,0.4)',
-                    color: '#f0e68c', borderRadius: '2px',
-                  }}
-                >{retrying === q.title ? '...' : retryError === q.title ? 'ERROR' : 'RETRY (50G)'}</button>
-              </div>
-            )}
-            </div>
-            {/* Expanded description */}
-            {isExpanded && q.description && (
-              <div style={{
-                marginTop: '4px', padding: '4px 6px',
-                fontSize: '9px', color: '#c8a87a', lineHeight: '1.5',
-                fontFamily: 'Georgia, serif', fontStyle: 'italic',
-                borderTop: '1px solid rgba(107,76,42,0.3)',
-              }}>
-                {q.description}
-                {(q.reward_xp || q.reward_gold) && (
-                  <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355', marginTop: '3px', fontStyle: 'normal' }}>
-                    {q.reward_gold ? `${q.reward_gold}G` : ''}{q.reward_gold && q.reward_xp ? ' / ' : ''}{q.reward_xp ? `${q.reward_xp}XP` : ''}
-                    {q.rank ? ` [${q.rank}]` : ''}
+            <div key={q.id}
+              onClick={() => setExpandedQuest(isExpanded ? null : q.id)}
+              style={{
+                marginBottom: '2px', padding: '5px 8px',
+                background: isExpanded ? 'rgba(90,60,20,0.15)' : 'transparent',
+                borderLeft: `2px solid ${tabColor}40`,
+                cursor: 'pointer',
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={(e) => { if (!isExpanded) e.currentTarget.style.background = 'rgba(90,60,20,0.08)' }}
+              onMouseLeave={(e) => { if (!isExpanded) e.currentTarget.style.background = 'transparent' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  {editingQuest === q.id ? (
+                    <input
+                      autoFocus
+                      defaultValue={q.title}
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={async (e) => {
+                        if (e.key === 'Enter') {
+                          const val = e.currentTarget.value.trim()
+                          if (val && val !== q.title) {
+                            try { await apiEditQuest(q.id, val); await refreshQuests() }
+                            catch (err) { console.error('quest edit failed', err) }
+                          }
+                          setEditingQuest(null)
+                        } else if (e.key === 'Escape') setEditingQuest(null)
+                      }}
+                      onBlur={() => setEditingQuest(null)}
+                      style={{
+                        width: '100%', padding: '2px 4px', fontSize: '10px',
+                        fontFamily: 'var(--font-pixel)',
+                        background: 'rgba(10,8,4,0.8)', border: '1px solid #f0e68c',
+                        color: '#f0e68c', outline: 'none',
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      fontSize: '10px',
+                      color: questTab === 'active' ? '#e8d5b0' : questTab === 'cancelled' ? '#7a7a7a' : '#ff8a8a',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      textDecoration: questTab === 'cancelled' ? 'line-through' : 'none',
+                      opacity: questTab === 'cancelled' ? 0.6 : 1,
+                    }}>{q.title || '(untitled)'}</div>
+                  )}
+                  <div style={{
+                    fontSize: '5px', fontFamily: 'var(--font-pixel)',
+                    color: q.source === 'user' ? '#8b7355' : '#6b6b4a', marginTop: '2px',
+                  }}>
+                    {q.source === 'user' ? 'POSTED BY YOU' : 'FROM THE GUILD'}
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                {questTab === 'active' && (
+                  <div style={{ display: 'flex', gap: '3px', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                    <button onClick={() => setEditingQuest(editingQuest === q.id ? null : q.id)} style={{
+                      fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '3px 6px', cursor: 'pointer',
+                      background: 'transparent', border: '1px solid rgba(139,94,60,0.3)',
+                      color: '#8b7355', borderRadius: '2px', transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#c8a87a'; e.currentTarget.style.color = '#c8a87a' }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(139,94,60,0.3)'; e.currentTarget.style.color = '#8b7355' }}
+                    >{editingQuest === q.id ? 'ESC' : 'EDIT'}</button>
+                    <button onClick={() => handleFailQuest(q.id)} disabled={failing === q.id} style={{
+                      fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '3px 6px', cursor: 'pointer',
+                      background: 'transparent', border: '1px solid rgba(255,140,50,0.3)',
+                      color: '#cc7a30', borderRadius: '2px', transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#ff8c32'; e.currentTarget.style.color = '#ff8c32' }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,140,50,0.3)'; e.currentTarget.style.color = '#cc7a30' }}
+                    >{failing === q.id ? '...' : failError === q.id ? 'ERROR' : 'FAIL'}</button>
+                    <button onClick={() => handleCancelQuest(q.id)} disabled={cancelling === q.id} style={{
+                      fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '3px 6px', cursor: 'pointer',
+                      background: 'transparent', border: '1px solid rgba(255,107,107,0.3)',
+                      color: '#cc5050', borderRadius: '2px', transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#ff6b6b'; e.currentTarget.style.color = '#ff6b6b' }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,107,107,0.3)'; e.currentTarget.style.color = '#cc5050' }}
+                    >{cancelling === q.id ? '...' : cancelError === q.id ? 'FAILED' : 'CANCEL'}</button>
+                  </div>
+                )}
+                {questTab === 'failed' && (
+                  <div style={{ display: 'flex', gap: '3px', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                    <button onClick={() => retryQuest(q.title)} disabled={retrying === q.title} style={{
+                      fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '3px 8px', cursor: 'pointer',
+                      background: 'rgba(240,230,140,0.08)', border: '1px solid rgba(240,230,140,0.3)',
+                      color: '#f0e68c', borderRadius: '2px', transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(240,230,140,0.15)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(240,230,140,0.08)' }}
+                    >{retrying === q.title ? '...' : retryError === q.title ? 'ERROR' : 'RETRY 50G'}</button>
                   </div>
                 )}
               </div>
-            )}
-          </div>
+
+              {/* Expanded detail */}
+              {isExpanded && q.description && (
+                <div style={{
+                  marginTop: '4px', padding: '4px 6px',
+                  fontSize: '9px', color: '#c8a87a', lineHeight: '1.5',
+                  fontFamily: 'Georgia, serif', fontStyle: 'italic',
+                  borderTop: '1px solid rgba(107,76,42,0.2)',
+                }}>
+                  {q.description}
+                  {(q.reward_xp || q.reward_gold) && (
+                    <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355', marginTop: '3px', fontStyle: 'normal' }}>
+                      {q.reward_gold ? `${q.reward_gold}G` : ''}{q.reward_gold && q.reward_xp ? ' / ' : ''}{q.reward_xp ? `${q.reward_xp}XP` : ''}
+                      {q.rank ? ` [${q.rank}]` : ''}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           )
         })}
       </div>
 
-      {/* Fixed input at bottom */}
-      <div style={{ display: 'flex', gap: '4px', flexShrink: 0, paddingTop: '4px', borderTop: '1px solid rgba(107,76,42,0.3)' }}>
+      {/* Quest creation input */}
+      <div style={{
+        display: 'flex', gap: '6px', flexShrink: 0, paddingTop: '6px',
+        borderTop: '1px solid rgba(107,76,42,0.3)',
+        alignItems: 'center',
+      }}>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && createTask()}
-          placeholder="New quest..."
+          placeholder="Write a new quest..."
           disabled={creating}
           style={{
             flex: 1, padding: '5px 8px',
-            background: 'rgba(10,8,4,0.6)', border: '1px solid #5c3a1e',
-            color: '#e8d5b0', fontFamily: 'var(--font-pixel)', fontSize: '8px',
-            outline: 'none', transition: 'border-color 0.15s',
+            background: 'rgba(10,8,4,0.5)', border: '1px solid rgba(139,94,60,0.3)',
+            color: '#e8d5b0', fontFamily: 'var(--font-pixel)', fontSize: '7px',
+            outline: 'none', borderRadius: '2px', transition: 'border-color 0.15s',
           }}
           onFocus={(e) => { e.currentTarget.style.borderColor = '#f0e68c' }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = '#5c3a1e' }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(139,94,60,0.3)' }}
         />
-        <button
-          onClick={createTask}
-          disabled={creating || !input.trim()}
-          style={{
-            fontFamily: 'var(--font-pixel)', fontSize: '5px',
-            padding: '4px 10px', cursor: creating ? 'wait' : 'pointer',
-            background: creating ? 'rgba(10,8,4,0.5)' : 'linear-gradient(180deg, #6a4428 0%, #4a2a14 50%, #3a2210 100%)',
-            border: '2px solid #6b4c2a',
-            color: '#f0e68c',
-            boxShadow: creating ? 'none' : '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,140,0.1)',
-            textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-            whiteSpace: 'nowrap',
-          }}
-        >{creating ? '...' : 'POST'}</button>
+        <RpgButton onClick={createTask} disabled={creating || !input.trim()} small>
+          {creating ? '...' : 'POST'}
+        </RpgButton>
       </div>
       {createError && (
-        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#ff6b6b', padding: '2px 6px' }}>
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#ff6b6b', padding: '2px 0', marginTop: '2px' }}>
           {createError}
         </div>
       )}
