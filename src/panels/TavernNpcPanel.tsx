@@ -119,7 +119,7 @@ export default function TavernNpcPanel({ activeNpc, onNpcSelect, chatNpc, onNpcC
               fontFamily: 'var(--font-pixel)',
               fontSize: 'clamp(5px, 0.7vw, 7px)',
               color: isActive ? '#f0e68c' : '#c8a87a',
-              marginTop: '3px',
+              marginTop: '5px',
               letterSpacing: '0.5px',
             }}>
               {npc.name}
@@ -128,6 +128,7 @@ export default function TavernNpcPanel({ activeNpc, onNpcSelect, chatNpc, onNpcC
               fontFamily: 'var(--font-pixel)',
               fontSize: 'clamp(4px, 0.5vw, 5px)',
               color: '#6a5a3a',
+              marginTop: '2px',
             }}>
               {npc.title}
             </span>

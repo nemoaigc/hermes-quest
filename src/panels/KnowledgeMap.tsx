@@ -27,20 +27,20 @@ const PARCHMENT = { left: 14, top: 8, width: 68, height: 82 }
 // Row 3 (bottom):  2 sites — offset left & right
 const FIXED_POSITIONS: Record<string, { x: number; y: number }> = {
   // Row 1 — top center
-  'creative-arts': { x: 0.50, y: 0.15 },
-  'creative-arts-flow': { x: 0.50, y: 0.15 },
+  'creative-arts': { x: 0.52, y: 0.15 },
+  'creative-arts-flow': { x: 0.52, y: 0.15 },
   // Row 2 — middle row (3 sites, fills center)
-  'software-engineering': { x: 0.22, y: 0.42 },
-  'software-engineering-flow': { x: 0.22, y: 0.42 },
-  'automation-tools': { x: 0.50, y: 0.45 },
-  'automation-tools-flow': { x: 0.50, y: 0.45 },
+  'software-engineering': { x: 0.25, y: 0.42 },
+  'software-engineering-flow': { x: 0.25, y: 0.42 },
+  'automation-tools': { x: 0.52, y: 0.45 },
+  'automation-tools-flow': { x: 0.52, y: 0.45 },
   'research-knowledge': { x: 0.78, y: 0.42 },
   'research-knowledge-flow': { x: 0.78, y: 0.42 },
   // Row 3 — bottom (2 fog/sites, offset)
-  'data-analytics': { x: 0.33, y: 0.75 },
-  'data-analytics-flow': { x: 0.33, y: 0.75 },
-  'devops-infrastructure': { x: 0.67, y: 0.75 },
-  'devops-infrastructure-flow': { x: 0.67, y: 0.75 },
+  'data-analytics': { x: 0.36, y: 0.75 },
+  'data-analytics-flow': { x: 0.36, y: 0.75 },
+  'devops-infrastructure': { x: 0.68, y: 0.75 },
+  'devops-infrastructure-flow': { x: 0.68, y: 0.75 },
   // Extra slots if more workflows are discovered
   'security-defense': { x: 0.22, y: 0.75 },
   'security-defense-flow': { x: 0.22, y: 0.75 },
@@ -52,8 +52,8 @@ const FIXED_POSITIONS: Record<string, { x: number; y: number }> = {
 
 // Fog positions — match the fixed positions layout
 const FOG_POSITIONS: Record<string, { x: number; y: number }> = {
-  'fog-data-science': { x: 0.33, y: 0.75 },
-  'fog-devops': { x: 0.67, y: 0.75 },
+  'fog-data-science': { x: 0.36, y: 0.75 },
+  'fog-devops': { x: 0.68, y: 0.75 },
 }
 // Hidden fog IDs — don't render these
 const HIDDEN_FOG = new Set<string>() // show all fog regions
