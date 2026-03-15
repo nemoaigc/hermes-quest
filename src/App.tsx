@@ -82,6 +82,75 @@ function InventoryWrapper() {
   )
 }
 
+function ConnectionIndicator() {
+  const connected = useStore((s) => s.connected)
+  const [showGreen, setShowGreen] = useState(false)
+
+  useEffect(() => {
+    if (connected) {
+      setShowGreen(true)
+      const t = setTimeout(() => setShowGreen(false), 2000)
+      return () => clearTimeout(t)
+    }
+  }, [connected])
+
+  if (!connected) {
+    return (
+      <div style={{
+        position: 'fixed', bottom: '12px', right: '12px', zIndex: 9999,
+        display: 'flex', alignItems: 'center', gap: '6px',
+        background: 'rgba(30,20,10,0.92)',
+        border: '1px solid rgba(180,80,40,0.6)',
+        borderRadius: '4px',
+        padding: '5px 10px',
+        fontFamily: 'var(--font-pixel)',
+        fontSize: '6px',
+        color: '#e8a040',
+        animation: 'pulse-reconnect 1.5s ease-in-out infinite',
+      }}>
+        <div style={{
+          width: '6px', height: '6px', borderRadius: '50%',
+          background: '#e8a040',
+          animation: 'pulse-reconnect 1.5s ease-in-out infinite',
+        }} />
+        RECONNECTING...
+        <style>{`
+          @keyframes pulse-reconnect {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+          }
+        `}</style>
+      </div>
+    )
+  }
+
+  if (showGreen) {
+    return (
+      <div style={{
+        position: 'fixed', bottom: '12px', right: '12px', zIndex: 9999,
+        display: 'flex', alignItems: 'center', gap: '6px',
+        background: 'rgba(20,30,10,0.85)',
+        border: '1px solid rgba(60,140,60,0.5)',
+        borderRadius: '4px',
+        padding: '5px 10px',
+        fontFamily: 'var(--font-pixel)',
+        fontSize: '6px',
+        color: '#6dbd6d',
+        opacity: 0.7,
+        transition: 'opacity 0.5s',
+      }}>
+        <div style={{
+          width: '6px', height: '6px', borderRadius: '50%',
+          background: '#6dbd6d',
+        }} />
+        CONNECTED
+      </div>
+    )
+  }
+
+  return null
+}
+
 export default function App() {
   const [ready, setReady] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -126,6 +195,7 @@ export default function App() {
   return (
     <>
     <ReflectionLetter />
+    <ConnectionIndicator />
     <div style={{
       display: 'grid',
       gridTemplateRows: 'auto 1fr',

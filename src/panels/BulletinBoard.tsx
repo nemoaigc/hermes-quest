@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useStore } from '../store'
 import { acceptQuest, API_URL } from '../api'
 import AnimatedBg from '../components/AnimatedBg'
@@ -217,6 +217,11 @@ export default function BulletinBoard() {
   const pageSize = 6
   const totalPages = Math.max(1, Math.ceil(recommendations.length / pageSize))
   const displayed = recommendations.slice(page * pageSize, (page + 1) * pageSize)
+
+  // Clamp page when recommendations change
+  useEffect(() => {
+    setPage(p => Math.min(p, Math.max(0, totalPages - 1)))
+  }, [recommendations.length])
 
   const selectedQuestData = selectedQuest ? recommendations.find(q => q?.id === selectedQuest) : null
 

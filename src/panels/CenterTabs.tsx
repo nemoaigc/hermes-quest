@@ -480,6 +480,22 @@ function RpgDialogInline({ npc, onClose, chatHistoryRef, prefillMessage }: {
           borderRadius: '3px',
         }} />
         <BackButton onClick={onClose} />
+        {messages.length > 1 && (
+          <button onClick={() => {
+            const fresh = [{ role: 'npc' as const, text: npcGreeting(npc) }]
+            setMessages(fresh)
+            chatHistoryRef.current[npc.id] = fresh
+            try { localStorage.setItem('hermes-npc-chat-history', JSON.stringify(chatHistoryRef.current)) } catch {}
+          }} style={{
+            fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '2px 6px',
+            background: 'transparent', border: '1px solid rgba(255,107,107,0.4)',
+            color: '#ff6b6b', cursor: 'pointer', letterSpacing: '0.5px',
+            transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,107,107,0.1)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+          >CLEAR</button>
+        )}
       </div>
 
       {/* Right: dialog content */}

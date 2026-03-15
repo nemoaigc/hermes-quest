@@ -136,6 +136,11 @@ export default function Shop() {
   const totalPages = Math.max(1, Math.ceil(displayed.length / pageSize))
   const pageItems = displayed.slice(page * pageSize, (page + 1) * pageSize)
 
+  // Clear selection when page changes
+  useEffect(() => {
+    setSelected(null)
+  }, [page])
+
   function srcOf(sk: HubSkill) {
     return sk.trust_level === 'builtin' ? 'official' : sk.source
   }

@@ -1,10 +1,31 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useStore } from '../store'
 import { formatEvent, formatTime } from '../utils/formatters'
 import { EVENT_ICONS } from '../utils/icons'
 import { API_URL } from '../api'
 
 const FEEDBACKABLE_TYPES = new Set(['skill_drop', 'cycle_end', 'quest_complete', 'train_start'])
+
+const FEEDBACK_LS_KEY = 'hermes-feedback-state'
+const CLEARED_LS_KEY = 'hermes-log-cleared-at'
+
+function loadFeedback(): Record<string, 'positive' | 'negative'> {
+  try {
+    const raw = localStorage.getItem(FEEDBACK_LS_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch { return {} }
+}
+
+function saveFeedback(state: Record<string, 'positive' | 'negative'>) {
+  try { localStorage.setItem(FEEDBACK_LS_KEY, JSON.stringify(state)) } catch {}
+}
+
+function loadClearedAt(): number {
+  try {
+    const v = localStorage.getItem(CLEARED_LS_KEY)
+    return v ? Number(v) : 0
+  } catch { return 0 }
+}
 
 async function sendFeedback(type: 'positive' | 'negative', event_type: string, detail: string) {
   try {
@@ -23,18 +44,37 @@ async function sendFeedback(type: 'positive' | 'negative', event_type: string, d
 export default function AdventureLog() {
   const events = useStore((s) => s.events)
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
-  const [sentFeedback, setSentFeedback] = useState<Record<string, 'positive' | 'negative'>>({})
+  const [sentFeedback, setSentFeedback] = useState<Record<string, 'positive' | 'negative'>>(loadFeedback)
+  const [clearedAt, setClearedAt] = useState(loadClearedAt)
+  const [showConfirm, setShowConfirm] = useState(false)
 
-  const handleFeedback = (key: string, type: 'positive' | 'negative', event_type: string, detail: string) => {
-    setSentFeedback((prev) => ({ ...prev, [key]: type }))
+  const handleFeedback = useCallback((key: string, type: 'positive' | 'negative', event_type: string, detail: string) => {
+    setSentFeedback((prev) => {
+      const next = { ...prev, [key]: type }
+      saveFeedback(next)
+      return next
+    })
     sendFeedback(type, event_type, detail)
-  }
+  }, [])
+
+  // Filter events older than cleared timestamp
+  const visibleEvents = clearedAt
+    ? events.filter((e) => new Date(e.ts).getTime() > clearedAt)
+    : events
+
+  const handleClear = useCallback(() => {
+    const now = Date.now()
+    localStorage.setItem(CLEARED_LS_KEY, String(now))
+    setClearedAt(now)
+    useStore.getState().setEvents([])
+    setShowConfirm(false)
+  }, [])
 
   return (
     <div className="pixel-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div className="pixel-panel-title" style={{ textAlign: 'center' }}>CHRONICLE</div>
       <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
-      {events.length === 0 ? (
+      {visibleEvents.length === 0 ? (
         <div style={{
           color: 'var(--text-dim)', fontSize: '10px', padding: '12px', textAlign: 'center',
           fontFamily: 'Georgia, serif', fontStyle: 'italic',
@@ -49,7 +89,7 @@ export default function AdventureLog() {
             width: '1px', background: 'rgba(107,76,42,0.4)',
           }} />
 
-          {events.map((event, i) => {
+          {visibleEvents.map((event, i) => {
             const { type, color, text } = formatEvent(event)
             const eventKey = `${event.ts}-${event.type}-${i}`
             const canFeedback = FEEDBACKABLE_TYPES.has(type)
@@ -94,7 +134,7 @@ export default function AdventureLog() {
                 {canFeedback && (
                   <div style={{
                     display: 'flex', gap: '2px', alignItems: 'center',
-                    opacity: alreadySent ? 0.6 : (hoveredIdx === i ? 1 : 0),
+                    opacity: alreadySent ? 0.6 : (hoveredIdx === i ? 1 : 0.25),
                     transition: 'opacity 0.15s',
                     pointerEvents: alreadySent ? 'none' : 'auto',
                     flexShrink: 0,
@@ -127,13 +167,14 @@ export default function AdventureLog() {
         </div>
       )}
       </div>
-      {events.length > 0 && (
+      {visibleEvents.length > 0 && (
         <div style={{
           flexShrink: 0, padding: '4px 8px',
           borderTop: '1px solid rgba(107,76,42,0.3)',
           display: 'flex', justifyContent: 'center',
+          position: 'relative',
         }}>
-          <button onClick={() => { if (confirm('Clear all chronicle entries?')) useStore.getState().setEvents([]) }} style={{
+          <button onClick={() => setShowConfirm(true)} style={{
             fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '3px 12px',
             background: 'rgba(90,60,20,0.3)', border: '1px solid rgba(139,94,60,0.4)',
             color: '#8b7355', cursor: 'pointer', letterSpacing: '1px', width: '100%',
@@ -141,6 +182,50 @@ export default function AdventureLog() {
           onMouseEnter={e => { e.currentTarget.style.borderColor = '#ff6b6b'; e.currentTarget.style.color = '#ff6b6b' }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(139,94,60,0.4)'; e.currentTarget.style.color = '#8b7355' }}
           >CLEAR LOG</button>
+
+          {/* Custom RPG-styled confirmation overlay */}
+          {showConfirm && (
+            <div style={{
+              position: 'absolute', bottom: '100%', left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'linear-gradient(180deg, #3a2a18 0%, #2a1c0e 100%)',
+              border: '2px solid #8b6a3c',
+              borderRadius: '4px',
+              padding: '10px 14px',
+              zIndex: 50,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.7)',
+              whiteSpace: 'nowrap',
+              marginBottom: '4px',
+            }}>
+              <div style={{
+                fontFamily: 'Georgia, serif', fontStyle: 'italic',
+                fontSize: '9px', color: '#c8a87a',
+                marginBottom: '8px', textAlign: 'center',
+              }}>
+                Erase all chronicle entries?
+              </div>
+              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                <button
+                  onClick={() => setShowConfirm(false)}
+                  style={{
+                    fontFamily: 'var(--font-pixel)', fontSize: '5px',
+                    padding: '3px 10px', cursor: 'pointer',
+                    background: 'transparent', border: '1px solid rgba(139,94,60,0.5)',
+                    color: '#8b7355',
+                  }}
+                >NAY</button>
+                <button
+                  onClick={handleClear}
+                  style={{
+                    fontFamily: 'var(--font-pixel)', fontSize: '5px',
+                    padding: '3px 10px', cursor: 'pointer',
+                    background: 'rgba(180,40,40,0.3)', border: '1px solid #ff6b6b',
+                    color: '#ff6b6b',
+                  }}
+                >AYE</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="280" viewBox="0 0 800 280">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a0a2e;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#2d1b4e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a0a2e;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="title" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#f7d794" />
+      <stop offset="50%" style="stop-color:#f8c291" />
+      <stop offset="100%" style="stop-color:#f7d794" />
+    </linearGradient>
+    <linearGradient id="quest" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#e55039" />
+      <stop offset="50%" style="stop-color:#eb4d4b" />
+      <stop offset="100%" style="stop-color:#e55039" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="glow-strong">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="280" fill="url(#bg)" rx="12"/>
+
+  <!-- Stars -->
+  <circle cx="50" cy="30" r="1.5" fill="#f7d794" opacity="0.6"/>
+  <circle cx="150" cy="55" r="1" fill="#f7d794" opacity="0.4"/>
+  <circle cx="280" cy="25" r="1.5" fill="#f7d794" opacity="0.5"/>
+  <circle cx="420" cy="40" r="1" fill="#f7d794" opacity="0.3"/>
+  <circle cx="550" cy="20" r="1.5" fill="#f7d794" opacity="0.6"/>
+  <circle cx="650" cy="50" r="1" fill="#f7d794" opacity="0.4"/>
+  <circle cx="720" cy="30" r="1.5" fill="#f7d794" opacity="0.5"/>
+  <circle cx="100" cy="70" r="1" fill="#f7d794" opacity="0.3"/>
+  <circle cx="380" cy="60" r="1" fill="#f7d794" opacity="0.5"/>
+  <circle cx="750" cy="65" r="1" fill="#f7d794" opacity="0.4"/>
+
+  <!-- Decorative line top -->
+  <line x1="150" y1="75" x2="650" y2="75" stroke="#f7d794" stroke-width="0.5" opacity="0.3"/>
+
+  <!-- Pixel sword left -->
+  <g transform="translate(120, 110) scale(0.8)" opacity="0.7">
+    <rect x="0" y="24" width="8" height="8" fill="#f7d794"/>
+    <rect x="8" y="16" width="8" height="8" fill="#f7d794"/>
+    <rect x="16" y="8" width="8" height="8" fill="#c8d6e5"/>
+    <rect x="24" y="0" width="8" height="8" fill="#c8d6e5"/>
+    <rect x="8" y="24" width="8" height="8" fill="#8B4513"/>
+    <rect x="0" y="32" width="8" height="8" fill="#8B4513"/>
+  </g>
+
+  <!-- Pixel sword right (mirrored) -->
+  <g transform="translate(640, 110) scale(0.8)" opacity="0.7">
+    <rect x="24" y="24" width="8" height="8" fill="#f7d794"/>
+    <rect x="16" y="16" width="8" height="8" fill="#f7d794"/>
+    <rect x="8" y="8" width="8" height="8" fill="#c8d6e5"/>
+    <rect x="0" y="0" width="8" height="8" fill="#c8d6e5"/>
+    <rect x="16" y="24" width="8" height="8" fill="#8B4513"/>
+    <rect x="24" y="32" width="8" height="8" fill="#8B4513"/>
+  </g>
+
+  <!-- HERMES title -->
+  <text x="400" y="130" font-family="'Courier New', monospace" font-size="64" font-weight="bold" fill="url(#title)" text-anchor="middle" filter="url(#glow)" letter-spacing="12">HERMES</text>
+
+  <!-- QUEST subtitle -->
+  <text x="400" y="175" font-family="'Courier New', monospace" font-size="36" font-weight="bold" fill="url(#quest)" text-anchor="middle" filter="url(#glow-strong)" letter-spacing="20">⚔  Q U E S T  ⚔</text>
+
+  <!-- Decorative line bottom -->
+  <line x1="150" y1="195" x2="650" y2="195" stroke="#f7d794" stroke-width="0.5" opacity="0.3"/>
+
+  <!-- Tagline EN -->
+  <text x="400" y="225" font-family="'Georgia', serif" font-size="14" fill="#c8d6e5" text-anchor="middle" opacity="0.9">Self-Evolving AI Agent  ·  Pixel RPG Adventure  ·  Built on Hermes</text>
+
+  <!-- Tagline CN -->
+  <text x="400" y="250" font-family="'Georgia', serif" font-size="13" fill="#c8d6e5" text-anchor="middle" opacity="0.6">自我进化 AI Agent  ·  像素 RPG 冒险  ·  基于 Hermes 构建</text>
+</svg>
