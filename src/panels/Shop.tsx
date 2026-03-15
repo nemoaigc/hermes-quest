@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { SkillIcon } from '../utils/icons'
-import { API_URL } from '../api'
+import { API_URL, searchHub, installSkill as apiInstallSkill } from '../api'
 import { useStore } from '../store'
 import AnimatedBg from '../components/AnimatedBg'
 import { SOURCE_COLOR } from '../constants/theme'
@@ -87,9 +87,7 @@ export default function Shop() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`${API_URL}/api/hub/search?q=`)
-        if (!res.ok) throw new Error(`Hub returned ${res.status}`)
-        setAllSkills(await res.json())
+        setAllSkills(await searchHub())
         setFetchError(null)
       } catch {
         setAllSkills([])
@@ -145,17 +143,10 @@ export default function Shop() {
     return sk.trust_level === 'builtin' ? 'official' : sk.source
   }
 
-  async function installSkill(identifier: string) {
+  async function handleInstallSkill(identifier: string) {
     setInstalling(identifier)
     try {
-      const installRes = await fetch(`${API_URL}/api/hub/install`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier }),
-      })
-      if (!installRes.ok) throw new Error(`Install failed: ${installRes.status}`)
-      const installData = await installRes.json()
-      if (installData.status === 'error') throw new Error(installData.message || 'Install failed')
+      await apiInstallSkill(identifier)
       const res = await fetch(`${API_URL}/api/skills`)
       setSkills(await res.json())
       // Use current store state to avoid stale closure
@@ -203,7 +194,7 @@ export default function Shop() {
 
       {fetchError && !loading && (
         <div
-          onClick={() => { setFetchError(null); setLoading(true); fetch(`${API_URL}/api/hub/search?q=`).then(r => { if (!r.ok) throw new Error(); return r.json() }).then(d => { setAllSkills(d); setFetchError(null) }).catch(() => setFetchError('Could not load wares... The shopkeep shrugs.')).finally(() => setLoading(false)) }}
+          onClick={() => { setFetchError(null); setLoading(true); searchHub().then(d => { setAllSkills(d); setFetchError(null) }).catch(() => setFetchError('Could not load wares... The shopkeep shrugs.')).finally(() => setLoading(false)) }}
           style={{
             position: 'absolute', left: '50%', top: '50%',
             transform: 'translate(-50%, -50%)',
@@ -257,7 +248,7 @@ export default function Shop() {
               background: 'transparent', border: '1px solid #5c3a1e', color: '#c8a87a',
             }}>BACK</button>
             <button
-              onClick={() => installSkill(selected.identifier)}
+              onClick={() => handleInstallSkill(selected.identifier)}
               disabled={installing === selected.identifier}
               style={{
                 fontFamily: 'var(--font-pixel)', fontSize: '6px',

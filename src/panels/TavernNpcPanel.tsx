@@ -62,100 +62,91 @@ export default function TavernNpcPanel({ activeNpc, onNpcSelect, chatNpc, onNpcC
     )
   }
 
-  /* ---- State 1: NPC Gallery ---- */
+  /* ---- State 1: NPC Gallery — Tavern residents board ---- */
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', width: '100%', height: '100%',
+      padding: '6px 8px',
     }}>
-      {/* Ornamental title */}
+      {/* Title bar */}
       <div style={{
-        textAlign: 'center', padding: '4px 0 2px', flexShrink: 0,
+        textAlign: 'center', padding: '2px 0 6px', flexShrink: 0,
+        borderBottom: '1px solid rgba(139,94,60,0.25)',
+        marginBottom: '6px',
       }}>
-        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.7vw, 8px)', color: '#8b6a3c' }}>{'\u2554'} </span>
-        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: 'clamp(6px, 0.8vw, 9px)', color: '#f0e68c', letterSpacing: '2px' }}>RESIDENTS</span>
-        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.7vw, 8px)', color: '#8b6a3c' }}> {'\u2557'}</span>
+        <span style={{
+          fontFamily: 'var(--font-pixel)', fontSize: '8px',
+          color: '#c8a87a', letterSpacing: '3px',
+        }}>TAVERN RESIDENTS</span>
       </div>
+
+      {/* NPC cards — horizontal scroll */}
       <div style={{
-        display: 'flex', flex: 1, minHeight: 0,
+        display: 'flex', gap: '8px', flex: 1, minHeight: 0,
+        overflowX: 'auto', overflowY: 'hidden',
+        padding: '2px 0',
       }}>
-      {NPCS.map((npc) => {
-        const isActive = activeNpc === npc.id
-        return (
+        {NPCS.map((npc) => (
           <div
             key={npc.id}
+            onClick={() => onNpcChat(npc.id)}
             style={{
-              flex: 1,
+              flex: '0 0 auto',
+              width: 'clamp(70px, 15vw, 110px)',
               display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              background: isActive
-                ? 'linear-gradient(180deg, rgba(50,35,20,0.6) 0%, rgba(35,25,15,0.7) 100%)'
-                : 'linear-gradient(180deg, rgba(40,28,16,0.5) 0%, rgba(28,20,12,0.6) 100%)',
+              alignItems: 'center',
+              padding: '8px 6px',
+              cursor: 'pointer',
+              background: 'linear-gradient(180deg, rgba(45,32,18,0.7) 0%, rgba(30,22,12,0.8) 100%)',
               border: '1px solid rgba(139,94,60,0.3)',
-              borderTop: '1px solid rgba(180,140,80,0.15)',
-              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3), 0 1px 0 rgba(139,94,60,0.1)',
-              borderRadius: '2px',
-              margin: '2px',
-              padding: '4px 2px',
+              borderRadius: '4px',
+              transition: 'all 0.2s',
+              position: 'relative',
               overflow: 'hidden',
             }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#f0e68c'
+              e.currentTarget.style.boxShadow = '0 0 12px rgba(240,230,140,0.15), inset 0 0 20px rgba(240,230,140,0.05)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(139,94,60,0.3)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
           >
+            {/* Portrait */}
             <img
               src={npc.img}
               alt={npc.name}
-              onClick={() => onNpcSelect(npc.id)}
-              onMouseEnter={(e) => { e.currentTarget.style.border = '2px solid #f0e68c'; e.currentTarget.style.transform = 'scale(1.05)' }}
-              onMouseLeave={(e) => { e.currentTarget.style.border = 'none'; e.currentTarget.style.transform = 'scale(1)' }}
               style={{
-                width: '100%', maxWidth: '80px', aspectRatio: '1',
+                width: '90%', aspectRatio: '1',
                 objectFit: 'cover',
                 imageRendering: 'pixelated',
-                border: 'none',
-                borderRadius: '2px',
-                cursor: 'pointer',
-                transition: 'all 0.15s',
+                borderRadius: '3px',
+                border: '1px solid rgba(139,94,60,0.4)',
               }}
             />
+            {/* Name */}
             <span style={{
               fontFamily: 'var(--font-pixel)',
-              fontSize: 'clamp(4px, 0.6vw, 6px)',
-              color: isActive ? '#f0e68c' : '#c8a87a',
-              marginTop: '3px',
-              letterSpacing: '0.5px',
+              fontSize: '8px',
+              color: '#f0e68c',
+              marginTop: '6px',
+              letterSpacing: '1px',
+              textShadow: '0 1px 3px rgba(0,0,0,0.6)',
             }}>
               {npc.name}
             </span>
+            {/* Title */}
             <span style={{
               fontFamily: 'var(--font-pixel)',
-              fontSize: 'clamp(3px, 0.4vw, 5px)',
-              color: '#6a5a3a',
+              fontSize: '5px',
+              color: '#8b7355',
+              marginTop: '2px',
             }}>
               {npc.title}
             </span>
-            <button
-              onClick={(e) => { e.stopPropagation(); onNpcChat(npc.id) }}
-              style={{
-                fontFamily: 'var(--font-pixel)',
-                fontSize: 'clamp(3px, 0.4vw, 5px)',
-                padding: '2px 8px',
-                marginTop: '3px',
-                cursor: 'pointer',
-                background: isActive
-                  ? 'linear-gradient(180deg, #7a5030 0%, #5a3820 100%)'
-                  : 'transparent',
-                border: isActive ? '1px solid #f0e68c' : '1px solid rgba(139,94,60,0.4)',
-                color: isActive ? '#f0e68c' : '#8b7355',
-                borderRadius: '2px',
-                letterSpacing: '1px',
-                transition: 'all 0.15s',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#f0e68c'; e.currentTarget.style.color = '#f0e68c' }}
-              onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.borderColor = 'rgba(139,94,60,0.4)'; e.currentTarget.style.color = '#8b7355' } }}
-            >
-              CHAT
-            </button>
           </div>
-        )
-      })}
+        ))}
       </div>
     </div>
   )

@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../store'
-import { API_URL } from '../api'
+import {
+  createQuest as apiCreateQuest,
+  cancelQuest as apiCancelQuest,
+  failQuest as apiFailQuest,
+  editQuest as apiEditQuest,
+  fetchActiveQuests,
+  fetchAllQuests,
+  fetchMap,
+} from '../api'
 
 /** GUILD bottom — task list with DONE buttons */
 export default function GuildBottomInfo() {
@@ -20,18 +28,12 @@ export default function GuildBottomInfo() {
 
   async function refreshQuests() {
     try {
-      const [questRes, mapRes] = await Promise.all([
-        fetch(`${API_URL}/api/quest/active`),
-        fetch(`${API_URL}/api/map`),
+      const [questData, mapData] = await Promise.all([
+        fetchActiveQuests(),
+        fetchMap(),
       ])
-      if (questRes.ok) {
-        const d = await questRes.json()
-        setQuests(d.quests || [])
-      }
-      if (mapRes.ok) {
-        const d = await mapRes.json()
-        setKnowledgeMap(d)
-      }
+      setQuests(questData.quests || [])
+      setKnowledgeMap(mapData)
     } catch (e) { console.error('refreshQuests failed', e) }
   }
 
@@ -41,8 +43,7 @@ export default function GuildBottomInfo() {
     setInput('')
     setCreating(true)
     try {
-      const res = await fetch(`${API_URL}/api/quest/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, source: 'user' }) })
-      if (!res.ok) throw new Error(`Create failed: ${res.status}`)
+      await apiCreateQuest(title, 'user')
       await refreshQuests()
       setAllQuestsTrigger(t => t + 1)
     } catch (e) {
@@ -59,11 +60,10 @@ export default function GuildBottomInfo() {
   const [editingQuest, setEditingQuest] = useState<string | null>(null)
 
 
-  async function cancelQuest(questId: string) {
+  async function handleCancelQuest(questId: string) {
     setCancelling(questId)
     try {
-      const res = await fetch(`${API_URL}/api/quest/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ quest_id: questId }) })
-      if (!res.ok) throw new Error(`Cancel failed: ${res.status}`)
+      await apiCancelQuest(questId)
       await refreshQuests()
       setAllQuestsTrigger(t => t + 1)
     } catch (e) {
@@ -74,11 +74,10 @@ export default function GuildBottomInfo() {
     setCancelling(null)
   }
 
-  async function failQuest(questId: string) {
+  async function handleFailQuest(questId: string) {
     setFailing(questId)
     try {
-      const res = await fetch(`${API_URL}/api/quest/fail`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ quest_id: questId }) })
-      if (!res.ok) throw new Error(`Fail failed: ${res.status}`)
+      await apiFailQuest(questId)
       await refreshQuests()
       setAllQuestsTrigger(t => t + 1)
     } catch (e) {
@@ -92,12 +91,7 @@ export default function GuildBottomInfo() {
   async function retryQuest(title: string) {
     setRetrying(title)
     try {
-      const res = await fetch(`${API_URL}/api/quest/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, source: 'user', retry: true }),
-      })
-      if (!res.ok) throw new Error(`Retry failed: ${res.status}`)
+      await apiCreateQuest(title, 'user', true)
       await refreshQuests()
       setAllQuestsTrigger(t => t + 1)
     } catch (e) {
@@ -112,7 +106,7 @@ export default function GuildBottomInfo() {
   const [allQuests, setAllQuests] = useState<any[]>([])
   const [allQuestsTrigger, setAllQuestsTrigger] = useState(0)
   useEffect(() => {
-    fetch(`${API_URL}/api/quests`).then(r => { if (!r.ok) throw new Error(`Quests fetch: ${r.status}`); return r.json() }).then(d => setAllQuests(Array.isArray(d) ? d : [])).catch(e => console.error('allQuests fetch failed', e))
+    fetchAllQuests().then(d => setAllQuests(Array.isArray(d) ? d : [])).catch(e => console.error('allQuests fetch failed', e))
   }, [allQuestsTrigger])
   const cancelledQuests = allQuests.filter(q => q.status === 'cancelled')
   const failedQuests = allQuests.filter(q => q.status === 'failed')
@@ -121,20 +115,48 @@ export default function GuildBottomInfo() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
-      {/* Tabs: ACTIVE / CANCELLED / FAILED */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '4px', flexShrink: 0 }}>
-        {(['active', 'cancelled', 'failed'] as const).map(tab => {
-          const tabColor = tab === 'active' ? '#f0e68c' : tab === 'cancelled' ? '#6b7280' : '#ff6b6b'
-          const count = tab === 'active' ? activeQuests.length : tab === 'cancelled' ? cancelledQuests.length : failedQuests.length
+      {/* Quest Ledger Tabs — parchment bookmark style */}
+      <div style={{
+        display: 'flex', gap: '0', flexShrink: 0,
+        borderBottom: '2px solid #5c3a1e',
+        position: 'relative',
+      }}>
+        {([
+          { key: 'active' as const, label: 'ACTIVE', count: activeQuests.length, color: '#f0e68c', bgActive: 'rgba(90,65,25,0.7)', icon: '⚔' },
+          { key: 'cancelled' as const, label: 'VOID', count: cancelledQuests.length, color: '#7a7a7a', bgActive: 'rgba(60,60,60,0.5)', icon: '✕' },
+          { key: 'failed' as const, label: 'FALLEN', count: failedQuests.length, color: '#e85050', bgActive: 'rgba(90,30,20,0.5)', icon: '☠' },
+        ]).map((tab, i) => {
+          const isActive = questTab === tab.key
           return (
-            <button key={tab} onClick={() => setQuestTab(tab)} style={{
-              fontFamily: 'var(--font-pixel)', fontSize: '6px', padding: '2px 6px',
-              background: questTab === tab ? 'rgba(90,60,20,0.5)' : 'transparent',
-              border: 'none', borderBottom: questTab === tab ? `2px solid ${tabColor}` : '2px solid transparent',
-              color: questTab === tab ? tabColor : '#8b7355', cursor: 'pointer',
-              letterSpacing: '1px',
+            <button key={tab.key} onClick={() => setQuestTab(tab.key)} style={{
+              fontFamily: 'var(--font-pixel)',
+              fontSize: '7px',
+              padding: '6px 12px 5px',
+              background: isActive ? tab.bgActive : 'transparent',
+              border: 'none',
+              borderBottom: isActive ? `3px solid ${tab.color}` : '3px solid transparent',
+              color: isActive ? tab.color : '#6a5a3a',
+              cursor: 'pointer',
+              letterSpacing: '2px',
+              transition: 'all 0.2s',
+              position: 'relative',
+              marginBottom: isActive ? '-2px' : '0',
+              textShadow: isActive ? `0 0 8px ${tab.color}40` : 'none',
+              flex: 1,
             }}>
-              {tab.toUpperCase()} (<span style={{ color: questTab === tab ? tabColor : '#8b7355' }}>{count}</span>)
+              <span style={{ marginRight: '4px', fontSize: '8px', opacity: isActive ? 1 : 0.4 }}>{tab.icon}</span>
+              {tab.label}
+              {tab.count > 0 && (
+                <span style={{
+                  marginLeft: '5px',
+                  fontSize: '6px',
+                  color: isActive ? tab.color : '#5a4a3a',
+                  background: isActive ? `${tab.color}15` : 'transparent',
+                  padding: '1px 4px',
+                  borderRadius: '6px',
+                  border: `1px solid ${isActive ? `${tab.color}30` : 'transparent'}`,
+                }}>{tab.count}</span>
+              )}
             </button>
           )
         })}
@@ -170,8 +192,7 @@ export default function GuildBottomInfo() {
                       const val = e.currentTarget.value.trim()
                       if (val && val !== q.title) {
                         try {
-                          const res = await fetch(`${API_URL}/api/quest/edit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ quest_id: q.id, title: val }) })
-                          if (!res.ok) throw new Error(`Edit failed: ${res.status}`)
+                          await apiEditQuest(q.id, val)
                           await refreshQuests()
                         } catch (err) { console.error('quest edit failed', err) }
                       }
@@ -203,11 +224,11 @@ export default function GuildBottomInfo() {
                   background: editingQuest === q.id ? 'rgba(56,152,236,0.15)' : 'transparent',
                   border: '1px solid rgba(56,152,236,0.5)', color: '#38bdf8', borderRadius: '2px',
                 }}>{editingQuest === q.id ? 'ESC' : 'EDIT'}</button>
-                <button onClick={() => failQuest(q.id)} disabled={failing === q.id} style={{
+                <button onClick={() => handleFailQuest(q.id)} disabled={failing === q.id} style={{
                   fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '2px 5px', cursor: 'pointer',
                   background: 'transparent', border: '1px solid rgba(255,140,50,0.4)', color: '#ff8c32', borderRadius: '2px',
                 }}>{failing === q.id ? '...' : failError === q.id ? 'ERROR' : 'FAIL'}</button>
-                <button onClick={() => cancelQuest(q.id)} disabled={cancelling === q.id} style={{
+                <button onClick={() => handleCancelQuest(q.id)} disabled={cancelling === q.id} style={{
                   fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '2px 5px', cursor: 'pointer',
                   background: 'transparent', border: '1px solid rgba(255,107,107,0.4)', color: '#ff6b6b', borderRadius: '2px',
                 }}>{cancelling === q.id ? '...' : cancelError === q.id ? 'FAILED' : 'CANCEL'}</button>

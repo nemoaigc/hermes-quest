@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../store'
-import { API_URL } from '../api'
+import { startCycle as apiStartCycle } from '../api'
 import PanelCard from '../components/PanelCard'
 import RpgButton from '../components/RpgButton'
 
@@ -17,18 +17,13 @@ export default function MapBottomInfo() {
 
   const [cycleStatus, setCycleStatus] = useState<'idle' | 'loading' | 'success' | 'failed'>('idle')
 
-  async function startCycle() {
+  async function handleStartCycle() {
     setCycleLoading(true)
     setCycleStatus('loading')
     try {
-      const res = await fetch(`${API_URL}/api/cycle/start`, { method: 'POST' })
-      if (res.ok) {
-        setCycleStatus('success')
-        setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 2000)
-      } else {
-        setCycleStatus('failed')
-        setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 2000)
-      }
+      await apiStartCycle()
+      setCycleStatus('success')
+      setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 2000)
     } catch {
       setCycleStatus('failed')
       setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 2000)
@@ -91,7 +86,7 @@ export default function MapBottomInfo() {
             <div style={{ fontSize: '4px', color: '#8b7355', marginTop: '2px' }}>MASTERY</div>
           </PanelCard>
         </div>
-        <RpgButton onClick={startCycle} disabled={cycleLoading}>
+        <RpgButton onClick={handleStartCycle} disabled={cycleLoading}>
           {cycleStatus === 'loading' ? 'EXPLORING...' : cycleStatus === 'success' ? 'CYCLE STARTED' : cycleStatus === 'failed' ? 'FAILED' : '\u25B6 START CYCLE'}
         </RpgButton>
       </div>

@@ -79,4 +79,99 @@ export async function usePotion(type: 'hp_potion' | 'mp_potion'): Promise<{
   return res.json()
 }
 
+// Quest management
+export async function createQuest(title: string, source = 'user', retry = false) {
+  const res = await fetch(`${API_URL}/api/quest/create`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, source, retry }),
+  })
+  if (!res.ok) throw new Error(`Create quest failed: ${res.status}`)
+  return res.json()
+}
+
+export async function cancelQuest(questId: string) {
+  const res = await fetch(`${API_URL}/api/quest/cancel`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ quest_id: questId }),
+  })
+  if (!res.ok) throw new Error(`Cancel quest failed: ${res.status}`)
+  return res.json()
+}
+
+export async function failQuest(questId: string) {
+  const res = await fetch(`${API_URL}/api/quest/fail`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ quest_id: questId }),
+  })
+  if (!res.ok) throw new Error(`Fail quest failed: ${res.status}`)
+  return res.json()
+}
+
+export async function editQuest(questId: string, title: string) {
+  const res = await fetch(`${API_URL}/api/quest/edit`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ quest_id: questId, title }),
+  })
+  if (!res.ok) throw new Error(`Edit quest failed: ${res.status}`)
+  return res.json()
+}
+
+export async function fetchActiveQuests() {
+  const res = await fetch(`${API_URL}/api/quest/active`)
+  if (!res.ok) throw new Error(`Fetch quests failed: ${res.status}`)
+  return res.json()
+}
+
+export async function fetchAllQuests() {
+  const res = await fetch(`${API_URL}/api/quests`)
+  if (!res.ok) throw new Error(`Fetch all quests failed: ${res.status}`)
+  return res.json()
+}
+
+// Map
+export async function fetchMap(refresh = false) {
+  const url = refresh ? `${API_URL}/api/map?refresh=true` : `${API_URL}/api/map`
+  const res = await fetch(url)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `Map fetch failed: ${res.status}`)
+  }
+  return res.json()
+}
+
+// Cycle
+export async function startCycle() {
+  const res = await fetch(`${API_URL}/api/cycle/start`, { method: 'POST' })
+  if (!res.ok) throw new Error(`Cycle start failed: ${res.status}`)
+  return res.json()
+}
+
+// Hub/Shop
+export async function searchHub(query = '') {
+  const res = await fetch(`${API_URL}/api/hub/search?q=${encodeURIComponent(query)}`)
+  if (!res.ok) throw new Error(`Hub search failed: ${res.status}`)
+  return res.json()
+}
+
+export async function installSkill(identifier: string) {
+  const res = await fetch(`${API_URL}/api/hub/install`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ identifier }),
+  })
+  if (!res.ok) throw new Error(`Install failed: ${res.status}`)
+  const data = await res.json()
+  if (data.status === 'error') throw new Error(data.message || 'Install failed')
+  return data
+}
+
+// State
+export async function updateState(updates: Record<string, unknown>) {
+  const res = await fetch(`${API_URL}/api/state/update`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  })
+  if (!res.ok) throw new Error(`State update failed: ${res.status}`)
+  return res.json()
+}
+
 export { API_URL }

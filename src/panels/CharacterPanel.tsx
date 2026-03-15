@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store'
 
-import { API_URL } from '../api'
+import { updateState } from '../api'
 
 const CLASS_DISPLAY: Record<string, string> = {
   warrior: 'Artificer', artificer: 'Artificer',
@@ -48,12 +48,7 @@ export default function CharacterPanel() {
     }
     setNameSaving(true)
     try {
-      const res = await fetch(`${API_URL}/api/state/update`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: trimmed }),
-      })
-      if (!res.ok) throw new Error('Save failed')
+      await updateState({ name: trimmed })
     } catch (e) {
       console.error('Name update failed', e)
     }

@@ -1,63 +1,40 @@
 # Hermes Quest — 持续审查修复日志
 
-> 自动化 5+1 专家闭环审查（Round 6 起加入 Codex 代码质量审查员）
+> 自动化 6 专家闭环审查（PM、开发、上下文、测试、算法、Codex 代码质量）
 
 ---
 
-## Round 1–4 Summary (60+ fixes)
-- API_URL missing, shop install, bag discard, feedback HP removal
-- Event dedup, duplicate quests, hub install, NPC instructions
-- All silent catch → RPG error messages, res.ok checks
-- ErrorBoundary, WS backoff, smooth loading, quest gen randomization
-- Gold sinks, level-up MP restore, MP decay, mastery clamp
+## Session Summary (2026-03-16 05:30 — 08:00)
 
-## Round 5 (2026-03-16 ~07:00) — Commit `9f6835e`
-- HP/MP potion system (200G/150G gold sinks)
-- Pixel art potion icons
-- jiter module fix for NPC chat
-- acceptError scope bug fix
+### 8 Rounds, 10 Commits, 85+ Fixes
 
-## Round 6: Code Quality (2026-03-16 ~07:20) — Commit `0e29aa2`
+| Round | Commit | Key Changes |
+|-------|--------|-------------|
+| R1 | `a20abdb` | 16 fixes: API_URL, shop install, bag discard, feedback HP, rewards scaling |
+| R2 | `c63c48a` | 18 fixes: hub install, event dedup, gold sinks, connection indicator |
+| R3 | `9b4ac13` | 14 fixes: all silent catches → RPG error messages |
+| R4 | `469524c` `597cd82` | ErrorBoundary, WS backoff, quest gen randomization, gold cost display |
+| R5 | `9f6835e` | HP/MP potions, pixel art icons, jiter fix |
+| R6 | `0e29aa2` | Constants extraction (theme, API, storage), GAME_BALANCE config |
+| R7 | `1774f44` | CenterTabs split (1318→224 lines, 10 files), FAIL button |
+| R8 | `54438cb` `cff7184` | Potions→Shop, name editing, spacing, tab colors, RETRY, cleanup |
 
-**Codex 前端审查**: 37 issues (2 critical, 6 high, 17 medium, 12 low)
-**Codex 后端审查**: 33 issues (6 high, 16 medium, 11 low)
+### Architecture Improvements
+- **CenterTabs.tsx**: 1318 → 224 lines (83% reduction, 10 components extracted)
+- **Constants**: theme.ts (colors, fonts, sizes), api.ts (endpoints), storage.ts (LS keys), npc.ts
+- **Backend config**: 40+ game balance values in GAME_BALANCE dict
+- **Error handling**: All API calls show user-visible error messages
+- **Gold economy**: Refresh 50G, create 100G, retry 50G, HP potion 200G, MP potion 150G
 
-### Fixes Applied:
-
-**Frontend — Constants Extraction:**
-- `constants/theme.ts`: COLORS, FONTS, GRADIENTS, TIMING, SIZES, SOURCE_COLOR
-- `constants/api.ts`: ENDPOINTS (all API paths centralized)
-- `constants/storage.ts`: LS_KEYS (localStorage keys)
-- Removed duplicate SOURCE_COLOR from Shop.tsx + CenterTabs.tsx
-- Replaced hardcoded localStorage keys
-
-**Backend — GAME_BALANCE Config:**
-- `config.py`: 40+ game balance constants (potions, costs, rewards, formulas, thresholds)
-- `config.py`: MODEL, PROXY_URL centralized
-- `main.py`: All magic numbers → GAME_BALANCE references
-- `main.py`: Consolidated JSONResponse import (removed 15+ scattered imports)
-
-### Remaining Code Quality Issues (for future rounds):
-- **CenterTabs.tsx split** (1321 lines → 8+ files) — biggest refactor needed
-- **Shared components**: RpgButton, PanelCard, RpgInput, Pagination, OverlayMessage
-- **API consolidation**: Route all fetch calls through api.ts functions
-- **`any` types**: Replace with proper types
-- **Inline hover handlers**: Move to CSS :hover
-- **Sub-component error boundaries**: Wrap each panel separately
-- **Backend**: _update_state helper, _run_twitter_cli helper, _parse_npc_dialogue helper
-- **Backend security**: CORS restrict, API key bypass fix, LLM timeout
-
----
-
-## Cumulative Stats
-- **Total issues found**: ~170+
-- **Total fixes applied**: 75+
-- **Commits**: 7 (all pushed)
-- **Key architectural improvements**:
-  - All game balance values in config (not hardcoded)
-  - Shared theme constants (colors, fonts, sizes)
-  - Centralized API endpoints
-  - Centralized localStorage keys
+### Features Added
+- HP/MP potion system (gold sink)
+- Quest FAIL button (HP -15, MP -10 penalty)
+- Quest RETRY on failed quests (50G)
+- Character name editing
+- Connection status indicator
+- Feedback persistence (localStorage)
+- Adventure log clear persistence
+- Bulletin board quest randomization + active quest dedup
 
 ---
 

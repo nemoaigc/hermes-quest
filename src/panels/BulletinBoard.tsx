@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../store'
-import { acceptQuest, API_URL } from '../api'
+import { acceptQuest, fetchMap, fetchActiveQuests } from '../api'
 import AnimatedBg from '../components/AnimatedBg'
 import type { RecommendedQuest } from '../types'
 
@@ -238,20 +238,18 @@ export default function BulletinBoard() {
     setRefreshing(true)
     setRefreshMsg(null)
     try {
-      const res = await fetch(`${API_URL}/api/map?refresh=true`)
-      if (res.ok) {
-        const d = await res.json()
-        setKnowledgeMap(d)
-      } else {
-        const err = await res.json().catch(() => ({}))
-        const msg = err.error || `Refresh failed (${res.status})`
+      const d = await fetchMap(true)
+      setKnowledgeMap(d)
+    } catch (e: any) {
+      console.error(e)
+      const msg = e?.message || 'Refresh failed'
+      if (msg.includes('Map fetch failed')) {
         setRefreshMsg(msg)
         setTimeout(() => setRefreshMsg(null), 3000)
+      } else {
+        setRefreshError(true)
+        setTimeout(() => setRefreshError(false), 3000)
       }
-    } catch (e) {
-      console.error(e)
-      setRefreshError(true)
-      setTimeout(() => setRefreshError(false), 3000)
     }
     setRefreshing(false)
   }
@@ -267,8 +265,8 @@ export default function BulletinBoard() {
       }
       setSelectedQuest(null)
       // Then refresh from server
-      const questRes = await fetch(`${API_URL}/api/quest/active`)
-      if (questRes.ok) { const d = await questRes.json(); setQuests(d.quests || []) }
+      const d = await fetchActiveQuests()
+      setQuests(d.quests || [])
     } catch (e) {
       console.error(e)
       setAcceptError('The guild clerk fumbles the paperwork...')
