@@ -10,18 +10,9 @@ import BagPanel from './panels/BagPanel'
 import ReflectionLetter from './components/ReflectionLetter'
 
 // Pre-load all background images + NPC portraits
+// Only preload the default tab (MAP) background — others load on demand
 const PRELOAD_IMAGES = [
   '/bg/map-bg.png',
-  '/bg/npc-bg.png',
-  '/bg/guild-bg.png',
-  '/bg/shop-bg.png',
-  '/bg/anim/map-1.png', '/bg/anim/map-2.png', '/bg/anim/map-3.png',
-  '/bg/anim/tavern-1.png', '/bg/anim/tavern-2.png', '/bg/anim/tavern-3.png',
-  '/bg/anim/guild-1.png', '/bg/anim/guild-2.png', '/bg/anim/guild-3.png',
-  '/bg/anim/shop-1.png', '/bg/anim/shop-2.png', '/bg/anim/shop-3.png',
-  '/npc/guild-master.png', '/npc/cartographer.png', '/npc/quartermaster.png',
-  '/npc/bartender.png', '/npc/sage.png',
-  '/sprites/fog.png',
 ]
 
 function preloadImages(): Promise<void> {
@@ -102,31 +93,24 @@ export default function App() {
     let cancelled = false
 
     async function load() {
-      // Phase 1: start progress
-      setProgress(10)
-      await new Promise(r => setTimeout(r, 300))
-      if (cancelled) return
-
-      // Phase 2: preload images
-      setProgress(30)
-      await preloadImages()
-      if (cancelled) return
-      setProgress(70)
-
-      // Phase 3: wait for initial data (state from WebSocket)
-      await new Promise<void>(resolve => {
+      setProgress(20)
+      // Preload images + wait for state in parallel, with fast timeout
+      const imgPromise = preloadImages()
+      const statePromise = new Promise<void>(resolve => {
         const check = () => {
           if (useStore.getState().state) { resolve(); return }
-          setTimeout(check, 200)
+          setTimeout(check, 150)
         }
         check()
-        setTimeout(resolve, 3000) // Safety timeout
+        setTimeout(resolve, 1500)
       })
+      await Promise.race([
+        Promise.all([imgPromise, statePromise]),
+        new Promise(r => setTimeout(r, 2000)), // Max 2s total
+      ])
       if (cancelled) return
       setProgress(100)
-
-      // Phase 4: small delay for visual polish
-      await new Promise(r => setTimeout(r, 400))
+      await new Promise(r => setTimeout(r, 200))
       if (cancelled) return
       setReady(true)
     }

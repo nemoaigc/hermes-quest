@@ -5,6 +5,7 @@ import SubRegionGraph from './SubRegionGraph'
 import GuildPanel from './GuildPanel'
 import Shop from './Shop'
 import TavernAmbientChat from '../components/TavernAmbientChat'
+import AnimatedBg from '../components/AnimatedBg'
 import { API_URL } from '../api'
 import type { TabId, NpcId } from '../types'
 
@@ -30,90 +31,117 @@ const TABS: Array<{ id: TabId; label: string; icon: string }> = [
   { id: 'npc', label: 'TAVERN', icon: '\u{1F37A}' },
 ]
 
-/** Tavern scene — background + centered rumors button + floating rumors */
-function TavernScene({ onRumorsClick, rumors, rumorsLoading, onCloseRumors }: {
-  onRumorsClick: () => void
-  rumors: Array<{ id: string; text: string; author: string; handle: string; likes: number }>
+/** Tavern SCENE area — 3 modes: default / chatter / rumors */
+function TavernSceneArea({ sceneMode, onSceneMode, rumors, rumorsLoading, onFetchRumors }: {
+  sceneMode: 'default' | 'chatter' | 'rumors'
+  onSceneMode: (mode: 'default' | 'chatter' | 'rumors') => void
+  rumors: Array<{ id: string; text: string; author: string; handle: string; likes: number; time: string }>
   rumorsLoading: boolean
-  onCloseRumors: () => void
+  onFetchRumors: () => void
 }) {
-  const showRumors = rumors.length > 0 || rumorsLoading
-
+  const dimmed = sceneMode !== 'default'
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <img src="/bg/npc-bg.png" alt="" draggable={false} style={{
-        width: '100%', height: '100%', objectFit: 'fill',
-        imageRendering: 'pixelated',
+    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
+      <AnimatedBg prefix="tavern" fallback="/bg/npc-bg.png" style={{
+        filter: dimmed ? 'brightness(0.25)' : 'none',
+        transition: 'filter 0.3s',
       }} />
 
-      {/* HEAR RUMORS button — centered on the tavern scene */}
-      {!showRumors && (
-        <button
-          onClick={onRumorsClick}
-          style={{
-            position: 'absolute', top: '50%', left: '50%',
-            transform: 'translate(-50%, -50%)',
-            fontFamily: 'var(--font-pixel)', fontSize: '7px',
-            padding: '6px 14px',
-            background: 'linear-gradient(180deg, #5a3a1e 0%, #3a2210 100%)',
-            border: '2px solid #6b4c2a',
-            color: '#f0e68c', cursor: 'pointer',
-            letterSpacing: '1px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
-          }}
-        >
-          HEAR RUMORS
-        </button>
+      {/* Tab bar at top — always visible */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, zIndex: 2,
+        display: 'flex',
+      }}>
+        {(['chatter', 'rumors'] as const).map(tab => {
+          const active = sceneMode === tab
+          return (
+            <button
+              key={tab}
+              onClick={() => { onSceneMode(active ? 'default' : tab); if (tab === 'rumors' && !active) onFetchRumors() }}
+              style={{
+                flex: 1, padding: '8px 0',
+                fontFamily: 'var(--font-pixel)', fontSize: '8px',
+                letterSpacing: '2px',
+                background: active ? 'rgba(13,10,6,0.85)' : 'rgba(13,10,6,0.5)',
+                border: 'none',
+                borderBottom: active ? '2px solid #f0e68c' : '2px solid transparent',
+                color: active ? '#f0e68c' : '#8b7355',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              {tab.toUpperCase()}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Chatter content */}
+      {sceneMode === 'chatter' && (
+        <div style={{ position: 'absolute', top: '32px', left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '4px 8px', flexShrink: 0,
+          }}>
+            <BackButton onClick={() => onSceneMode('default')} />
+            <span style={{ flex: 1 }} />
+            <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#f0e68c', letterSpacing: '1px' }}>
+              TAVERN CHATTER
+            </span>
+            <span style={{ flex: 1 }} />
+            <RpgButton onClick={() => { /* refresh gossip */ const el = document.querySelector('[data-refresh-gossip]') as HTMLButtonElement; el?.click() }} small>NEW GOSSIP</RpgButton>
+          </div>
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <TavernAmbientChat hideHeader />
+          </div>
+        </div>
       )}
 
-      {/* Floating rumors — scrollable whispers over the scene */}
-      {showRumors && (
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex', flexDirection: 'column',
-          overflow: 'hidden',
-        }}>
-          {/* Header */}
+      {/* Rumors content */}
+      {sceneMode === 'rumors' && (
+        <div style={{ position: 'absolute', top: '32px', left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column' }}>
           <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '6px 12px',
-            background: 'rgba(58,42,26,0.9)',
-            borderBottom: '2px solid #6b4c2a',
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '4px 8px', flexShrink: 0,
           }}>
-            <span style={{
-              fontFamily: 'var(--font-pixel)', fontSize: '7px',
-              color: '#f0e68c', letterSpacing: '1px',
-            }}>
-              WHISPERS IN THE TAVERN
+            <BackButton onClick={() => onSceneMode('default')} />
+            <span style={{ flex: 1 }} />
+            <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#f0e68c', letterSpacing: '1px' }}>
+              REALM RUMORS
             </span>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              <button onClick={onRumorsClick} style={{
+            <span style={{ flex: 1 }} />
+            <button
+              onClick={onFetchRumors}
+              disabled={rumorsLoading}
+              style={{
                 fontFamily: 'var(--font-pixel)', fontSize: '5px',
-                padding: '2px 8px', cursor: 'pointer',
-                background: 'rgba(90,60,20,0.5)', border: '1px solid #5c3a1e',
-                color: '#c8a87a',
-              }}>REFRESH</button>
-              <button onClick={onCloseRumors} style={{
-                fontFamily: 'var(--font-pixel)', fontSize: '5px',
-                padding: '2px 6px', cursor: 'pointer',
-                background: 'transparent', border: '1px solid #5c3a1e',
-                color: '#8b7355',
-              }}>X</button>
-            </div>
+                padding: '3px 8px', cursor: rumorsLoading ? 'wait' : 'pointer',
+                background: 'linear-gradient(180deg, #6a4428 0%, #4a2a14 50%, #3a2210 100%)',
+                border: '2px solid #6b4c2a',
+                color: '#f0e68c',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.4)',
+              }}
+            >
+              {rumorsLoading ? '...' : 'REFRESH'}
+            </button>
           </div>
-          {/* Scrollable rumors list */}
-          <div style={{
-            flex: 1, overflow: 'auto', padding: '6px 10px',
-          }}>
+          <div style={{ flex: 1, overflow: 'auto', padding: '4px 10px' }}>
             {rumorsLoading ? (
               <div style={{
                 textAlign: 'center', color: '#c8a87a', fontStyle: 'italic',
-                fontSize: '10px', fontFamily: 'Georgia, serif',
+                fontSize: '10px', fontFamily: 'var(--font-pixel)',
                 textShadow: '0 1px 3px rgba(0,0,0,0.8)',
                 marginTop: '20px',
               }}>
                 You lean in and listen...
+              </div>
+            ) : rumors.length === 0 ? (
+              <div style={{
+                textAlign: 'center', color: '#5c4a2a',
+                fontSize: '6px', fontFamily: 'var(--font-pixel)',
+                marginTop: '20px', cursor: 'pointer',
+              }} onClick={onFetchRumors}>
+                No whispers yet... Click to listen.
               </div>
             ) : rumors.map((r) => (
               <a
@@ -135,7 +163,7 @@ function TavernScene({ onRumorsClick, rumors, rumorsLoading, onCloseRumors }: {
               >
                 <div style={{
                   fontSize: '9px', color: '#e8d5b0', lineHeight: '1.4',
-                  fontFamily: 'Georgia, serif',
+                  fontFamily: 'var(--font-pixel)',
                   textShadow: '0 1px 2px rgba(0,0,0,0.5)',
                 }}>
                   "{r.text.length > 150 ? r.text.slice(0, 150) + '...' : r.text}"
@@ -157,6 +185,151 @@ function TavernScene({ onRumorsClick, rumors, rumorsLoading, onCloseRumors }: {
   )
 }
 
+/** Tavern BOTTOM panel — 3 states: NPC gallery / NPC bio card / NPC chat */
+function TavernNpcPanel({ activeNpc, onNpcSelect, chatNpc, onNpcChat, onCloseBio, onCloseChat, chatHistoryRef, npcPrefill }: {
+  activeNpc: string | null
+  onNpcSelect: (id: string) => void
+  chatNpc: string | null
+  onNpcChat: (id: string) => void
+  onCloseBio: () => void
+  onCloseChat: () => void
+  chatHistoryRef: React.MutableRefObject<Record<string, Array<{ role: 'npc' | 'user'; text: string }>>>
+  npcPrefill?: string | null
+}) {
+  const selectedNpcData = activeNpc ? NPCS.find(n => n.id === activeNpc) : null
+  const chatNpcData = chatNpc ? NPCS.find(n => n.id === chatNpc) : null
+  const bio = activeNpc ? NPC_BIOS[activeNpc] : null
+
+  /* ---- State 3: NPC Chat ---- */
+  if (chatNpc && chatNpcData) {
+    return (
+      <div style={{ width: '100%', height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <RpgDialogInline npc={chatNpcData} onClose={onCloseChat} chatHistoryRef={chatHistoryRef} prefillMessage={npcPrefill} />
+      </div>
+    )
+  }
+
+  /* ---- State 2: NPC Bio Card (old horizontal layout) ---- */
+  if (activeNpc && selectedNpcData && bio) {
+    return (
+      <div style={{
+        display: 'flex', gap: '12px', width: '100%', height: '100%', padding: '8px 12px',
+      }}>
+        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+          <img src={selectedNpcData.img} alt="" style={{
+            width: '80px', height: '80px', imageRendering: 'pixelated',
+            borderRadius: '3px',
+          }} />
+          <BackButton onClick={onCloseBio} />
+        </div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', overflow: 'auto' }}>
+          <div>
+            <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: '#f0e68c', letterSpacing: '1px' }}>
+              {selectedNpcData.name}
+            </div>
+            <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: '#8b7355', marginTop: '2px' }}>
+              {selectedNpcData.title}
+            </div>
+          </div>
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: 'var(--cyan)', letterSpacing: '0.5px' }}>
+            {bio.trait}
+          </div>
+          <div style={{
+            fontSize: '13px', color: '#c8a87a', lineHeight: '1.7',
+            fontFamily: 'Georgia, serif', fontStyle: 'italic',
+          }}>
+            "{bio.lore}"
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  /* ---- State 1: NPC Gallery ---- */
+  return (
+    <div style={{
+      display: 'flex', width: '100%', height: '100%',
+    }}>
+      {NPCS.map((npc) => {
+        const isActive = activeNpc === npc.id
+        return (
+          <div
+            key={npc.id}
+            style={{
+              flex: 1,
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+              background: isActive
+                ? 'linear-gradient(180deg, rgba(50,35,20,0.6) 0%, rgba(35,25,15,0.7) 100%)'
+                : 'linear-gradient(180deg, rgba(40,28,16,0.5) 0%, rgba(28,20,12,0.6) 100%)',
+              border: '1px solid rgba(139,94,60,0.3)',
+              borderTop: '1px solid rgba(180,140,80,0.15)',
+              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3), 0 1px 0 rgba(139,94,60,0.1)',
+              borderRadius: '2px',
+              margin: '2px',
+              padding: '4px 2px',
+              overflow: 'hidden',
+            }}
+          >
+            <img
+              src={npc.img}
+              alt={npc.name}
+              onClick={() => onNpcSelect(npc.id)}
+              style={{
+                width: '100%', maxWidth: '80px', aspectRatio: '1',
+                objectFit: 'cover',
+                imageRendering: 'pixelated',
+                border: 'none',
+                borderRadius: '2px',
+                cursor: 'pointer',
+                transition: 'border-color 0.15s',
+              }}
+            />
+            <span style={{
+              fontFamily: 'var(--font-pixel)',
+              fontSize: 'clamp(4px, 0.6vw, 6px)',
+              color: isActive ? '#f0e68c' : '#c8a87a',
+              marginTop: '3px',
+              letterSpacing: '0.5px',
+            }}>
+              {npc.name}
+            </span>
+            <span style={{
+              fontFamily: 'var(--font-pixel)',
+              fontSize: 'clamp(3px, 0.4vw, 5px)',
+              color: '#6a5a3a',
+            }}>
+              {npc.title}
+            </span>
+            <button
+              onClick={(e) => { e.stopPropagation(); onNpcChat(npc.id) }}
+              style={{
+                fontFamily: 'var(--font-pixel)',
+                fontSize: 'clamp(3px, 0.4vw, 5px)',
+                padding: '2px 8px',
+                marginTop: '3px',
+                cursor: 'pointer',
+                background: isActive
+                  ? 'linear-gradient(180deg, #7a5030 0%, #5a3820 100%)'
+                  : 'transparent',
+                border: isActive ? '1px solid #f0e68c' : '1px solid rgba(139,94,60,0.4)',
+                color: isActive ? '#f0e68c' : '#8b7355',
+                borderRadius: '2px',
+                letterSpacing: '1px',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#f0e68c'; e.currentTarget.style.color = '#f0e68c' }}
+              onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.borderColor = 'rgba(139,94,60,0.4)'; e.currentTarget.style.color = '#8b7355' } }}
+            >
+              CHAT
+            </button>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 const NPC_BIOS: Record<string, { lore: string; trait: string }> = {
   guild_master: {
     lore: 'Once a legendary adventurer herself, Lyra retired to manage the guild after a fateful expedition. She has an eye for potential and knows exactly which quest will push you to grow.',
@@ -171,7 +344,7 @@ const NPC_BIOS: Record<string, { lore: string; trait: string }> = {
     trait: 'Manages skills \u00B7 Recommends gear',
   },
   bartender: {
-    lore: 'Rosa hears everything. Every boast, every whisper, every secret spilled over a drink. She remembers it all and shares only what matters.',
+    lore: 'Gus hears everything. Every boast, every whisper, every secret spilled over a drink. He remembers it all and shares only what matters.',
     trait: 'Shares gossip \u00B7 Tells stories',
   },
   sage: {
@@ -195,51 +368,6 @@ function BackButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-/** NPC Bio Panel — replaces bottom bar when portrait is clicked */
-function NpcBioPanel({ npc, bio, onClose }: {
-  npc: typeof NPCS[0]
-  bio: { lore: string; trait: string }
-  onClose: () => void
-  onChat: () => void
-}) {
-  return (
-    <div style={{
-      display: 'flex', gap: '12px', width: '100%', height: '100%', padding: '8px 12px',
-    }}>
-      {/* Left: large portrait + back */}
-      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-        <img src={npc.img} alt="" style={{
-          width: '80px', height: '80px', imageRendering: 'pixelated',
-          borderRadius: '3px',
-        }} />
-        <BackButton onClick={onClose} />
-      </div>
-
-      {/* Right: bio content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', overflow: 'auto' }}>
-        <div>
-          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: '#f0e68c', letterSpacing: '1px' }}>
-            {npc.name}
-          </div>
-          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: '#8b7355', marginTop: '2px' }}>
-            {npc.title}
-          </div>
-        </div>
-
-        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: 'var(--cyan)', letterSpacing: '0.5px' }}>
-          {bio.trait}
-        </div>
-
-        <div style={{
-          fontSize: '13px', color: '#c8a87a', lineHeight: '1.7',
-          fontFamily: 'Georgia, serif', fontStyle: 'italic',
-        }}>
-          "{bio.lore}"
-        </div>
-      </div>
-    </div>
-  )
-}
 
 /** RPG dialog inline — replaces NPC bar in the bottom area */
 function RpgDialogInline({ npc, onClose, chatHistoryRef, prefillMessage }: {
@@ -333,13 +461,16 @@ function RpgDialogInline({ npc, onClose, chatHistoryRef, prefillMessage }: {
           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
             {suggestions.map((q, i) => (
               <button key={i} onClick={() => handleSend(q)} style={{
-                fontFamily: 'var(--font-pixel)', fontSize: '5px',
-                padding: '3px 8px', cursor: 'pointer',
-                background: 'rgba(90,60,20,0.4)', border: '1px solid #5c3a1e',
-                color: '#c8a87a', transition: 'all 0.15s',
+                fontFamily: 'var(--font-pixel)', fontSize: '8px',
+                padding: '6px 12px', cursor: 'pointer',
+                background: 'linear-gradient(180deg, rgba(90,60,20,0.6) 0%, rgba(60,40,15,0.8) 100%)',
+                border: '2px solid #6b4c2a',
+                color: '#f0e68c', transition: 'all 0.15s',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,140,0.1)',
+                textShadow: '0 1px 2px rgba(0,0,0,0.5)',
               }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = '#f0e68c'; e.currentTarget.style.color = '#f0e68c' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#5c3a1e'; e.currentTarget.style.color = '#c8a87a' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#f0e68c'; e.currentTarget.style.background = 'linear-gradient(180deg, rgba(120,80,30,0.7) 0%, rgba(80,55,20,0.9) 100%)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#6b4c2a'; e.currentTarget.style.background = 'linear-gradient(180deg, rgba(90,60,20,0.6) 0%, rgba(60,40,15,0.8) 100%)' }}
               >{q}</button>
             ))}
           </div>
@@ -651,73 +782,12 @@ function ShopBottomInfo() {
   )
 }
 
-/** TAVERN bottom panel — compact NPC head strip + TavernAmbientChat */
-function TavernBottomPanel({ onNpcClick, activeNpc, onBioClick, onRumorsClick, rumorsLoading }: {
-  onNpcClick: (id: string) => void
-  activeNpc: string | null
-  onBioClick: (id: string) => void
-  onRumorsClick: () => void
-  rumorsLoading: boolean
-}) {
-  return (
-    <div style={{
-      display: 'flex', flexDirection: 'column',
-      width: '100%', height: '100%',
-      overflow: 'hidden',
-    }}>
-      {/* NPC head strip — 32px images in a row */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '4px',
-        padding: '4px 8px',
-        background: 'rgba(26,18,10,0.6)',
-        borderBottom: '1px solid rgba(139,94,60,0.3)',
-        flexShrink: 0,
-      }}>
-        <span style={{
-          fontFamily: 'var(--font-pixel)', fontSize: '5px',
-          color: '#5c4a2a', letterSpacing: '1px', marginRight: '4px',
-        }}>NPC</span>
-        {NPCS.map((npc) => {
-          const isActive = activeNpc === npc.id
-          return (
-            <img
-              key={npc.id}
-              src={npc.img}
-              alt={npc.name}
-              title={`${npc.name} - ${npc.title} (click to chat, right-click for bio)`}
-              onClick={() => onNpcClick(npc.id)}
-              onContextMenu={(e) => { e.preventDefault(); onBioClick(npc.id) }}
-              style={{
-                width: '32px', height: '32px',
-                objectFit: 'cover',
-                imageRendering: 'pixelated',
-                borderRadius: '2px',
-                border: isActive ? '2px solid #f0e68c' : '2px solid rgba(139,94,60,0.3)',
-                cursor: 'pointer',
-                transition: 'border-color 0.15s',
-              }}
-              onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.borderColor = '#8b7355' }}
-              onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = 'rgba(139,94,60,0.3)' }}
-            />
-          )
-        })}
-      </div>
-
-      {/* TavernAmbientChat fills the rest */}
-      <div style={{ flex: 1, overflow: 'hidden' }}>
-        <TavernAmbientChat onRumorsClick={onRumorsClick} rumorsLoading={rumorsLoading} />
-      </div>
-    </div>
-  )
-}
-
 export default function CenterTabs() {
   const activeTab = useStore((s) => s.activeTab)
   const setActiveTab = useStore((s) => s.setActiveTab)
   const [activeNpc, setActiveNpc] = useState<string | null>(null)
-  const selectedNpc = NPCS.find((n) => n.id === activeNpc)
-  const [bioNpcId, setBioNpcId] = useState<string | null>(null)
-  const bioNpcData = bioNpcId ? NPCS.find(n => n.id === bioNpcId) : null
+  const [chatNpc, setChatNpc] = useState<string | null>(null)
+  const [sceneMode, setSceneMode] = useState<'default' | 'chatter' | 'rumors'>('default')
   const [mapSelectedContinent, setMapSelectedContinent] = useState<string | null>(null)
   const knowledgeMap = useStore((s) => s.knowledgeMap)
   const [cycleLoading, setCycleLoading] = useState(false)
@@ -735,16 +805,16 @@ export default function CenterTabs() {
     window.__hermesShowToNpc = (npcId: string, message: string) => {
       setActiveTab('npc')
       setNpcPrefill(message)
-      setActiveNpc(npcId)
-      setBioNpcId(null)
+      setChatNpc(npcId)
+      setActiveNpc(null)
     }
     return () => { window.__hermesShowToNpc = undefined }
   }, [setActiveTab])
 
-  // Clear prefill after NPC changes
+  // Clear prefill after chat NPC changes
   useEffect(() => {
-    if (!activeNpc) setNpcPrefill(null)
-  }, [activeNpc])
+    if (!chatNpc) setNpcPrefill(null)
+  }, [chatNpc])
 
   async function fetchRumors() {
     setRumorsLoading(true)
@@ -756,9 +826,6 @@ export default function CenterTabs() {
     setRumorsLoading(false)
   }
 
-  function closeRumors() {
-    setRumors([])
-  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -810,7 +877,15 @@ export default function CenterTabs() {
         {activeTab === 'map' && <KnowledgeMap onContinentSelect={setMapSelectedContinent} />}
         {activeTab === 'guild' && <GuildPanel />}
         {activeTab === 'shop' && <Shop />}
-        {activeTab === 'npc' && <TavernScene onRumorsClick={() => fetchRumors()} rumors={rumors} rumorsLoading={rumorsLoading} onCloseRumors={closeRumors} />}
+        {activeTab === 'npc' && (
+          <TavernSceneArea
+            sceneMode={sceneMode}
+            onSceneMode={setSceneMode}
+            rumors={rumors}
+            rumorsLoading={rumorsLoading}
+            onFetchRumors={fetchRumors}
+          />
+        )}
       </div>
       {/* Bottom bar */}
       <div style={{
@@ -822,27 +897,21 @@ export default function CenterTabs() {
         display: 'flex',
         alignItems: 'stretch',
         justifyContent: 'center',
-        padding: activeTab === 'npc' && !selectedNpc && !bioNpcData ? '0' : '10px 14px',
+        padding: '10px 14px',
         overflow: 'auto',
         position: 'relative',
       } as React.CSSProperties}>
-        {/* TAVERN: compact head strip + ambient chat (default), or private chat, or bio */}
-        {activeTab === 'npc' && !selectedNpc && !bioNpcData && (
-          <TavernBottomPanel
-            onNpcClick={setActiveNpc}
+        {/* TAVERN: NPC gallery/card/chat in bottom panel */}
+        {activeTab === 'npc' && (
+          <TavernNpcPanel
             activeNpc={activeNpc}
-            onBioClick={(id) => setBioNpcId(id)}
-            onRumorsClick={() => fetchRumors()}
-            rumorsLoading={rumorsLoading}
-          />
-        )}
-        {activeTab === 'npc' && !selectedNpc && bioNpcData && <NpcBioPanel npc={bioNpcData} bio={NPC_BIOS[bioNpcId!]} onClose={() => setBioNpcId(null)} onChat={() => { setActiveNpc(bioNpcId!); setBioNpcId(null) }} />}
-        {activeTab === 'npc' && selectedNpc && (
-          <RpgDialogInline
-            npc={selectedNpc}
-            onClose={() => setActiveNpc(null)}
+            onNpcSelect={(id) => { setActiveNpc(id); setChatNpc(null) }}
+            chatNpc={chatNpc}
+            onNpcChat={(id) => { setChatNpc(id); setActiveNpc(null) }}
+            onCloseBio={() => setActiveNpc(null)}
+            onCloseChat={() => { setChatNpc(null); setActiveNpc(null) }}
             chatHistoryRef={chatHistoryRef}
-            prefillMessage={npcPrefill}
+            npcPrefill={npcPrefill}
           />
         )}
         {activeTab === 'map' && (() => {
