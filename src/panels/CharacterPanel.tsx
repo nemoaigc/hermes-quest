@@ -49,15 +49,12 @@ export default function CharacterPanel() {
       {/* Portrait + Identity — horizontal layout */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
         {/* Avatar — same size as NPC portraits */}
-        <div style={{
+        <img src="/avatar.png" alt="Hermes" style={{
           width: '80px', height: '80px', flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(20,14,8,0.6)',
+          imageRendering: 'pixelated',
           border: '1px solid rgba(107,76,42,0.4)',
           borderRadius: '3px',
-        }}>
-          <ClassIcon cls={state.class} size={64} />
-        </div>
+        }} />
 
         {/* Name + Class + Title */}
         <div style={{ flex: 1 }}>
@@ -86,7 +83,7 @@ export default function CharacterPanel() {
       }}>
         <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#c8a87a' }}>UNDERSTANDING</span>
         <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '8px', color: 'var(--cyan)' }}>
-          {state.understanding < 0 ? '...' : `${Math.round(state.understanding * 100)}%`}
+          {state.understanding < 0 ? '...' : `${Math.round(state.understanding)}%`}
         </span>
       </div>
 

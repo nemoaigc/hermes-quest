@@ -23,7 +23,6 @@ export default function TavernAmbientChat({ onRumorsClick, rumorsLoading, hideHe
   refreshRef?: React.MutableRefObject<(() => void) | null>
 }) {
   const [messages, setMessages] = useState<TavernMessage[]>([])
-  const [visibleCount, setVisibleCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [userInput, setUserInput] = useState('')
   const [sending, setSending] = useState(false)
@@ -35,22 +34,13 @@ export default function TavernAmbientChat({ onRumorsClick, rumorsLoading, hideHe
       .then(d => {
         if (d.messages?.length > 0) {
           setMessages(d.messages)
-          setVisibleCount(0)
+          requestAnimationFrame(() => {
+            scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
+          })
         }
       })
       .catch(() => {})
   }, [])
-
-  useEffect(() => {
-    if (visibleCount >= messages.length) return
-    const timer = setTimeout(() => {
-      setVisibleCount(v => v + 1)
-      requestAnimationFrame(() => {
-        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-      })
-    }, visibleCount === 0 ? 400 : 1200)
-    return () => clearTimeout(timer)
-  }, [visibleCount, messages.length])
 
   async function handleRefresh() {
     setLoading(true)
@@ -60,7 +50,9 @@ export default function TavernAmbientChat({ onRumorsClick, rumorsLoading, hideHe
         const d = await res.json()
         if (d.messages?.length > 0) {
           setMessages(d.messages)
-          setVisibleCount(0)
+          requestAnimationFrame(() => {
+            scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
+          })
         }
       }
     } catch {}
@@ -79,23 +71,25 @@ export default function TavernAmbientChat({ onRumorsClick, rumorsLoading, hideHe
     setUserInput('')
     // Add user message to chat
     const userMsg: TavernMessage = { npc: 'you', name: 'You', text }
-    setMessages(prev => [...prev, userMsg])
-    setVisibleCount(prev => prev + 1)
+    const updatedMessages = [...messages, userMsg]
+    setMessages(updatedMessages)
     setSending(true)
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+    })
     try {
-      const res = await fetch(`${API_URL}/api/npc/chat`, {
+      const res = await fetch(`${API_URL}/api/tavern/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ npc: 'bartender', message: text, context: {} }),
+        body: JSON.stringify({ message: text, history: updatedMessages }),
       })
       const data = await res.json()
-      const reply: TavernMessage = { npc: 'gus', name: 'Gus', text: data.reply || '...' }
-      setMessages(prev => [...prev, reply])
-      setVisibleCount(prev => prev + 1)
+      if (data.messages?.length > 0) {
+        setMessages(prev => [...prev, ...data.messages])
+      }
     } catch {
       const reply: TavernMessage = { npc: 'gus', name: 'Gus', text: '*wipes the counter silently*' }
       setMessages(prev => [...prev, reply])
-      setVisibleCount(prev => prev + 1)
     }
     setSending(false)
     requestAnimationFrame(() => {
@@ -152,7 +146,7 @@ export default function TavernAmbientChat({ onRumorsClick, rumorsLoading, hideHe
             {loading ? '...' : 'The tavern is quiet... Click to eavesdrop.'}
           </div>
         ) : (
-          messages.slice(0, visibleCount).map((msg, i) => {
+          messages.map((msg, i) => {
             const s = NPC_STYLE[msg.npc] || { color: '#c8a87a', mark: '-' }
             return (
               <div key={i} style={{
@@ -177,14 +171,6 @@ export default function TavernAmbientChat({ onRumorsClick, rumorsLoading, hideHe
           })
         )}
 
-        {visibleCount > 0 && visibleCount < messages.length && (
-          <span style={{
-            fontFamily: 'var(--font-pixel)', fontSize: '5px',
-            color: '#3a2a16',
-          }}>
-            ...
-          </span>
-        )}
       </div>
 
       {/* User input bar */}
