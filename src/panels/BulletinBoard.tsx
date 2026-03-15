@@ -111,11 +111,12 @@ function QuestSlot({ quest, slot, onAccept, accepting, onSelect, selected }: {
 }
 
 /** Expanded detail overlay for a selected quest */
-function QuestDetailOverlay({ quest, onClose, onAccept, accepting }: {
+function QuestDetailOverlay({ quest, onClose, onAccept, accepting, acceptError }: {
   quest: RecommendedQuest
   onClose: () => void
   onAccept: (id: string) => void
   accepting: boolean
+  acceptError?: string | null
 }) {
   return (
     <div
@@ -304,6 +305,7 @@ export default function BulletinBoard() {
           onClose={() => setSelectedQuest(null)}
           onAccept={handleAccept}
           accepting={accepting === selectedQuestData.id}
+          acceptError={acceptError}
         />
       )}
 

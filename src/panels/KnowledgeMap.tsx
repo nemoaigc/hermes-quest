@@ -21,34 +21,39 @@ const CONTINENT_SPRITES: Record<string, string> = {
 // The parchment area within map-bg.png (1024x572)
 const PARCHMENT = { left: 14, top: 8, width: 68, height: 82 }
 
-// Fixed positions — well within 0.2-0.8 to avoid parchment edges
+// Fixed positions — 2x3 grid layout, centered in parchment, generous spacing
+// Row 1: 3 slots across the top, Row 2: 3 slots across the bottom
 const FIXED_POSITIONS: Record<string, { x: number; y: number }> = {
-  'software-engineering': { x: 0.25, y: 0.25 },
-  'software-engineering-flow': { x: 0.25, y: 0.25 },
-  'research-knowledge': { x: 0.6, y: 0.2 },
-  'research-knowledge-flow': { x: 0.6, y: 0.2 },
-  'automation-tools': { x: 0.25, y: 0.6 },
-  'automation-tools-flow': { x: 0.25, y: 0.6 },
-  'creative-arts': { x: 0.5, y: 0.5 },
-  'creative-arts-flow': { x: 0.5, y: 0.5 },
-  'data-analytics': { x: 0.7, y: 0.45 },
-  'data-analytics-flow': { x: 0.7, y: 0.45 },
-  'devops-infrastructure': { x: 0.42, y: 0.35 },
-  'devops-infrastructure-flow': { x: 0.42, y: 0.35 },
-  'security-defense': { x: 0.65, y: 0.65 },
-  'security-defense-flow': { x: 0.65, y: 0.65 },
-  'ai-machine-learning': { x: 0.45, y: 0.15 },
-  'ai-machine-learning-flow': { x: 0.45, y: 0.15 },
-  'web-frontend': { x: 0.3, y: 0.45 },
-  'web-frontend-flow': { x: 0.3, y: 0.45 },
+  // Row 1 — top
+  'software-engineering': { x: 0.18, y: 0.25 },
+  'software-engineering-flow': { x: 0.18, y: 0.25 },
+  'creative-arts': { x: 0.50, y: 0.20 },
+  'creative-arts-flow': { x: 0.50, y: 0.20 },
+  'research-knowledge': { x: 0.80, y: 0.25 },
+  'research-knowledge-flow': { x: 0.80, y: 0.25 },
+  // Row 2 — bottom
+  'automation-tools': { x: 0.18, y: 0.70 },
+  'automation-tools-flow': { x: 0.18, y: 0.70 },
+  'data-analytics': { x: 0.50, y: 0.72 },
+  'data-analytics-flow': { x: 0.50, y: 0.72 },
+  'devops-infrastructure': { x: 0.80, y: 0.70 },
+  'devops-infrastructure-flow': { x: 0.80, y: 0.70 },
+  // Extra slots if more workflows are discovered
+  'security-defense': { x: 0.35, y: 0.47 },
+  'security-defense-flow': { x: 0.35, y: 0.47 },
+  'ai-machine-learning': { x: 0.65, y: 0.47 },
+  'ai-machine-learning-flow': { x: 0.65, y: 0.47 },
+  'web-frontend': { x: 0.50, y: 0.47 },
+  'web-frontend-flow': { x: 0.50, y: 0.47 },
 }
 
-// Fog positions — near edges but still visible
+// Fog positions — match the fixed positions for their corresponding workflow
 const FOG_POSITIONS: Record<string, { x: number; y: number }> = {
-  'fog-data-science': { x: 0.78, y: 0.72 },
+  'fog-data-science': { x: 0.50, y: 0.72 },
+  'fog-devops': { x: 0.80, y: 0.70 },
 }
 // Hidden fog IDs — don't render these
-const HIDDEN_FOG = new Set(['fog-devops'])
+const HIDDEN_FOG = new Set<string>() // show all fog regions
 
 function ContinentSprite({ continent, onClick, isActive }: {
   continent: Continent
