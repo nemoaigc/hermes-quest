@@ -18,7 +18,7 @@ const SOURCE_COLOR: Record<string, string> = {
 const SHELF_SLOTS: Array<{ left: number; top: number; width: number; height: number }> = []
 const SHOP_COLS = [26.5, 41.8, 59.0]
 const SHOP_ROWS = [27.5, 47.5, 66.5]
-const SHOP_CW = 14.5  // cell width %
+const SHOP_CW = 13.5  // cell width % (reduced to prevent text overlap)
 const SHOP_CH = 17.5   // cell height %
 for (let row = 0; row < 3; row++) {
   for (let col = 0; col < 3; col++) {
@@ -108,7 +108,13 @@ export default function Shop() {
   }, [allSkills])
 
   const displayed = useMemo(() => {
-    let list = allSkills
+    // Dedup by name
+    const seen = new Set<string>()
+    let list = allSkills.filter(s => {
+      if (!s.name || seen.has(s.name)) return false
+      seen.add(s.name)
+      return true
+    })
     if (sourceFilter) {
       list = list.filter((s) => {
         const src = s.trust_level === 'builtin' ? 'official' : s.source

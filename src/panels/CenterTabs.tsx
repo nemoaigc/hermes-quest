@@ -251,8 +251,19 @@ function TavernNpcPanel({ activeNpc, onNpcSelect, chatNpc, onNpcChat, onCloseBio
   /* ---- State 1: NPC Gallery ---- */
   return (
     <div style={{
-      display: 'flex', width: '100%', height: '100%',
+      display: 'flex', flexDirection: 'column', width: '100%', height: '100%',
     }}>
+      {/* Ornamental title */}
+      <div style={{
+        textAlign: 'center', padding: '4px 0 2px', flexShrink: 0,
+      }}>
+        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.7vw, 8px)', color: '#8b6a3c' }}>{'\u2554'} </span>
+        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: 'clamp(6px, 0.8vw, 9px)', color: '#f0e68c', letterSpacing: '2px' }}>RESIDENTS</span>
+        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.7vw, 8px)', color: '#8b6a3c' }}> {'\u2557'}</span>
+      </div>
+      <div style={{
+        display: 'flex', flex: 1, minHeight: 0,
+      }}>
       {NPCS.map((npc) => {
         const isActive = activeNpc === npc.id
         return (
@@ -331,6 +342,7 @@ function TavernNpcPanel({ activeNpc, onNpcSelect, chatNpc, onNpcChat, onCloseBio
           </div>
         )
       })}
+      </div>
     </div>
   )
 }
@@ -699,17 +711,7 @@ function GuildBottomInfo() {
   const setQuests = useStore((s) => s.setQuests)
   const [input, setInput] = useState('')
   const [creating, setCreating] = useState(false)
-  const [completing, setCompleting] = useState<string | null>(null)
-  const [completed, setCompleted] = useState<string | null>(null)
-  const [doneCount, setDoneCount] = useState(0)
   const activeQuests = quests.filter((q) => q.status === 'active' || q.status === 'in_progress' || q.status === 'pending')
-
-  // Fetch completed count on mount
-  useEffect(() => {
-    fetch(`${API_URL}/api/quest/active`).then(r => r.json()).then(d => {
-      if (typeof d.completed_count === 'number') setDoneCount(d.completed_count)
-    }).catch(() => {})
-  }, [])
 
   async function refreshQuests() {
     try {
@@ -717,7 +719,6 @@ function GuildBottomInfo() {
       if (res.ok) {
         const d = await res.json()
         setQuests(d.quests || [])
-        if (typeof d.completed_count === 'number') setDoneCount(d.completed_count)
       }
     } catch {}
   }
@@ -734,73 +735,80 @@ function GuildBottomInfo() {
     setCreating(false)
   }
 
-  async function completeQuest(questId: string) {
-    setCompleting(questId)
+  const [questTab, setQuestTab] = useState<'active' | 'cancelled' | 'failed'>('active')
+  const [cancelling, setCancelling] = useState<string | null>(null)
+
+  async function cancelQuest(questId: string) {
+    setCancelling(questId)
     try {
-      const res = await fetch(`${API_URL}/api/quest/complete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quest_id: questId }),
-      })
-      if (res.ok) {
-        setCompleted(questId)
-        setTimeout(() => setCompleted(null), 1000)
-        // Refresh quests and state
-        await refreshQuests()
-        const stateRes = await fetch(`${API_URL}/api/state`)
-        if (stateRes.ok) {
-          const stateData = await stateRes.json()
-          useStore.getState().setState(stateData)
-        }
-      }
+      await fetch(`${API_URL}/api/quest/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ quest_id: questId }) })
+      await refreshQuests()
     } catch {}
-    setCompleting(null)
+    setCancelling(null)
   }
 
+  // Fetch all quests (including done/cancelled) for tab display
+  const [allQuests, setAllQuests] = useState<any[]>([])
+  useEffect(() => {
+    fetch(`${API_URL}/api/quests`).then(r => r.json()).then(d => setAllQuests(Array.isArray(d) ? d : [])).catch(() => {})
+  }, [quests])
+  const cancelledQuests = allQuests.filter(q => q.status === 'cancelled')
+  const failedQuests = allQuests.filter(q => q.status === 'failed')
+
+  const tabQuests = questTab === 'active' ? activeQuests : questTab === 'cancelled' ? cancelledQuests : failedQuests
+
   return (
-    <PanelCard style={{ width: '100%', overflow: 'auto' }}>
-      <div style={{ fontSize: '8px', color: '#c8a87a', marginBottom: '6px', letterSpacing: '1px', fontFamily: 'var(--font-pixel)' }}>
-        ACTIVE ({activeQuests.length}){doneCount > 0 ? <span style={{ color: '#6a8a4a', marginLeft: '8px' }}>DONE ({doneCount})</span> : null}
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
+      {/* Tabs: ACTIVE / CANCELLED / FAILED */}
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '4px', flexShrink: 0 }}>
+        {(['active', 'cancelled', 'failed'] as const).map(tab => (
+          <button key={tab} onClick={() => setQuestTab(tab)} style={{
+            fontFamily: 'var(--font-pixel)', fontSize: '6px', padding: '2px 6px',
+            background: questTab === tab ? 'rgba(90,60,20,0.5)' : 'transparent',
+            border: 'none', borderBottom: questTab === tab ? '2px solid #f0e68c' : '2px solid transparent',
+            color: questTab === tab ? '#f0e68c' : '#8b7355', cursor: 'pointer',
+            letterSpacing: '1px',
+          }}>
+            {tab.toUpperCase()} ({tab === 'active' ? activeQuests.length : tab === 'cancelled' ? cancelledQuests.length : failedQuests.length})
+          </button>
+        ))}
       </div>
-      {activeQuests.length === 0 ? (
-        <div style={{ fontSize: '11px', color: '#6a5a3a', fontStyle: 'italic', fontFamily: 'Georgia, serif' }}>
-          No tasks assigned. Talk to Lyra in the Tavern.
-        </div>
-      ) : activeQuests.slice(0, 5).map((q) => (
-        <div key={q.id} style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          marginBottom: '4px', fontSize: '11px', padding: '3px 6px',
-          borderLeft: '3px solid rgba(139,94,60,0.5)',
-        }}>
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <div style={{ color: '#e8d5b0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.title}</div>
-            <div style={{ fontSize: '6px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '1px' }}>{q.source === 'user' ? 'YOU' : 'AGENT'}</div>
+
+      {/* Scrollable quest list */}
+      <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+        {tabQuests.length === 0 ? (
+          <div style={{ fontSize: '10px', color: '#6a5a3a', fontStyle: 'italic', fontFamily: 'Georgia, serif', padding: '8px' }}>
+            {questTab === 'active' ? 'No active quests.' : questTab === 'cancelled' ? 'No cancelled quests.' : 'No failed quests.'}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-            <button
-              onClick={() => completeQuest(q.id)}
-              disabled={completing === q.id || completed === q.id}
-              style={{
-                fontFamily: 'var(--font-pixel)', fontSize: '5px',
-                padding: '2px 6px', cursor: completing === q.id ? 'wait' : 'pointer',
-                background: completed === q.id
-                  ? 'linear-gradient(180deg, #4a9a48 0%, #2a7a24 100%)'
-                  : 'linear-gradient(180deg, #2a6a28 0%, #1a4a14 100%)',
-                border: completed === q.id ? '1px solid #90ee90' : '1px solid #4a8a44',
-                color: '#90ee90',
-                borderRadius: '2px',
-                letterSpacing: '0.5px',
-                transition: 'all 0.2s',
-                boxShadow: completed === q.id ? '0 0 6px rgba(144,238,144,0.4)' : 'none',
-              }}
-            >
-              {completing === q.id ? '...' : completed === q.id ? 'DONE \u2713' : 'DONE'}
-            </button>
+        ) : tabQuests.map((q) => (
+          <div key={q.id} style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            marginBottom: '3px', fontSize: '10px', padding: '3px 6px',
+            borderLeft: `3px solid ${questTab === 'active' ? '#f0e68c' : questTab === 'cancelled' ? '#6b7280' : '#ff6b6b'}`,
+          }}>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <div style={{
+                color: questTab === 'active' ? '#e8d5b0' : questTab === 'cancelled' ? '#7a7a7a' : '#ff8a8a',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                textDecoration: questTab === 'cancelled' ? 'line-through' : 'none',
+                opacity: questTab === 'cancelled' ? 0.6 : 1,
+              }}>{q.title || '(untitled)'}</div>
+              <div style={{ fontSize: '5px', color: '#8b7355', fontFamily: 'var(--font-pixel)', marginTop: '1px' }}>{q.source === 'user' ? 'YOU' : 'AGENT'}</div>
+            </div>
+            {questTab === 'active' && (
+              <div style={{ display: 'flex', gap: '3px', flexShrink: 0 }}>
+                <button onClick={() => cancelQuest(q.id)} disabled={cancelling === q.id} style={{
+                  fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '2px 5px', cursor: 'pointer',
+                  background: 'transparent', border: '1px solid rgba(255,107,107,0.4)', color: '#ff6b6b', borderRadius: '2px',
+                }}>{cancelling === q.id ? '...' : 'CANCEL'}</button>
+              </div>
+            )}
           </div>
-        </div>
-      ))}
-      {/* Quest creation input */}
-      <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
+        ))}
+      </div>
+
+      {/* Fixed input at bottom */}
+      <div style={{ display: 'flex', gap: '4px', flexShrink: 0, paddingTop: '4px', borderTop: '1px solid rgba(107,76,42,0.3)' }}>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -831,7 +839,7 @@ function GuildBottomInfo() {
           }}
         >{creating ? '...' : 'POST'}</button>
       </div>
-    </PanelCard>
+    </div>
   )
 }
 
@@ -860,9 +868,15 @@ function ShopBottomInfo() {
     'claude-marketplace': '#b48eff', clawhub: '#ff9944', lobehub: '#55bbff',
   }
 
-  // Filtered list (same logic as Shop.tsx shelf)
+  // Dedup + filter
   const displayed = useMemo(() => {
-    let list = hubSkills
+    // Deduplicate by name
+    const seen = new Set<string>()
+    let list = hubSkills.filter(s => {
+      if (!s.name || seen.has(s.name)) return false
+      seen.add(s.name)
+      return true
+    })
     if (sourceFilter) {
       list = list.filter((s) => {
         const src = s.trust_level === 'builtin' ? 'official' : s.source
@@ -878,10 +892,13 @@ function ShopBottomInfo() {
     return list
   }, [hubSkills, shopFilter, sourceFilter])
 
-  // Count sources for filter chips
+  // Count sources for filter chips (deduped)
   const sourceCounts = useMemo(() => {
+    const seen = new Set<string>()
     const m = new Map<string, number>()
     for (const sk of hubSkills) {
+      if (!sk.name || seen.has(sk.name)) continue
+      seen.add(sk.name)
       const src = sk.trust_level === 'builtin' ? 'official' : sk.source
       m.set(src, (m.get(src) || 0) + 1)
     }
@@ -902,8 +919,9 @@ function ShopBottomInfo() {
   const btnDisabled: React.CSSProperties = { ...btnStyle, opacity: 0.3, cursor: 'default' }
 
   return (
-    <div style={{ display: 'flex', gap: '6px', width: '100%', height: '100%' }}>
-      {/* Left: source filter + search */}
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
+      <div style={{ display: 'flex', gap: '6px', flex: 1, minHeight: 0 }}>
+      {/* Left: source filter */}
       <PanelCard style={{ minWidth: '110px', overflow: 'auto' }}>
         <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355', marginBottom: '4px', letterSpacing: '1px' }}>SOURCES</div>
         {sourceCounts.map(([src, count]) => (
@@ -920,24 +938,12 @@ function ShopBottomInfo() {
             onMouseEnter={e => { if (sourceFilter !== src) e.currentTarget.style.background = 'rgba(90,60,20,0.2)' }}
             onMouseLeave={e => { if (sourceFilter !== src) e.currentTarget.style.background = 'transparent' }}
           >
-            <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: SOURCE_COLOR[src] || '#c8a87a', textTransform: 'uppercase' }}>
+            <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: SOURCE_COLOR[src] || '#c8a87a', textTransform: 'uppercase' }}>
               {src}
             </span>
-            <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355' }}>{count}</span>
+            <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: '#8b7355' }}>{count}</span>
           </div>
         ))}
-        {/* Search input */}
-        <input
-          value={shopFilter}
-          onChange={e => setShopFilter(e.target.value)}
-          placeholder="Search..."
-          style={{
-            width: '100%', marginTop: '4px', padding: '2px 4px',
-            fontFamily: 'var(--font-pixel)', fontSize: '5px',
-            background: 'rgba(15,10,5,0.6)', border: '1px solid #5c3a1e',
-            color: '#f0e68c', outline: 'none', boxSizing: 'border-box',
-          }}
-        />
       </PanelCard>
 
       {/* Right: current page items + pagination */}
@@ -948,8 +954,9 @@ function ShopBottomInfo() {
         <div style={{ flex: 1, overflow: 'auto' }}>
           {pageItems.map(s => (
             <div key={s.identifier} style={{
-              fontSize: '7px', color: '#e8d5b0', padding: '1px 0',
+              fontSize: '9px', color: '#e8d5b0', padding: '3px 0',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              borderBottom: '1px solid rgba(107,76,42,0.15)',
             }}>
               <span style={{ color: SOURCE_COLOR[s.trust_level === 'builtin' ? 'official' : s.source] || '#8a8a8a', marginRight: '4px', fontSize: '5px' }}>
                 {(s.trust_level === 'builtin' ? 'official' : s.source).slice(0, 3).toUpperCase()}
@@ -975,6 +982,22 @@ function ShopBottomInfo() {
           >&#9654;</button>
         </div>
       </PanelCard>
+      </div>
+      {/* Search bar at bottom */}
+      <input
+        value={shopFilter}
+        onChange={e => setShopFilter(e.target.value)}
+        placeholder="Search skills..."
+        style={{
+          width: '100%', marginTop: '4px', padding: '4px 8px',
+          fontFamily: 'var(--font-pixel)', fontSize: '7px',
+          background: 'rgba(15,10,5,0.6)', border: '1px solid #5c3a1e',
+          color: '#f0e68c', outline: 'none', boxSizing: 'border-box',
+          flexShrink: 0,
+        }}
+        onFocus={e => { e.currentTarget.style.borderColor = '#f0e68c' }}
+        onBlur={e => { e.currentTarget.style.borderColor = '#5c3a1e' }}
+      />
     </div>
   )
 }

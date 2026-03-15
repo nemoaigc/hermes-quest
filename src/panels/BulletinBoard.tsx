@@ -33,17 +33,18 @@ function QuestSlot({ quest, slot, onAccept, accepting }: {
       width: `${slot.width}%`, height: `${slot.height}%`,
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      padding: '4% 6%',
+      padding: '3% 4%',
       overflow: 'hidden',
       cursor: 'pointer',
     }}>
       {/* Rank */}
       <div style={{
         fontFamily: 'var(--font-pixel)',
-        fontSize: 'clamp(5px, 0.7vw, 8px)',
+        fontSize: 'clamp(4px, 0.55vw, 7px)',
         color: RANK_COLOR[quest.rank || 'C'] || '#5a5a5a',
         fontWeight: 'bold',
         lineHeight: 1,
+        textAlign: 'center',
       }}>
         [{quest.rank || 'C'}]
       </div>
@@ -51,16 +52,17 @@ function QuestSlot({ quest, slot, onAccept, accepting }: {
       {/* Title */}
       <div style={{
         fontFamily: 'var(--font-pixel)',
-        fontSize: 'clamp(5px, 0.8vw, 8px)',
+        fontSize: 'clamp(4px, 0.6vw, 7px)',
         color: '#3a1e0a',
-        lineHeight: '1.3',
+        lineHeight: '1.2',
         textAlign: 'center',
-        margin: '3% 0',
+        margin: '2% 0',
+        width: '100%',
         overflow: 'hidden',
         display: '-webkit-box',
-        WebkitLineClamp: 2,
+        WebkitLineClamp: 3,
         WebkitBoxOrient: 'vertical',
-        wordBreak: 'break-word',
+        wordBreak: 'break-all',
       } as React.CSSProperties}>
         {quest.title}
       </div>
@@ -68,10 +70,10 @@ function QuestSlot({ quest, slot, onAccept, accepting }: {
       {/* Rewards */}
       <div style={{
         fontFamily: 'var(--font-pixel)',
-        fontSize: 'clamp(4px, 0.55vw, 6px)',
+        fontSize: 'clamp(3px, 0.45vw, 5px)',
         color: '#6a4a2a',
         textAlign: 'center',
-        lineHeight: '1.4',
+        lineHeight: '1.3',
       }}>
         <div>{quest.reward_gold}G</div>
         <div>{quest.reward_xp}XP</div>
