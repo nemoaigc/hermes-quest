@@ -12,6 +12,8 @@ export default function GuildBottomInfo() {
   const [expandedQuest, setExpandedQuest] = useState<string | null>(null)
   const [createError, setCreateError] = useState<string | null>(null)
   const [cancelError, setCancelError] = useState<string | null>(null)
+  const [failing, setFailing] = useState<string | null>(null)
+  const [failError, setFailError] = useState<string | null>(null)
   const activeQuests = quests.filter((q) => q.status === 'active' || q.status === 'in_progress' || q.status === 'pending')
 
   async function refreshQuests() {
@@ -68,6 +70,21 @@ export default function GuildBottomInfo() {
       setTimeout(() => setCancelError(null), 3000)
     }
     setCancelling(null)
+  }
+
+  async function failQuest(questId: string) {
+    setFailing(questId)
+    try {
+      const res = await fetch(`${API_URL}/api/quest/fail`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ quest_id: questId }) })
+      if (!res.ok) throw new Error(`Fail failed: ${res.status}`)
+      await refreshQuests()
+      setAllQuestsTrigger(t => t + 1)
+    } catch (e) {
+      console.error('failQuest failed', e)
+      setFailError(questId)
+      setTimeout(() => setFailError(null), 3000)
+    }
+    setFailing(null)
   }
 
   // Fetch all quests (including done/cancelled) for tab display
@@ -161,6 +178,10 @@ export default function GuildBottomInfo() {
                   background: editingQuest === q.id ? 'rgba(56,152,236,0.15)' : 'transparent',
                   border: '1px solid rgba(56,152,236,0.5)', color: '#38bdf8', borderRadius: '2px',
                 }}>{editingQuest === q.id ? 'ESC' : 'EDIT'}</button>
+                <button onClick={() => failQuest(q.id)} disabled={failing === q.id} style={{
+                  fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '2px 5px', cursor: 'pointer',
+                  background: 'transparent', border: '1px solid rgba(255,140,50,0.4)', color: '#ff8c32', borderRadius: '2px',
+                }}>{failing === q.id ? '...' : failError === q.id ? 'ERROR' : 'FAIL'}</button>
                 <button onClick={() => cancelQuest(q.id)} disabled={cancelling === q.id} style={{
                   fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '2px 5px', cursor: 'pointer',
                   background: 'transparent', border: '1px solid rgba(255,107,107,0.4)', color: '#ff6b6b', borderRadius: '2px',
