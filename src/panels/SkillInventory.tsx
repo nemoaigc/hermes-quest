@@ -14,6 +14,7 @@ export default function SkillInventory() {
   const setSkills = useStore((s) => s.setSkills)
   const [selected, setSelected] = useState<string | null>(null)
   const [forgetting, setForgetting] = useState(false)
+  const [confirmForget, setConfirmForget] = useState(false)
 
   const selectedSkill = skills.find((s) => s.name === selected)
 
@@ -49,15 +50,39 @@ export default function SkillInventory() {
         <div style={{ fontSize: '9px', color: 'var(--text)', lineHeight: '1.5', maxHeight: '80px', overflow: 'auto' }}>
           {selectedSkill.description || 'No description.'}
         </div>
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <button className="pixel-btn" onClick={() => setSelected(null)} style={{ fontSize: '6px', padding: '3px 8px' }}>◀ BACK</button>
-          <button
-            className="pixel-btn"
-            onClick={() => { if (confirm(`Forget "${selectedSkill.name}"? This cannot be undone.`)) forgetSkill(selectedSkill.name) }}
-            disabled={forgetting}
-            style={{ fontSize: '6px', padding: '3px 8px', color: 'var(--red)', borderColor: 'var(--red)' }}
-          >{forgetting ? '...' : 'FORGET'}</button>
-        </div>
+        {confirmForget ? (
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+            padding: '6px', background: 'rgba(255,107,107,0.05)', border: '1px solid rgba(255,107,107,0.3)', borderRadius: '2px',
+          }}>
+            <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: '#ff6b6b', textAlign: 'center' }}>
+              Forget {selectedSkill.name}?
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                className="pixel-btn"
+                onClick={() => { setConfirmForget(false); forgetSkill(selectedSkill.name) }}
+                disabled={forgetting}
+                style={{ fontSize: '6px', padding: '3px 8px', color: '#ff6b6b', borderColor: '#ff6b6b', background: 'rgba(255,107,107,0.15)', cursor: forgetting ? 'wait' : 'pointer' }}
+              >{forgetting ? '...' : 'YES'}</button>
+              <button
+                className="pixel-btn"
+                onClick={() => setConfirmForget(false)}
+                style={{ fontSize: '6px', padding: '3px 8px', color: '#8b7355', borderColor: 'rgba(139,94,60,0.4)', cursor: 'pointer' }}
+              >NO</button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '4px' }}>
+            <button className="pixel-btn" onClick={() => setSelected(null)} style={{ fontSize: '6px', padding: '3px 8px' }}>◀ BACK</button>
+            <button
+              className="pixel-btn"
+              onClick={() => setConfirmForget(true)}
+              disabled={forgetting}
+              style={{ fontSize: '6px', padding: '3px 8px', color: 'var(--red)', borderColor: 'var(--red)' }}
+            >FORGET</button>
+          </div>
+        )}
       </div>
     )
   }

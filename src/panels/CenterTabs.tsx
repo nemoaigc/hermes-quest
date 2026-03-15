@@ -12,7 +12,7 @@ import type { TabId, NpcId } from '../types'
 // Extend window for SHOW TO NPC bridge
 declare global {
   interface Window {
-    __hermesShowToNpc?: (npcId: string, message: string) => void
+    __hermesShowToNpc?: (message: string) => void
   }
 }
 
@@ -59,6 +59,8 @@ function TavernSceneArea({ sceneMode, onSceneMode, rumors, rumorsLoading, onFetc
             <button
               key={tab}
               onClick={() => { onSceneMode(active ? 'default' : tab); if (tab === 'rumors' && !active) onFetchRumors() }}
+              onMouseEnter={(e) => { if (!active) { e.currentTarget.style.color = '#c8a87a'; e.currentTarget.style.background = 'rgba(13,10,6,0.7)' } }}
+              onMouseLeave={(e) => { if (!active) { e.currentTarget.style.color = '#8b7355'; e.currentTarget.style.background = 'rgba(13,10,6,0.5)' } }}
               style={{
                 flex: 1, padding: '8px 0',
                 fontFamily: 'var(--font-pixel)', fontSize: '8px',
@@ -276,6 +278,8 @@ function TavernNpcPanel({ activeNpc, onNpcSelect, chatNpc, onNpcChat, onCloseBio
               src={npc.img}
               alt={npc.name}
               onClick={() => onNpcSelect(npc.id)}
+              onMouseEnter={(e) => { e.currentTarget.style.border = '2px solid #f0e68c'; e.currentTarget.style.transform = 'scale(1.05)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.border = 'none'; e.currentTarget.style.transform = 'scale(1)' }}
               style={{
                 width: '100%', maxWidth: '80px', aspectRatio: '1',
                 objectFit: 'cover',
@@ -283,7 +287,7 @@ function TavernNpcPanel({ activeNpc, onNpcSelect, chatNpc, onNpcChat, onCloseBio
                 border: 'none',
                 borderRadius: '2px',
                 cursor: 'pointer',
-                transition: 'border-color 0.15s',
+                transition: 'all 0.15s',
               }}
             />
             <span style={{
@@ -576,7 +580,10 @@ function PanelCard({ children, style }: { children: React.ReactNode; style?: Rea
 /** Reusable RPG button */
 function RpgButton({ children, onClick, disabled, small, color }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; small?: boolean; color?: string }) {
   return (
-    <button onClick={onClick} disabled={disabled} style={{
+    <button onClick={onClick} disabled={disabled}
+      onMouseEnter={(e) => { if (!disabled) { e.currentTarget.style.borderColor = '#f0e68c'; e.currentTarget.style.boxShadow = '0 0 8px rgba(240,230,140,0.3), 0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,140,0.1)' } }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#6b4c2a'; e.currentTarget.style.boxShadow = disabled ? 'none' : '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,140,0.1)' }}
+      style={{
       fontFamily: 'var(--font-pixel)', fontSize: small ? '5px' : '6px',
       padding: small ? '4px 8px' : '6px 14px',
       cursor: disabled ? 'wait' : 'pointer',
@@ -586,6 +593,7 @@ function RpgButton({ children, onClick, disabled, small, color }: { children: Re
       boxShadow: disabled ? 'none' : '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,140,0.1)',
       textShadow: '0 1px 2px rgba(0,0,0,0.5)',
       whiteSpace: 'nowrap' as const,
+      transition: 'all 0.15s',
     }}>{children}</button>
   )
 }
@@ -601,10 +609,24 @@ function MapBottomInfo() {
     ? workflows.reduce((a, w) => a + ((w as any).mastery || 0), 0) / workflows.length
     : 0
 
+  const [cycleStatus, setCycleStatus] = useState<'idle' | 'loading' | 'success' | 'failed'>('idle')
+
   async function startCycle() {
     setCycleLoading(true)
-    try { await fetch('/api/cycle/start', { method: 'POST' }) } catch {}
-    setTimeout(() => setCycleLoading(false), 5000)
+    setCycleStatus('loading')
+    try {
+      const res = await fetch('/api/cycle/start', { method: 'POST' })
+      if (res.ok) {
+        setCycleStatus('success')
+        setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 2000)
+      } else {
+        setCycleStatus('failed')
+        setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 2000)
+      }
+    } catch {
+      setCycleStatus('failed')
+      setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 2000)
+    }
   }
 
   return (
@@ -664,7 +686,7 @@ function MapBottomInfo() {
           </PanelCard>
         </div>
         <RpgButton onClick={startCycle} disabled={cycleLoading}>
-          {cycleLoading ? 'EXPLORING...' : '\u25B6 START CYCLE'}
+          {cycleStatus === 'loading' ? 'EXPLORING...' : cycleStatus === 'success' ? 'CYCLE STARTED' : cycleStatus === 'failed' ? 'FAILED' : '\u25B6 START CYCLE'}
         </RpgButton>
       </div>
     </div>
@@ -677,6 +699,7 @@ function GuildBottomInfo() {
   const [input, setInput] = useState('')
   const [creating, setCreating] = useState(false)
   const [completing, setCompleting] = useState<string | null>(null)
+  const [completed, setCompleted] = useState<string | null>(null)
   const activeQuests = quests.filter((q) => q.status === 'active' || q.status === 'in_progress' || q.status === 'pending')
 
   async function createTask() {
@@ -693,11 +716,15 @@ function GuildBottomInfo() {
   async function completeQuest(questId: string) {
     setCompleting(questId)
     try {
-      await fetch(`${API_URL}/api/quest/complete`, {
+      const res = await fetch(`${API_URL}/api/quest/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quest_id: questId }),
       })
+      if (res.ok) {
+        setCompleted(questId)
+        setTimeout(() => setCompleted(null), 1000)
+      }
     } catch {}
     setCompleting(null)
   }
@@ -727,22 +754,58 @@ function GuildBottomInfo() {
             </div>
             <button
               onClick={() => completeQuest(q.id)}
-              disabled={completing === q.id}
+              disabled={completing === q.id || completed === q.id}
               style={{
                 fontFamily: 'var(--font-pixel)', fontSize: '5px',
                 padding: '2px 6px', cursor: completing === q.id ? 'wait' : 'pointer',
-                background: 'linear-gradient(180deg, #2a6a28 0%, #1a4a14 100%)',
-                border: '1px solid #4a8a44',
+                background: completed === q.id
+                  ? 'linear-gradient(180deg, #4a9a48 0%, #2a7a24 100%)'
+                  : 'linear-gradient(180deg, #2a6a28 0%, #1a4a14 100%)',
+                border: completed === q.id ? '1px solid #90ee90' : '1px solid #4a8a44',
                 color: '#90ee90',
                 borderRadius: '2px',
                 letterSpacing: '0.5px',
+                transition: 'all 0.2s',
+                boxShadow: completed === q.id ? '0 0 6px rgba(144,238,144,0.4)' : 'none',
               }}
             >
-              {completing === q.id ? '...' : 'DONE'}
+              {completing === q.id ? '...' : completed === q.id ? 'DONE \u2713' : 'DONE'}
             </button>
           </div>
         </div>
       ))}
+      {/* Quest creation input */}
+      <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && createTask()}
+          placeholder="New quest..."
+          disabled={creating}
+          style={{
+            flex: 1, padding: '5px 8px',
+            background: 'rgba(10,8,4,0.6)', border: '1px solid #5c3a1e',
+            color: '#e8d5b0', fontFamily: 'var(--font-pixel)', fontSize: '8px',
+            outline: 'none', transition: 'border-color 0.15s',
+          }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = '#f0e68c' }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = '#5c3a1e' }}
+        />
+        <button
+          onClick={createTask}
+          disabled={creating || !input.trim()}
+          style={{
+            fontFamily: 'var(--font-pixel)', fontSize: '5px',
+            padding: '4px 10px', cursor: creating ? 'wait' : 'pointer',
+            background: creating ? 'rgba(10,8,4,0.5)' : 'linear-gradient(180deg, #6a4428 0%, #4a2a14 50%, #3a2210 100%)',
+            border: '2px solid #6b4c2a',
+            color: '#f0e68c',
+            boxShadow: creating ? 'none' : '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,140,0.1)',
+            textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+            whiteSpace: 'nowrap',
+          }}
+        >{creating ? '...' : 'POST'}</button>
+      </div>
     </PanelCard>
   )
 }
@@ -845,10 +908,11 @@ export default function CenterTabs() {
 
   // Register global bridge for SHOW TO NPC
   useEffect(() => {
-    window.__hermesShowToNpc = (npcId: string, message: string) => {
+    window.__hermesShowToNpc = (message: string) => {
       setActiveTab('npc')
       setNpcPrefill(message)
-      setChatNpc(npcId)
+      // Use currently active NPC, or default to guild_master
+      setChatNpc(prev => prev || 'guild_master')
       setActiveNpc(null)
     }
     return () => { window.__hermesShowToNpc = undefined }
@@ -883,6 +947,8 @@ export default function CenterTabs() {
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
+              onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.color = '#c8a87a'; e.currentTarget.style.background = 'rgba(58,42,26,0.4)' } }}
+              onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.color = '#6a5a3a'; e.currentTarget.style.background = 'transparent' } }}
               style={{
                 flex: 1,
                 fontFamily: 'var(--font-pixel)',
@@ -972,10 +1038,18 @@ export default function CenterTabs() {
                   connections={knowledgeMap.connections}
                   onBack={() => setMapSelectedContinent(null)}
                   extraAction={
-                    <RpgButton onClick={() => {
+                    <RpgButton onClick={async () => {
                       setCycleLoading(true)
-                      fetch('/api/cycle/start', { method: 'POST' }).catch(() => {})
-                      setTimeout(() => setCycleLoading(false), 5000)
+                      try {
+                        const res = await fetch('/api/cycle/start', { method: 'POST' })
+                        if (res.ok) {
+                          setTimeout(() => setCycleLoading(false), 2000)
+                        } else {
+                          setTimeout(() => setCycleLoading(false), 2000)
+                        }
+                      } catch {
+                        setTimeout(() => setCycleLoading(false), 2000)
+                      }
                     }} disabled={cycleLoading} small>
                       {cycleLoading ? '...' : '\u25B6 CYCLE'}
                     </RpgButton>
