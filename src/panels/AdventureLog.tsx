@@ -83,7 +83,7 @@ export default function AdventureLog() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '9px', color, lineHeight: '1.3' }}>{text}</div>
                   <div style={{
-                    fontFamily: 'var(--font-pixel)', fontSize: '4px',
+                    fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.6vw, 7px)',
                     color: 'var(--text-dim)', marginTop: '1px',
                   }}>
                     {formatTime(event.ts)}

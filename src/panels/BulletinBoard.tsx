@@ -86,8 +86,8 @@ function QuestSlot({ quest, slot, onAccept, accepting, onSelect, selected }: {
         textAlign: 'center',
         lineHeight: '1.2',
       }}>
-        <div>{quest.reward_gold}G</div>
-        <div>{quest.reward_xp}XP</div>
+        <div>{quest.reward_gold ?? 0}G</div>
+        <div>{quest.reward_xp ?? 0}XP</div>
       </div>
 
       {/* Accept */}
@@ -213,17 +213,17 @@ export default function BulletinBoard() {
   const [selectedQuest, setSelectedQuest] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
 
-  const recommendations = knowledgeMap?.recommended_quests || []
+  const recommendations = (knowledgeMap?.recommended_quests || []) as Array<RecommendedQuest | null>
   const pageSize = 6
   const totalPages = Math.max(1, Math.ceil(recommendations.length / pageSize))
   const displayed = recommendations.slice(page * pageSize, (page + 1) * pageSize)
 
-  const selectedQuestData = selectedQuest ? recommendations.find(q => q.id === selectedQuest) : null
+  const selectedQuestData = selectedQuest ? recommendations.find(q => q?.id === selectedQuest) : null
 
   async function refreshMap() {
     setRefreshing(true)
     try {
-      const res = await fetch(`${API_URL}/api/map`)
+      const res = await fetch(`${API_URL}/api/map?refresh=true`)
       if (res.ok) {
         const d = await res.json()
         setKnowledgeMap(d)
@@ -236,14 +236,15 @@ export default function BulletinBoard() {
     setAccepting(questId)
     try {
       await acceptQuest(questId)
-      // Refresh both: active quests + map (to update recommended_quests)
-      const [questRes, mapRes] = await Promise.all([
-        fetch(`${API_URL}/api/quest/active`),
-        fetch(`${API_URL}/api/map`),
-      ])
-      if (questRes.ok) { const d = await questRes.json(); setQuests(d.quests || []) }
-      if (mapRes.ok) { const d = await mapRes.json(); setKnowledgeMap(d) }
+      // Replace accepted quest with null placeholder (preserve slot positions)
+      if (knowledgeMap) {
+        const updated = { ...knowledgeMap, recommended_quests: (knowledgeMap.recommended_quests || []).map(q => q?.id === questId ? null : q) }
+        setKnowledgeMap(updated)
+      }
       setSelectedQuest(null)
+      // Then refresh from server
+      const questRes = await fetch(`${API_URL}/api/quest/active`)
+      if (questRes.ok) { const d = await questRes.json(); setQuests(d.quests || []) }
     } catch (e) { console.error(e) }
     setAccepting(null)
   }
@@ -257,6 +258,7 @@ export default function BulletinBoard() {
       {displayed.map((quest, i) => {
         const slot = PARCHMENT_SLOTS[i]
         if (!slot) return null
+        if (!quest) return null  // Accepted quest — empty slot
         return (
           <QuestSlot
             key={quest.id}
@@ -279,7 +281,7 @@ export default function BulletinBoard() {
         />
       )}
 
-      {displayed.length === 0 && (
+      {displayed.filter(Boolean).length === 0 && (
         <div style={{
           position: 'absolute', left: '50%', top: '50%',
           transform: 'translate(-50%, -50%)',

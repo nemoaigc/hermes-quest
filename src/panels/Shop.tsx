@@ -80,7 +80,8 @@ function ShelfItem({ skill, slot, isSelected, onClick }: {
 
 export default function Shop() {
   const setSkills = useStore((s) => s.setSkills)
-  const [allSkills, setAllSkills] = useState<HubSkill[]>([])
+  const allSkills = useStore((s) => s.hubSkills)
+  const setAllSkills = useStore((s) => s.setHubSkills)
   const [loading, setLoading] = useState(true)
   const [installing, setInstalling] = useState<string | null>(null)
   const filter = useStore((s) => s.shopFilter)
@@ -108,11 +109,12 @@ export default function Shop() {
   }, [allSkills])
 
   const displayed = useMemo(() => {
-    // Dedup by name
+    // Dedup by identifier (matches ShopBottomInfo logic)
     const seen = new Set<string>()
     let list = allSkills.filter(s => {
-      if (!s.name || seen.has(s.name)) return false
-      seen.add(s.name)
+      const key = s.identifier || s.name
+      if (!s.name || seen.has(key)) return false
+      seen.add(key)
       return true
     })
     if (sourceFilter) {
@@ -141,14 +143,19 @@ export default function Shop() {
   async function installSkill(identifier: string) {
     setInstalling(identifier)
     try {
-      await fetch(`${API_URL}/api/hub/install`, {
+      const installRes = await fetch(`${API_URL}/api/hub/install`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier }),
       })
+      if (!installRes.ok) throw new Error(`Install failed: ${installRes.status}`)
+      const installData = await installRes.json()
+      if (installData.status === 'error') throw new Error(installData.message || 'Install failed')
       const res = await fetch(`${API_URL}/api/skills`)
       setSkills(await res.json())
-      setAllSkills((prev) => prev.filter((s) => s.identifier !== identifier))
+      // Use current store state to avoid stale closure
+      const currentSkills = useStore.getState().hubSkills
+      setAllSkills(currentSkills.filter((s) => s.identifier !== identifier))
       setSelected(null)
     } catch (e) { console.error('Install failed', e) }
     setInstalling(null)

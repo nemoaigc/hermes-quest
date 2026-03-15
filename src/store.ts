@@ -18,7 +18,7 @@ export interface AgentState {
   mp: number
   mp_max: number
   // v2: global understanding
-  understanding: number // 0.0-1.0, -1 = calibrating
+  understanding: number // 0-100 (percentage), -1 = calibrating
   skills_count: number
   skill_distribution: Record<string, number>
   inventory: Array<Record<string, unknown>>
@@ -95,7 +95,9 @@ interface Store {
   selectedBagItems: string[]
   selectedRegion: string | null
 
-  // Shop filter (shared between Shop scene + bottom bar)
+  // Shop: shared hub skills + filter (shared between Shop scene + bottom bar)
+  hubSkills: HubSkill[]
+  setHubSkills: (s: HubSkill[]) => void
   shopFilter: string
   shopSourceFilter: string | null
   shopPage: number
@@ -134,6 +136,8 @@ export const useStore = create<Store>((set) => ({
   activeTab: 'map',
   selectedBagItems: [],
   selectedRegion: null,
+  hubSkills: [],
+  setHubSkills: (s) => set({ hubSkills: s }),
   shopFilter: '',
   shopSourceFilter: null,
   shopPage: 0,
@@ -171,7 +175,8 @@ export const useStore = create<Store>((set) => ({
   setKnowledgeMap: (m) => {
     if (!m) { set({ knowledgeMap: null }); return }
     // v2 compat: map 'workflows' to 'continents' alias for components using old field
-    const km = m as KnowledgeMap & { continents?: Workflow[] }
+    const raw = m as KnowledgeMap & { continents?: Workflow[] }
+    const km = { ...raw }
     if (km.workflows && !km.continents) {
       km.continents = km.workflows
     }

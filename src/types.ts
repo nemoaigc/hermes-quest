@@ -52,7 +52,7 @@ export interface KnowledgeMap {
   fog_regions: FogRegion[]
   // v1 compat alias (set by store)
   continents?: Workflow[]
-  recommended_quests?: Quest[]
+  recommended_quests?: (Quest | null)[]
 }
 
 // v1 compat aliases (for components not yet migrated)

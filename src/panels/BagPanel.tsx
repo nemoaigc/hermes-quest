@@ -44,14 +44,17 @@ export default function BagPanel() {
     setDiscarding(true)
     try {
       await discardBagItem(itemId)
-      // Remove from local state
-      setBagItems(bagItems.filter(i => i.id !== itemId))
+      // Remove from local state + clear from selection
+      const current = useStore.getState().bagItems
+      setBagItems(current.filter(i => i.id !== itemId))
+      if (selectedBagItems.includes(itemId)) {
+        toggleBagItem(itemId)
+      }
       setDetailId(null)
       setConfirmDiscard(null)
-    } catch {
-      // Fallback: remove locally anyway (bag.json based)
-      setBagItems(bagItems.filter(i => i.id !== itemId))
-      setDetailId(null)
+    } catch (e) {
+      console.error('Discard failed', e)
+      // Don't remove locally on error — keep item visible
       setConfirmDiscard(null)
     }
     setDiscarding(false)

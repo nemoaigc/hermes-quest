@@ -428,9 +428,10 @@ function RpgDialogInline({ npc, onClose, chatHistoryRef, prefillMessage }: {
   useEffect(() => {
     if (prefillMessage && !prefillHandled.current) {
       prefillHandled.current = true
-      handleSend(prefillMessage)
+      // Slight delay to ensure component is fully mounted with messages
+      setTimeout(() => handleSend(prefillMessage), 100)
     }
-  }, [prefillMessage])
+  }, [prefillMessage]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSend(msg?: string) {
     const text = (msg || input).trim()
@@ -640,7 +641,7 @@ function MapBottomInfo() {
     setCycleLoading(true)
     setCycleStatus('loading')
     try {
-      const res = await fetch('/api/cycle/start', { method: 'POST' })
+      const res = await fetch(`${API_URL}/api/cycle/start`, { method: 'POST' })
       if (res.ok) {
         setCycleStatus('success')
         setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 2000)
@@ -753,6 +754,7 @@ function GuildBottomInfo() {
     try {
       await fetch(`${API_URL}/api/quest/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, source: 'user' }) })
       await refreshQuests()
+      setAllQuestsTrigger(t => t + 1)
     } catch {}
     setCreating(false)
   }
@@ -767,15 +769,17 @@ function GuildBottomInfo() {
     try {
       await fetch(`${API_URL}/api/quest/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ quest_id: questId }) })
       await refreshQuests()
+      setAllQuestsTrigger(t => t + 1)
     } catch {}
     setCancelling(null)
   }
 
   // Fetch all quests (including done/cancelled) for tab display
   const [allQuests, setAllQuests] = useState<any[]>([])
+  const [allQuestsTrigger, setAllQuestsTrigger] = useState(0)
   useEffect(() => {
-    fetch(`${API_URL}/api/quests`).then(r => r.json()).then(d => setAllQuests(Array.isArray(d) ? d : [])).catch(() => {})
-  }, [quests])
+    fetch(`${API_URL}/api/quests`).then(r => r.ok ? r.json() : []).then(d => setAllQuests(Array.isArray(d) ? d : [])).catch(() => {})
+  }, [allQuestsTrigger])
   const cancelledQuests = allQuests.filter(q => q.status === 'cancelled')
   const failedQuests = allQuests.filter(q => q.status === 'failed')
 
@@ -932,16 +936,7 @@ function ShopBottomInfo() {
   const shopPage = useStore((s) => s.shopPage)
   const setShopPage = useStore((s) => s.setShopPage)
 
-  const [hubSkills, setHubSkills] = useState<Array<{ name: string; source: string; trust_level: string; identifier: string; description: string; tags: string[] }>>([])
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/hub/search?q=`)
-        setHubSkills(await res.json())
-      } catch { /* ignore */ }
-    })()
-  }, [])
+  const hubSkills = useStore((s) => s.hubSkills)
 
   const SOURCE_COLOR: Record<string, string> = {
     official: 'var(--green)', github: 'var(--cyan)',
@@ -950,11 +945,12 @@ function ShopBottomInfo() {
 
   // Dedup + filter
   const displayed = useMemo(() => {
-    // Deduplicate by name
+    // Deduplicate by identifier (unique per skill)
     const seen = new Set<string>()
     let list = hubSkills.filter(s => {
-      if (!s.name || seen.has(s.name)) return false
-      seen.add(s.name)
+      const key = s.identifier || s.name
+      if (!s.name || seen.has(key)) return false
+      seen.add(key)
       return true
     })
     if (sourceFilter) {
@@ -972,13 +968,14 @@ function ShopBottomInfo() {
     return list
   }, [hubSkills, shopFilter, sourceFilter])
 
-  // Count sources for filter chips (deduped)
+  // Count sources for filter chips (deduped by identifier)
   const sourceCounts = useMemo(() => {
     const seen = new Set<string>()
     const m = new Map<string, number>()
     for (const sk of hubSkills) {
-      if (!sk.name || seen.has(sk.name)) continue
-      seen.add(sk.name)
+      const key = sk.identifier || sk.name
+      if (!sk.name || seen.has(key)) continue
+      seen.add(key)
       const src = sk.trust_level === 'builtin' ? 'official' : sk.source
       m.set(src, (m.get(src) || 0) + 1)
     }
@@ -1095,13 +1092,9 @@ export default function CenterTabs() {
   const [rumorsLoading, setRumorsLoading] = useState(false)
 
   // Persist NPC chat history across open/close (+ localStorage)
-  const chatHistoryRef = useRef<Record<string, Array<{ role: 'npc' | 'user'; text: string }>>>(() => {
-    try {
-      const saved = localStorage.getItem('hermes-npc-chat-history')
-      if (saved) return JSON.parse(saved)
-    } catch {}
-    return {}
-  })()
+  const chatHistoryRef = useRef<Record<string, Array<{ role: 'npc' | 'user'; text: string }>>>(
+    (() => { try { const s = localStorage.getItem('hermes-npc-chat-history'); return s ? JSON.parse(s) : {} } catch { return {} } })()
+  )
 
   // Ref for gossip refresh callback (avoids DOM querySelector hack)
   const gossipRefreshRef = useRef<(() => void) | null>(null)
@@ -1244,7 +1237,7 @@ export default function CenterTabs() {
                     <RpgButton onClick={async () => {
                       setCycleLoading(true)
                       try {
-                        const res = await fetch('/api/cycle/start', { method: 'POST' })
+                        const res = await fetch(`${API_URL}/api/cycle/start`, { method: 'POST' })
                         if (res.ok) {
                           setTimeout(() => setCycleLoading(false), 2000)
                         } else {
