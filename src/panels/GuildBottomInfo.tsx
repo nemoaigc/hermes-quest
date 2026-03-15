@@ -14,6 +14,8 @@ export default function GuildBottomInfo() {
   const [cancelError, setCancelError] = useState<string | null>(null)
   const [failing, setFailing] = useState<string | null>(null)
   const [failError, setFailError] = useState<string | null>(null)
+  const [retrying, setRetrying] = useState<string | null>(null)
+  const [retryError, setRetryError] = useState<string | null>(null)
   const activeQuests = quests.filter((q) => q.status === 'active' || q.status === 'in_progress' || q.status === 'pending')
 
   async function refreshQuests() {
@@ -87,6 +89,25 @@ export default function GuildBottomInfo() {
     setFailing(null)
   }
 
+  async function retryQuest(title: string) {
+    setRetrying(title)
+    try {
+      const res = await fetch(`${API_URL}/api/quest/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, source: 'user', retry: true }),
+      })
+      if (!res.ok) throw new Error(`Retry failed: ${res.status}`)
+      await refreshQuests()
+      setAllQuestsTrigger(t => t + 1)
+    } catch (e) {
+      console.error('retryQuest failed', e)
+      setRetryError(title)
+      setTimeout(() => setRetryError(null), 3000)
+    }
+    setRetrying(null)
+  }
+
   // Fetch all quests (including done/cancelled) for tab display
   const [allQuests, setAllQuests] = useState<any[]>([])
   const [allQuestsTrigger, setAllQuestsTrigger] = useState(0)
@@ -102,17 +123,21 @@ export default function GuildBottomInfo() {
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
       {/* Tabs: ACTIVE / CANCELLED / FAILED */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '4px', flexShrink: 0 }}>
-        {(['active', 'cancelled', 'failed'] as const).map(tab => (
-          <button key={tab} onClick={() => setQuestTab(tab)} style={{
-            fontFamily: 'var(--font-pixel)', fontSize: '6px', padding: '2px 6px',
-            background: questTab === tab ? 'rgba(90,60,20,0.5)' : 'transparent',
-            border: 'none', borderBottom: questTab === tab ? '2px solid #f0e68c' : '2px solid transparent',
-            color: questTab === tab ? '#f0e68c' : '#8b7355', cursor: 'pointer',
-            letterSpacing: '1px',
-          }}>
-            {tab.toUpperCase()} ({tab === 'active' ? activeQuests.length : tab === 'cancelled' ? cancelledQuests.length : failedQuests.length})
-          </button>
-        ))}
+        {(['active', 'cancelled', 'failed'] as const).map(tab => {
+          const tabColor = tab === 'active' ? '#f0e68c' : tab === 'cancelled' ? '#6b7280' : '#ff6b6b'
+          const count = tab === 'active' ? activeQuests.length : tab === 'cancelled' ? cancelledQuests.length : failedQuests.length
+          return (
+            <button key={tab} onClick={() => setQuestTab(tab)} style={{
+              fontFamily: 'var(--font-pixel)', fontSize: '6px', padding: '2px 6px',
+              background: questTab === tab ? 'rgba(90,60,20,0.5)' : 'transparent',
+              border: 'none', borderBottom: questTab === tab ? `2px solid ${tabColor}` : '2px solid transparent',
+              color: questTab === tab ? tabColor : '#8b7355', cursor: 'pointer',
+              letterSpacing: '1px',
+            }}>
+              {tab.toUpperCase()} (<span style={{ color: questTab === tab ? tabColor : '#8b7355' }}>{count}</span>)
+            </button>
+          )
+        })}
       </div>
 
       {/* Scrollable quest list */}
@@ -186,6 +211,19 @@ export default function GuildBottomInfo() {
                   fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '2px 5px', cursor: 'pointer',
                   background: 'transparent', border: '1px solid rgba(255,107,107,0.4)', color: '#ff6b6b', borderRadius: '2px',
                 }}>{cancelling === q.id ? '...' : cancelError === q.id ? 'FAILED' : 'CANCEL'}</button>
+              </div>
+            )}
+            {questTab === 'failed' && (
+              <div style={{ display: 'flex', gap: '3px', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => retryQuest(q.title)}
+                  disabled={retrying === q.title}
+                  style={{
+                    fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '2px 6px', cursor: 'pointer',
+                    background: 'rgba(240,230,140,0.1)', border: '1px solid rgba(240,230,140,0.4)',
+                    color: '#f0e68c', borderRadius: '2px',
+                  }}
+                >{retrying === q.title ? '...' : retryError === q.title ? 'ERROR' : 'RETRY (50G)'}</button>
               </div>
             )}
             </div>

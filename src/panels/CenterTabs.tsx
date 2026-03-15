@@ -23,11 +23,11 @@ declare global {
   }
 }
 
-const TABS: Array<{ id: TabId; label: string; icon: string }> = [
-  { id: 'map', label: 'MAP', icon: '\u{1F5FA}' },
-  { id: 'guild', label: 'GUILD', icon: '\u2694' },
-  { id: 'shop', label: 'SHOP', icon: '\u{1F3EA}' },
-  { id: 'npc', label: 'TAVERN', icon: '\u{1F37A}' },
+const TABS: Array<{ id: TabId; label: string }> = [
+  { id: 'map', label: 'MAP' },
+  { id: 'guild', label: 'GUILD' },
+  { id: 'shop', label: 'SHOP' },
+  { id: 'npc', label: 'TAVERN' },
 ]
 
 export default function CenterTabs() {
@@ -124,7 +124,6 @@ export default function CenterTabs() {
                 letterSpacing: '1px',
               }}
             >
-              <span style={{ fontSize: '10px', lineHeight: 1 }}>{t.icon}</span>
               {t.label}
             </button>
           )

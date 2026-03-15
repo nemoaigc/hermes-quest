@@ -1,7 +1,75 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useStore } from '../store'
 import { SOURCE_COLOR } from '../constants/theme'
 import PanelCard from '../components/PanelCard'
+import { usePotion } from '../api'
+
+function PotionShopButton({ type, label, cost, icon, color }: {
+  type: 'hp_potion' | 'mp_potion'
+  label: string
+  cost: number
+  icon: string
+  color: string
+}) {
+  const state = useStore((s) => s.state)
+  const [loading, setLoading] = useState(false)
+  const [msg, setMsg] = useState('')
+  const gold = state?.gold ?? 0
+  const stat = type === 'hp_potion' ? (state?.hp ?? 0) : (state?.mp ?? 0)
+  const statMax = type === 'hp_potion' ? (state?.hp_max ?? 100) : (state?.mp_max ?? 100)
+  const disabled = loading || gold < cost || stat >= statMax
+
+  const handleClick = async () => {
+    setLoading(true)
+    setMsg('')
+    try {
+      const res = await usePotion(type)
+      setMsg(`+${res.healed} ${label}!`)
+      setTimeout(() => setMsg(''), 2000)
+    } catch (e: any) {
+      setMsg(e.message || 'Failed...')
+      setTimeout(() => setMsg(''), 3000)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={disabled}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '4px',
+        padding: '3px 8px',
+        background: disabled ? 'rgba(10,8,4,0.4)' : 'rgba(30,20,10,0.8)',
+        border: `1px solid ${disabled ? 'rgba(107,76,42,0.2)' : 'rgba(107,76,42,0.6)'}`,
+        borderRadius: '2px',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.5 : 1,
+        fontFamily: 'var(--font-pixel)',
+        fontSize: '6px',
+        color: disabled ? '#8b7355' : color,
+        transition: 'all 0.2s',
+        flex: 1,
+        justifyContent: 'center',
+        position: 'relative',
+      }}
+      title={gold < cost ? `Need ${cost}G` : stat >= statMax ? `${label} full` : `Use ${label} Potion (${cost}G)`}
+    >
+      <img src={icon} alt={label} style={{ width: '14px', height: '14px', imageRendering: 'pixelated' }} />
+      <span>{label} POTION ({cost}G)</span>
+      {msg && (
+        <span style={{
+          position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)',
+          fontFamily: 'var(--font-pixel)', fontSize: '5px',
+          color: msg.startsWith('+') ? color : '#ff6b6b',
+          textShadow: `0 0 4px ${msg.startsWith('+') ? color : '#ff6b6b'}40`,
+          whiteSpace: 'nowrap',
+        }}>{msg}</span>
+      )}
+    </button>
+  )
+}
 
 /** SHOP bottom — left: source shops, right: skills from selected source */
 export default function ShopBottomInfo() {
@@ -68,6 +136,18 @@ export default function ShopBottomInfo() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
+      {/* Potions bar */}
+      <div style={{
+        display: 'flex', gap: '6px', marginBottom: '4px', flexShrink: 0,
+        padding: '4px 6px',
+        background: 'rgba(15,10,5,0.5)',
+        border: '1px solid rgba(107,76,42,0.3)',
+        borderRadius: '2px',
+      }}>
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355', letterSpacing: '1px', display: 'flex', alignItems: 'center', marginRight: '2px' }}>POTIONS</div>
+        <PotionShopButton type="hp_potion" label="HP" cost={200} icon="/items/potions/hp-potion.png" color="#ff6b6b" />
+        <PotionShopButton type="mp_potion" label="MP" cost={150} icon="/items/potions/mp-potion.png" color="#4ecdc4" />
+      </div>
       <div style={{ display: 'flex', gap: '6px', flex: 1, minHeight: 0 }}>
       {/* Left: source filter */}
       <PanelCard style={{ minWidth: '110px', overflow: 'auto' }}>
