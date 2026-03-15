@@ -50,6 +50,15 @@ export async function generateTavernAmbient(): Promise<{
   return res.json()
 }
 
+export async function fetchBagItemContent(itemId: string): Promise<{ content: string; path: string }> {
+  const res = await fetch(`${API_URL}/api/bag/item/${encodeURIComponent(itemId)}/content`)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Unknown error' }))
+    throw new Error(err.error || `Fetch content failed: ${res.status}`)
+  }
+  return res.json()
+}
+
 export async function discardBagItem(itemId: string): Promise<void> {
   const res = await fetch(`${API_URL}/api/bag/discard`, {
     method: 'POST',

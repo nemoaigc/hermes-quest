@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store'
 import { ItemIcon } from '../utils/icons'
-import { discardBagItem } from '../api'
+import { discardBagItem, fetchBagItemContent } from '../api'
 
 const RARITY_COLOR: Record<string, string> = {
   common: '#6b7280',
@@ -28,6 +28,9 @@ export default function BagPanel() {
   const [detailId, setDetailId] = useState<string | null>(null)
   const [confirmDiscard, setConfirmDiscard] = useState<string | null>(null)
   const [discarding, setDiscarding] = useState(false)
+  const [viewContent, setViewContent] = useState<{ content: string; path: string } | null>(null)
+  const [viewLoading, setViewLoading] = useState(false)
+  const [viewError, setViewError] = useState<string | null>(null)
 
   if (bagItems.length === 0) {
     return (
@@ -60,6 +63,18 @@ export default function BagPanel() {
     setDiscarding(false)
   }
 
+  async function handleView(itemId: string) {
+    setViewLoading(true)
+    setViewError(null)
+    try {
+      const data = await fetchBagItemContent(itemId)
+      setViewContent(data)
+    } catch (e: any) {
+      setViewError(e.message || 'Failed to load content')
+    }
+    setViewLoading(false)
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
       {/* Grid */}
@@ -83,6 +98,8 @@ export default function BagPanel() {
                 } else {
                   setDetailId(detailId === item.id ? null : item.id)
                   setConfirmDiscard(null)
+                  setViewContent(null)
+                  setViewError(null)
                 }
               }}
               onContextMenu={(e) => { e.preventDefault(); toggleBagItem(item.id) }}
@@ -231,6 +248,19 @@ export default function BagPanel() {
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
                   <button
+                    onClick={() => handleView(detailItem.id)}
+                    disabled={viewLoading}
+                    style={{
+                      fontFamily: 'var(--font-pixel)', fontSize: '5px',
+                      padding: '3px 8px', cursor: viewLoading ? 'wait' : 'pointer',
+                      background: 'rgba(78,205,196,0.15)', border: '1px solid var(--cyan)',
+                      color: 'var(--cyan)', transition: 'all 0.15s',
+                      letterSpacing: '0.5px',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(78,205,196,0.25)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(78,205,196,0.15)' }}
+                  >{viewLoading ? '...' : 'VIEW'}</button>
+                  <button
                     onClick={() => {
                       const msg = `Look at this ${detailItem.name}: ${detailItem.description || ''}`
                       if ((window as any).__hermesShowToNpc) {
@@ -260,6 +290,58 @@ export default function BagPanel() {
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
                   >DISCARD</button>
                 </div>
+                {/* View error */}
+                {viewError && (
+                  <div style={{
+                    marginTop: '6px', fontSize: '8px', color: '#ff6b6b',
+                    fontFamily: 'var(--font-pixel)',
+                  }}>
+                    {viewError}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          {/* File Content Viewer */}
+          {viewContent && (
+            <div style={{ marginTop: '8px' }}>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                marginBottom: '4px',
+              }}>
+                <span style={{
+                  fontFamily: 'var(--font-pixel)', fontSize: '5px',
+                  color: '#6b4c2a', letterSpacing: '0.5px',
+                }}>
+                  {viewContent.path.split('/').slice(-2).join('/')}
+                </span>
+                <button
+                  onClick={() => { setViewContent(null); setViewError(null) }}
+                  style={{
+                    fontFamily: 'var(--font-pixel)', fontSize: '5px',
+                    padding: '2px 6px', cursor: 'pointer',
+                    background: 'transparent', border: '1px solid rgba(139,94,60,0.4)',
+                    color: '#8b7355', transition: 'all 0.15s',
+                  }}
+                >CLOSE</button>
+              </div>
+              <div style={{
+                maxHeight: '200px', overflow: 'auto',
+                padding: '6px 8px',
+                background: 'rgba(30,20,10,0.6)',
+                border: '1px solid rgba(139,94,60,0.3)',
+                borderRadius: '3px',
+              }}>
+                <pre style={{
+                  margin: 0, padding: 0,
+                  fontSize: '8px', lineHeight: '1.5',
+                  color: '#c8a87a',
+                  fontFamily: "'Courier New', monospace",
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}>
+                  {viewContent.content}
+                </pre>
               </div>
             </div>
           )}
