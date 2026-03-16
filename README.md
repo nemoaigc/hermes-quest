@@ -2,9 +2,9 @@
 
 <img src="assets/banner.svg" alt="Hermes Quest" width="100%"/>
 
-**A self-evolving AI agent, gamified as a pixel-art RPG adventure.**
+**A self-evolving RPG system built on Hermes Agent — where AI learns, grows, and levels up like a real adventurer.**
 
-**自我进化的 AI Agent -- 像素 RPG 可视化冒险仪表盘。**
+**基于 Hermes Agent 构建的自我进化 RPG 系统 — AI 像真正的冒险者一样学习、成长、升级。**
 
 [![MIT License](https://img.shields.io/badge/License-MIT-gold.svg?style=for-the-badge)](LICENSE)
 [![Built on Hermes](https://img.shields.io/badge/Built_on-Hermes_Agent-8B5CF6?style=for-the-badge)](https://github.com/NousResearch/hermes-agent)
@@ -17,9 +17,13 @@
 
 ## What is Hermes Quest?
 
-Hermes Quest turns a [Hermes Agent](https://github.com/NousResearch/hermes-agent) into a **self-evolving RPG adventurer**. It autonomously reflects on weaknesses, trains new skills, levels up, and completes quests -- visualized as a pixel-art fantasy dashboard in real-time. **Zero modifications to Hermes source code** -- everything runs through native extension points.
+Hermes Quest is a **self-evolving RPG system** built on [Hermes Agent](https://github.com/NousResearch/hermes-agent). The agent autonomously discovers knowledge domains, trains skills, completes quests, and levels up — all driven by Hermes's native evolution cycle. **You define the world, the agent conquers it.**
 
-Hermes Quest 把 Hermes Agent 变成一个**自我进化的 RPG 冒险者**。它自主反思弱点、训练新技能、升级变强、完成任务 -- 整个过程以像素风仪表盘实时呈现。**零修改 Hermes 源码** -- 全部通过原生扩展点运行。
+The key innovation: **user-defined learning domains**. Name a continent "Music" or "Machine Learning" — the agent starts learning skills in that area. Skills are auto-classified by LLM, visualized as star constellations, and tracked through an RPG progression system. Five LLM-powered NPCs serve as intelligent interfaces — the bartender searches X/Twitter, the sage analyzes your stats, the guild master recommends quests.
+
+Hermes Quest 是基于 Hermes Agent 构建的**自我进化 RPG 系统**。Agent 自主发现知识领域、训练技能、完成任务、升级。**你定义世界，Agent 去征服它。**
+
+核心创新：**用户自定义学习领域**。给大陆命名"音乐"或"机器学习"— Agent 就开始自学。技能由 LLM 自动分类、以星座图可视化、通过 RPG 进度系统追踪。五个 LLM 驱动的 NPC 是智能交互界面 — 酒保搜 X 新闻，贤者分析数据，公会推荐任务。
 
 ---
 
@@ -65,20 +69,48 @@ Every **evolution cycle**, the agent reflects on mistakes, picks the weakest are
 
 ---
 
-## Features / 功能
+## What Makes It Special / 核心亮点
+
+### 🗺️ Define Your Own World
+Click the fog → name a new continent → the agent starts learning that domain. **Music? Cooking? Quantum Physics?** You decide what your AI studies. Skills are automatically classified by LLM into the domains you define. Delete a domain, and skills redistribute. Your world, your rules.
+
+点击迷雾 → 命名新大陆 → Agent 开始自学该领域。**音乐？烹饪？量子物理？** 你来决定。技能由 LLM 自动分类到你定义的领域。
+
+### 🍺 NPCs That Actually Do Things
+5 NPCs powered by real LLM — not scripted dialogue trees. **Gus the bartender searches X/Twitter for real-time news** and retells it as tavern gossip. **Orin the sage analyzes your actual game stats** and gives strategic advice. Ask Gus if he has a crush on Lyra — he'll blush. They have group conversations too.
+
+5 个 NPC 由真实 LLM 驱动 — 酒保能搜 X 新闻，贤者能分析你的真实数据，还有群聊模式。
+
+### ⚔️ Multi-Agent Group Chat
+The tavern CHATTER mode lets 5 NPCs discuss your adventures among themselves. You can jump in and steer the conversation. Each NPC has distinct personality, speech patterns, secrets, and cross-NPC relationships.
+
+酒馆群聊：5 个 NPC 自由讨论，你也能参与。每个 NPC 有独特人格、语言风格和秘密。
+
+### 🎯 Smart Quest System
+The guild board **analyzes your weaknesses** and recommends targeted training quests. Accept one, and the agent trains autonomously in the next evolution cycle. You can also post custom quests. Quests scale rewards with your level.
+
+公会任务板**分析你的弱点**，推荐针对性训练任务。任务奖励随等级缩放。
+
+---
+
+## All Features / 全部功能
 
 | Feature | Description |
 |---------|-------------|
-| **Character Panel** | Real-time HP/MP/XP bars, emergent class system, level & title |
-| **Knowledge Map** | Custom hex-grid sites, fog-of-war regions, skill constellation graphs |
-| **Guild Board** | AI-recommended quests, custom quest creation, lifecycle tracking |
-| **Skill Shop** | Browse & install skills from Hermes Hub |
-| **NPC Tavern** | 5 LLM-powered NPCs with unique personalities + group chatter |
-| **Rumors Board** | Real-time X/Twitter feed with search |
-| **Inventory** | Collected artifacts, "Show to NPC" interaction |
-| **Adventure Log** | Event chronicle with thumbs up/down feedback affecting stats |
-| **Evolution Cycle** | One-click autonomous training with Telegram notifications |
-| **Potion Shop** | Gold-sink HP/MP recovery system |
+| **🧙 Character Panel** | HP (stability), MP (morale), XP, Gold, Level, Class, Title — all real-time |
+| **🗺️ Custom World Map** | 6 user-definable sites, fog-of-war, skill constellation star graphs |
+| **⚔️ Guild Quest Board** | AI-recommended quests, custom creation, ACCEPT/EDIT/CANCEL lifecycle |
+| **🏪 Skill Shop** | Browse 80+ community skills from Hermes Hub, one-click install (300G) |
+| **🧪 Potion Shop** | HP Potion (200G) and MP Potion (150G) — gold sink economy |
+| **🍺 NPC Tavern** | 5 LLM-powered NPCs: Lyra, Aldric, Kael, Gus, Orin — each with unique personality |
+| **💬 Group Chat** | Multi-agent tavern chatter — NPCs discuss your adventures autonomously |
+| **📰 Rumors Board** | Real-time X/Twitter feed + search — "What's trending in AI?" |
+| **🎒 Inventory** | Bag items with file viewer — VIEW actual config files, training reports |
+| **📜 Adventure Chronicle** | Event timeline with 👍/👎 feedback → affects HP/MP, can mark quests failed |
+| **🔄 Evolution Cycle** | One-click autonomous training → Telegram notification on completion |
+| **🧠 Skill Classification** | LLM-powered: rename a domain → all 44+ skills auto-reclassified |
+| **📊 NPC Persona Cards** | Click any NPC → detailed bio, personality traits, lore |
+| **🔍 Skill Forget** | Remove unwanted skills — a true warrior knows when to let go |
 
 ---
 
@@ -192,14 +224,6 @@ hermes-quest/
 **Classes** emerge from skill distribution: Warrior (coding), Mage (research), Ranger (automation), Paladin (balanced), Necromancer (delegation).
 
 **Economy**: Create quest 100g, retry 50g, HP potion 200g, MP potion 150g, refresh board 50g.
-
----
-
-## Credits
-
-Built for the [Nous Research](https://nousresearch.com) x [Hermes Agent](https://github.com/NousResearch/hermes-agent) Hackathon.
-
-Developed with [Claude Code](https://claude.ai), [Gemini](https://deepmind.google/technologies/gemini/), and the Hermes Agent runtime.
 
 ---
 
