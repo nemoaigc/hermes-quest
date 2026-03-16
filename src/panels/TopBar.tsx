@@ -9,8 +9,10 @@ export default function TopBar() {
         <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: 'var(--gold)', letterSpacing: '2px' }}>
           HERMES QUEST
         </span>
-        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '4px', color: 'var(--text-dim)', letterSpacing: '1px', marginTop: '2px' }}>
-          Built on Nous Research Hermes Agent
+        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '4px', letterSpacing: '1px', marginTop: '2px' }}>
+          <span style={{ color: 'var(--text-dim)' }}>Built on </span>
+          <span style={{ color: '#00d4ff' }}>Nous Research</span>
+          <span style={{ color: 'var(--text-dim)' }}> Hermes Agent</span>
         </span>
       </div>
       <span style={{
