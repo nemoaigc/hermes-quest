@@ -130,7 +130,7 @@ function ContinentSprite({ site, allSites, skillCount, onClick, onContextMenu, i
       </div>
       {isStarter && (
         <div style={{
-          fontFamily: 'var(--font-pixel)', fontSize: 'clamp(4px, 0.6vmin, 6px)',
+          fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.6vmin, 6px)',
           color: '#6a4a2a',
           textShadow: '0 0 2px rgba(228,216,192,0.8)',
         }}>
@@ -175,7 +175,7 @@ function FogSiteSprite({ site, onClick, isActive }: {
         }}
       />
       <div style={{
-        fontFamily: 'var(--font-pixel)', fontSize: 'clamp(4px, 0.6vmin, 6px)',
+        fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.6vmin, 6px)',
         color: '#8a7a5a',
         textShadow: '0 0 2px rgba(228,216,192,0.8)',
       }}>

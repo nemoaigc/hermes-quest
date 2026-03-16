@@ -69,7 +69,7 @@ export default function MapBottomInfo() {
                 return <line key={i} x1={`${50 + Math.cos(a1) * 30}%`} y1={`${50 + Math.sin(a1) * 30}%`} x2={`${50 + Math.cos(a2) * 30}%`} y2={`${50 + Math.sin(a2) * 30}%`} stroke="rgba(139,94,60,0.3)" strokeWidth="1" strokeDasharray="3 2" />
               })}
             </svg>
-            {fogCount > 0 && <div style={{ position: 'absolute', bottom: '2px', right: '4px', fontSize: '4px', color: '#6a5a3a', fontFamily: 'var(--font-pixel)' }}>?x{fogCount}</div>}
+            {fogCount > 0 && <div style={{ position: 'absolute', bottom: '2px', right: '4px', fontSize: '5px', color: '#6a5a3a', fontFamily: 'var(--font-pixel)' }}>?x{fogCount}</div>}
           </>
         )}
       </PanelCard>
@@ -79,11 +79,11 @@ export default function MapBottomInfo() {
         <div style={{ display: 'flex', gap: '6px' }}>
           <PanelCard style={{ flex: 1, textAlign: 'center' }}>
             <div style={{ fontSize: '14px', color: '#f0e68c', lineHeight: 1 }}>{workflows.length}</div>
-            <div style={{ fontSize: '4px', color: '#8b7355', marginTop: '2px' }}>REGIONS</div>
+            <div style={{ fontSize: '5px', color: '#8b7355', marginTop: '2px' }}>REGIONS</div>
           </PanelCard>
           <PanelCard style={{ flex: 1, textAlign: 'center' }}>
             <div style={{ fontSize: '14px', color: 'var(--cyan)', lineHeight: 1 }}>{Math.round(avgMastery * 100)}%</div>
-            <div style={{ fontSize: '4px', color: '#8b7355', marginTop: '2px' }}>MASTERY</div>
+            <div style={{ fontSize: '5px', color: '#8b7355', marginTop: '2px' }}>MASTERY</div>
           </PanelCard>
         </div>
         <RpgButton onClick={handleStartCycle} disabled={cycleLoading}>

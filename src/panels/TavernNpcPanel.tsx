@@ -126,7 +126,7 @@ export default function TavernNpcPanel({ activeNpc, onNpcSelect, chatNpc, onNpcC
             </span>
             <span style={{
               fontFamily: 'var(--font-pixel)',
-              fontSize: 'clamp(4px, 0.5vw, 5px)',
+              fontSize: 'clamp(5px, 0.5vw, 6px)',
               color: '#6a5a3a',
               marginTop: '2px',
             }}>
@@ -136,7 +136,7 @@ export default function TavernNpcPanel({ activeNpc, onNpcSelect, chatNpc, onNpcC
               onClick={(e) => { e.stopPropagation(); onNpcChat(npc.id) }}
               style={{
                 fontFamily: 'var(--font-pixel)',
-                fontSize: 'clamp(4px, 0.5vw, 6px)',
+                fontSize: 'clamp(5px, 0.5vw, 6px)',
                 padding: '3px 10px',
                 marginTop: '4px',
                 cursor: 'pointer',

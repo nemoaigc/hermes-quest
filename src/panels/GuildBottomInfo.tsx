@@ -3,7 +3,6 @@ import { useStore } from '../store'
 import {
   createQuest as apiCreateQuest,
   cancelQuest as apiCancelQuest,
-  failQuest as apiFailQuest,
   editQuest as apiEditQuest,
   fetchActiveQuests,
   fetchAllQuests,
@@ -25,8 +24,6 @@ export default function GuildBottomInfo() {
   const [expandedQuest, setExpandedQuest] = useState<string | null>(null)
   const [createError, setCreateError] = useState<string | null>(null)
   const [cancelError, setCancelError] = useState<string | null>(null)
-  const [failing, setFailing] = useState<string | null>(null)
-  const [failError, setFailError] = useState<string | null>(null)
   const [retrying, setRetrying] = useState<string | null>(null)
   const [retryError, setRetryError] = useState<string | null>(null)
   const activeQuests = quests.filter((q) => q.status === 'active' || q.status === 'in_progress' || q.status === 'pending')
@@ -72,20 +69,6 @@ export default function GuildBottomInfo() {
       setTimeout(() => setCancelError(null), 3000)
     }
     setCancelling(null)
-  }
-
-  async function handleFailQuest(questId: string) {
-    setFailing(questId)
-    try {
-      await apiFailQuest(questId)
-      await refreshQuests()
-      setAllQuestsTrigger(t => t + 1)
-    } catch (e) {
-      console.error('failQuest failed', e)
-      setFailError(questId)
-      setTimeout(() => setFailError(null), 3000)
-    }
-    setFailing(null)
   }
 
   async function retryQuest(title: string) {
@@ -218,14 +201,6 @@ export default function GuildBottomInfo() {
                     onMouseEnter={e => { e.currentTarget.style.borderColor = '#c8a87a'; e.currentTarget.style.color = '#c8a87a' }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(139,94,60,0.3)'; e.currentTarget.style.color = '#8b7355' }}
                     >{editingQuest === q.id ? 'ESC' : 'EDIT'}</button>
-                    <button onClick={() => handleFailQuest(q.id)} disabled={failing === q.id} style={{
-                      fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '3px 6px', cursor: 'pointer',
-                      background: 'transparent', border: '1px solid rgba(255,140,50,0.3)',
-                      color: '#cc7a30', borderRadius: '2px', transition: 'all 0.15s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#ff8c32'; e.currentTarget.style.color = '#ff8c32' }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,140,50,0.3)'; e.currentTarget.style.color = '#cc7a30' }}
-                    >{failing === q.id ? '...' : failError === q.id ? 'ERROR' : 'FAIL'}</button>
                     <button onClick={() => handleCancelQuest(q.id)} disabled={cancelling === q.id} style={{
                       fontFamily: 'var(--font-pixel)', fontSize: '5px', padding: '3px 6px', cursor: 'pointer',
                       background: 'transparent', border: '1px solid rgba(255,107,107,0.3)',

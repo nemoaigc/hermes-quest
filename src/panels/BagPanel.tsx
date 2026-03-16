@@ -235,12 +235,12 @@ export default function BagPanel() {
                 {/* Meta info */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '2px' }}>
                   {detailItem.source_quest && (
-                    <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '4px', color: '#6b4c2a' }}>
+                    <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#6b4c2a' }}>
                       QUEST: {detailItem.source_quest}
                     </span>
                   )}
                   {detailItem.created_at && (
-                    <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '4px', color: '#6b4c2a' }}>
+                    <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#6b4c2a' }}>
                       {new Date(detailItem.created_at).toLocaleDateString()}
                     </span>
                   )}

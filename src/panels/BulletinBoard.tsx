@@ -53,7 +53,7 @@ function QuestSlot({ quest, slot, onAccept, accepting, onSelect, selected }: {
       {/* Rank */}
       <div style={{
         fontFamily: 'var(--font-pixel)',
-        fontSize: 'clamp(4px, 0.55vw, 7px)',
+        fontSize: 'clamp(5px, 0.55vw, 7px)',
         color: RANK_COLOR[quest.rank || 'C'] || '#5a5a5a',
         fontWeight: 'bold',
         lineHeight: 1,
@@ -65,7 +65,7 @@ function QuestSlot({ quest, slot, onAccept, accepting, onSelect, selected }: {
       {/* Title — abbreviated to prevent one-letter-per-line */}
       <div style={{
         fontFamily: 'var(--font-pixel)',
-        fontSize: 'clamp(3px, 0.45vw, 5px)',
+        fontSize: 'clamp(5px, 0.45vw, 5px)',
         color: '#3a1e0a',
         lineHeight: '1.2',
         textAlign: 'center',
@@ -81,7 +81,7 @@ function QuestSlot({ quest, slot, onAccept, accepting, onSelect, selected }: {
       {/* Rewards */}
       <div style={{
         fontFamily: 'var(--font-pixel)',
-        fontSize: 'clamp(3px, 0.4vw, 4px)',
+        fontSize: 'clamp(5px, 0.4vw, 5px)',
         color: '#6a4a2a',
         textAlign: 'center',
         lineHeight: '1.2',
@@ -96,7 +96,7 @@ function QuestSlot({ quest, slot, onAccept, accepting, onSelect, selected }: {
         disabled={accepting}
         style={{
           fontFamily: 'var(--font-pixel)',
-          fontSize: 'clamp(3px, 0.4vw, 5px)',
+          fontSize: 'clamp(5px, 0.4vw, 5px)',
           padding: '1px 4px', marginTop: '4%',
           background: 'rgba(90,60,20,0.5)',
           border: '1px solid #8b6a3c',
@@ -330,7 +330,7 @@ export default function BulletinBoard() {
         style={{
           position: 'absolute', top: '3%', right: '3%', zIndex: 10,
           fontFamily: 'var(--font-pixel)',
-          fontSize: 'clamp(4px, 0.5vw, 6px)',
+          fontSize: 'clamp(5px, 0.5vw, 6px)',
           padding: '3px 8px',
           cursor: refreshing ? 'wait' : 'pointer',
           background: 'linear-gradient(180deg, #6a4428 0%, #4a2a14 50%, #3a2210 100%)',
@@ -345,7 +345,7 @@ export default function BulletinBoard() {
       {refreshMsg && (
         <div style={{
           position: 'absolute', top: '10%', right: '3%', zIndex: 10,
-          fontFamily: 'var(--font-pixel)', fontSize: 'clamp(4px, 0.5vw, 6px)',
+          fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.5vw, 6px)',
           color: '#ff6b6b', textShadow: '0 1px 3px rgba(0,0,0,0.8)',
           background: 'rgba(10,8,4,0.9)', padding: '3px 6px',
           border: '1px solid rgba(255,107,107,0.3)', borderRadius: '2px',

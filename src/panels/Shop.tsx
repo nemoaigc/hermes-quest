@@ -50,7 +50,7 @@ function ShelfItem({ skill, slot, isSelected, onClick }: {
       <SkillIcon name={skill.name} category={skill.tags[0] || 'quest'} size={22} />
       <div style={{
         fontFamily: 'var(--font-pixel)',
-        fontSize: 'clamp(4px, 0.7vmin, 6px)',
+        fontSize: 'clamp(5px, 0.7vmin, 6px)',
         color: '#f0e68c', marginTop: '3px',
         textAlign: 'center', lineHeight: '1.2',
         maxWidth: '90%', overflow: 'hidden',
@@ -61,7 +61,7 @@ function ShelfItem({ skill, slot, isSelected, onClick }: {
       </div>
       <div style={{
         fontFamily: 'var(--font-pixel)',
-        fontSize: 'clamp(3px, 0.5vmin, 5px)',
+        fontSize: 'clamp(5px, 0.5vmin, 5px)',
         color: SOURCE_COLOR[src] || '#8a8a8a',
         textShadow: '0 1px 2px rgba(0,0,0,0.8)',
       }}>

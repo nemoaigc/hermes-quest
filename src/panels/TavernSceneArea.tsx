@@ -201,7 +201,7 @@ export default function TavernSceneArea({ sceneMode, onSceneMode, rumors, rumors
                   "{r.text.length > 150 ? r.text.slice(0, 150) + '...' : r.text}"
                 </div>
                 <div style={{
-                  fontFamily: 'var(--font-pixel)', fontSize: '4px',
+                  fontFamily: 'var(--font-pixel)', fontSize: '5px',
                   color: '#8b7355', marginTop: '2px',
                   display: 'flex', gap: '8px',
                 }}>
