@@ -79,7 +79,7 @@ export default function AdventureLog() {
 
   // Filter events older than cleared timestamp
   const visibleEvents = clearedAt
-    ? events.filter((e) => new Date(e.ts).getTime() > clearedAt)
+    ? events.filter((e) => { const t = new Date(e.ts).getTime(); return !isNaN(t) && t > clearedAt })
     : events
 
   const handleClear = useCallback(() => {

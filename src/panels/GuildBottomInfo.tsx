@@ -7,6 +7,7 @@ import {
   fetchActiveQuests,
   fetchAllQuests,
 } from '../api'
+import { formatDate } from '../utils/formatters'
 import RpgButton from '../components/RpgButton'
 import type { Quest } from '../types'
 
@@ -243,7 +244,7 @@ export default function GuildBottomInfo() {
                       {q.rank ? ` [${q.rank}]` : ''}
                       {q.completed_at && (
                         <span style={{ color: '#6a5a3a', marginLeft: '6px' }}>
-                          {new Date(q.completed_at).toLocaleDateString()}
+                          {formatDate(q.completed_at)}
                         </span>
                       )}
                     </div>

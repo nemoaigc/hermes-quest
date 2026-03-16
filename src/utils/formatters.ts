@@ -165,3 +165,14 @@ export function formatTime(ts: string): string {
     return ''
   }
 }
+
+export function formatDate(ts: string | undefined | null): string {
+  try {
+    if (!ts) return ''
+    const d = new Date(ts)
+    if (isNaN(d.getTime())) return ''
+    return d.toLocaleDateString()
+  } catch {
+    return ''
+  }
+}

@@ -288,6 +288,19 @@ async def api_hub_install(body: dict):
                         fpath.write_text(str(fcontent))
                 # Re-sync skills
                 await watcher._sync_filesystem_skills()
+                # Broadcast hub_acquire event so frontend refreshes SKILLS panel
+                _now = datetime.now(timezone.utc).isoformat()
+                await manager.broadcast({"type": "event", "data": {
+                    "ts": _now, "type": "hub_acquire",
+                    "region": None,
+                    "data": {"skill": skill_name, "source": bundle.source, "identifier": identifier},
+                }})
+                # Broadcast state update so gold change is reflected
+                try:
+                    _updated_state = json.loads(state_path.read_text())
+                    await manager.broadcast({"type": "state", "data": _updated_state})
+                except Exception:
+                    pass
                 return {"status": "installed", "name": skill_name, "message": f"Installed {skill_name} from {bundle.source}"}
         # Skill not found -- refund gold
         async with _state_lock:

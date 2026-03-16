@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../store'
 import { ItemIcon } from '../utils/icons'
 import { discardBagItem, fetchBagItemContent } from '../api'
+import { formatDate } from '../utils/formatters'
 
 const RARITY_COLOR: Record<string, string> = {
   common: '#6b7280',
@@ -241,7 +242,7 @@ export default function BagPanel() {
                   )}
                   {detailItem.created_at && (
                     <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#6b4c2a' }}>
-                      {new Date(detailItem.created_at).toLocaleDateString()}
+                      {formatDate(detailItem.created_at)}
                     </span>
                   )}
                 </div>
