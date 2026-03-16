@@ -4,7 +4,8 @@ import { API_URL } from './api'
 
 const WS_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.host}/ws`
 
-async function safeFetch<T>(url: string, transform?: (data: any) => T): Promise<T | null> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function safeFetch<T = any>(url: string, transform?: (data: any) => T): Promise<T | null> {
   try {
     const res = await fetch(url)
     if (!res.ok) {

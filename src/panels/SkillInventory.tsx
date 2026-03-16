@@ -6,6 +6,17 @@ import { API_URL } from '../api'
 const CAT_COLOR: Record<string, string> = {
   coding: 'var(--cyan)', research: 'var(--purple)',
   automation: 'var(--gold)', creative: '#ff9944',
+  // Extended categories from skill classification
+  'software-development': 'var(--cyan)',
+  'data-science': '#42a5f5',
+  'creative-arts-flow': '#ff9944',
+  'social-media': '#e879f9',
+  leisure: '#34d399',
+  solana: '#9945ff',
+  dogfood: '#fb923c',
+  blackbox: '#6b7280',
+  quest: 'var(--gold)',
+  test: '#6b7280',
 }
 
 export default function SkillInventory() {

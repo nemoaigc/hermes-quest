@@ -27,7 +27,13 @@ function PotionShopButton({ type, label, cost, icon, color }: {
       setMsg(`+${res.healed} ${label}!`)
       setTimeout(() => setMsg(''), 2000)
     } catch (e: unknown) {
-      setMsg(e instanceof Error ? e.message : 'Failed...')
+      const raw = e instanceof Error ? e.message : 'Failed...'
+      // Map technical errors to RPG-themed messages
+      const friendly = raw.includes('unauthorized') ? 'The potion resists...'
+        : raw.includes('full') || raw.includes('max') ? `${label} already full!`
+        : raw.includes('gold') || raw.includes('afford') ? 'Not enough gold!'
+        : 'Potion fizzled...'
+      setMsg(friendly)
       setTimeout(() => setMsg(''), 3000)
     } finally {
       setLoading(false)

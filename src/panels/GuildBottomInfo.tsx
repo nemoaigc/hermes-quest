@@ -229,15 +229,15 @@ export default function GuildBottomInfo() {
               </div>
 
               {/* Expanded detail */}
-              {isExpanded && q.description && (
+              {isExpanded && (
                 <div style={{
                   marginTop: '4px', padding: '4px 6px',
                   fontSize: '9px', color: '#c8a87a', lineHeight: '1.5',
                   fontFamily: 'Georgia, serif', fontStyle: 'italic',
                   borderTop: '1px solid rgba(107,76,42,0.2)',
                 }}>
-                  {q.description}
-                  {(q.reward_xp || q.reward_gold) && (
+                  {q.description || <span style={{ color: '#5a4a3a' }}>No details recorded.</span>}
+                  {(q.reward_xp || q.reward_gold || q.rank || q.completed_at) && (
                     <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355', marginTop: '3px', fontStyle: 'normal' }}>
                       {q.reward_gold ? `${q.reward_gold}G` : ''}{q.reward_gold && q.reward_xp ? ' / ' : ''}{q.reward_xp ? `${q.reward_xp}XP` : ''}
                       {q.rank ? ` [${q.rank}]` : ''}

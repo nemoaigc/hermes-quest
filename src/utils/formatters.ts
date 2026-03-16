@@ -7,7 +7,7 @@ const EVENT_CONFIG: Record<string, { color: string; format: (data: Record<string
   },
   reflect: {
     color: 'var(--purple)',
-    format: (d) => `Hermes meditates on weakness: ${(d.chosen as string) || (d.weaknesses ? (d.weaknesses as string[])[0] : '') || 'unknown'}...`,
+    format: (d) => `Hermes meditates on weakness: ${(d.chosen_training_target as string) || (d.chosen as string) || (d.weaknesses ? (d.weaknesses as string[])[0] : '') || 'unknown'}...`,
   },
   train_start: {
     color: 'var(--gold)',
@@ -19,7 +19,7 @@ const EVENT_CONFIG: Record<string, { color: string; format: (data: Record<string
   },
   skill_drop: {
     color: 'var(--green)',
-    format: (d) => `New skill learned: ${(d.skill_name as string) || (d.skill as string) || 'unknown'} [${(d.rarity as string) || 'common'}]`,
+    format: (d) => `New skill learned: ${(d.skill as string) || (d.skill_name as string) || 'unknown'} [${(d.rarity as string) || 'common'}]`,
   },
   xp_gain: {
     color: 'var(--green)',
@@ -82,10 +82,15 @@ const EVENT_CONFIG: Record<string, { color: string; format: (data: Record<string
     color: 'var(--text-dim)',
     format: (d) => {
       const duration = (d.duration_seconds as number) ?? (d.duration_s as number) ?? 0
+      const status = (d.status as string) || ''
       const skills = Array.isArray(d.skills_gained)
         ? (d.skills_gained as string[]).join(', ')
-        : String(d.skills_gained ?? 0)
-      return `Cycle complete — ${duration}s elapsed, skills practiced: ${skills || 'none'}`
+        : d.skills_gained ? String(d.skills_gained) : ''
+      const parts = [`Cycle complete — ${duration}s`]
+      if (status === 'success') parts.push('(success)')
+      else if (status) parts.push(`(${status})`)
+      if (skills) parts.push(`skills: ${skills}`)
+      return parts.join(' ')
     },
   },
   cycle_skip: {

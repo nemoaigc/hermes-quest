@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../store'
 import { API_URL } from '../api'
 
@@ -41,10 +41,12 @@ export default function ReflectionLetter() {
     return () => { cancelled = true }
   }, [pending])
 
-  // Escape key to dismiss
+  // Escape key to dismiss — use ref to avoid stale closure
+  const handleAcknowledgeRef = useRef(handleAcknowledge)
+  handleAcknowledgeRef.current = handleAcknowledge
   useEffect(() => {
     if (!pending) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') handleAcknowledge() }
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') handleAcknowledgeRef.current() }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [pending])

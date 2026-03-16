@@ -23,14 +23,17 @@ describe('store', () => {
     useStore.getState().setState({
       version: 1, name: 'Hermes', level: 2, class: 'artificer', title: 'Novice',
       xp: 50, xp_to_next: 200,
+      hp: 80, hp_max: 100,
+      mp: 60, mp_max: 80,
       stability: 80, stability_max: 100,
       energy: 60, energy_max: 80,
-      gold: 250, current_region: 'software-engineering',
-      regions_unlocked: [], regions_cleared: [],
+      gold: 250, understanding: 0,
       skills_count: 5, skill_distribution: {},
-      inventory: [], active_quests: [],
-      completed_quests: 3, total_cycles: 10,
-      started_at: null, last_cycle_at: null,
+      inventory: [],
+      total_cycles: 10, total_corrections: 0, total_positive_signals: 0,
+      workflows_discovered: 0,
+      started_at: null, last_cycle_at: null, last_interaction_at: null,
+      reflection_letter_pending: false,
     })
     const s = useStore.getState().state!
     // v2 compat: stability/energy are mapped to hp/mp and vice versa
@@ -46,10 +49,14 @@ describe('store', () => {
   it('sets and retrieves knowledge map', () => {
     const map: KnowledgeMap = {
       version: 1, generated_at: '2026-03-13T12:00:00Z',
-      continents: [], connections: [], fog_regions: [], recommended_quests: [],
+      workflows: [], connections: [], fog_regions: [], recommended_quests: [],
     }
     useStore.getState().setKnowledgeMap(map)
-    expect(useStore.getState().knowledgeMap).toEqual(map)
+    const stored = useStore.getState().knowledgeMap!
+    expect(stored.version).toBe(1)
+    expect(stored.workflows).toEqual([])
+    // v1 compat: continents alias is added by setKnowledgeMap
+    expect(stored.continents).toEqual([])
   })
 
   it('manages quests', () => {

@@ -62,7 +62,7 @@ export type RecommendedQuest = Quest
 
 // --- Quests / Learning Tasks ---
 
-export type QuestStatus = 'pending' | 'accepted' | 'active' | 'in_progress' | 'completed' | 'failed'
+export type QuestStatus = 'pending' | 'accepted' | 'active' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
 export type QuestSource = 'user' | 'agent' | 'bulletin_board' | 'npc_dialog' | 'map_exploration'
 
 export interface Quest {

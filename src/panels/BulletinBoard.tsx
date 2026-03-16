@@ -174,7 +174,7 @@ function QuestDetailOverlay({ quest, onClose, onAccept, accepting, acceptError }
           fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.6vw, 8px)',
           color: '#8b7355',
         }}>
-          <span>{quest.reward_gold}G / {quest.reward_xp}XP</span>
+          <span>{quest.reward_gold ?? 0}G / {quest.reward_xp ?? 0}XP</span>
           {quest.region && <span>Region: {quest.region}</span>}
         </div>
         <div style={{ display: 'flex', gap: '8px', marginTop: '12px', justifyContent: 'flex-end' }}>

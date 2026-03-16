@@ -11,17 +11,23 @@ describe('types', () => {
     const map: KnowledgeMap = {
       version: 1,
       generated_at: '2026-03-13T12:00:00Z',
-      continents: [{
+      workflows: [{
         id: 'software-engineering',
         name: 'Software Engineering',
         description: 'Code creation',
+        category: 'coding',
         color: '#66BB6A',
         position: { x: 0.25, y: 0.4 },
         size: 0.8,
-        sub_regions: [{
+        discovered_at: '2026-03-13T00:00:00Z',
+        last_active: '2026-03-13T00:00:00Z',
+        interaction_count: 10,
+        correction_count: 0,
+        mastery: 0.4,
+        skills_involved: ['basic-programming'],
+        sub_nodes: [{
           id: 'programming',
           name: 'Programming',
-          skills: ['basic-programming'],
           mastery: 0.4,
         }],
       }],
@@ -46,11 +52,16 @@ describe('types', () => {
         reward_gold: 150,
         reward_xp: 200,
         related_skills: ['tdd'],
+        status: 'pending',
+        progress: 0,
+        accepted_at: '',
+        completed_at: null,
+        source: 'bulletin_board',
       }],
     }
     expect(map.version).toBe(1)
-    expect(map.continents).toHaveLength(1)
-    expect(map.continents[0].sub_regions[0].mastery).toBe(0.4)
+    expect(map.workflows).toHaveLength(1)
+    expect(map.workflows[0].sub_nodes[0].mastery).toBe(0.4)
   })
 
   it('Quest lifecycle statuses are valid', () => {
@@ -70,7 +81,7 @@ describe('types', () => {
       source: 'bulletin_board',
     }
     expect(quest.status).toBe('active')
-    const statuses: QuestStatus[] = ['active', 'in_progress', 'completed', 'failed']
+    const statuses: QuestStatus[] = ['active', 'in_progress', 'completed', 'failed', 'cancelled']
     expect(statuses).toContain(quest.status)
   })
 
@@ -111,6 +122,11 @@ describe('types', () => {
           id: 'rec-1', title: 'Test', description: 'desc',
           region: 'se', rank: 'B', reward_gold: 100, reward_xp: 100,
           related_skills: [],
+          status: 'pending',
+          progress: 0,
+          accepted_at: '',
+          completed_at: null,
+          source: 'bulletin_board',
         },
       }],
       npc_mood: 'friendly',

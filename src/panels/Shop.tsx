@@ -122,7 +122,6 @@ export default function Shop() {
   }, [allSkills, filter, sourceFilter])
 
   const pageSize = 9
-  const totalPages = Math.max(1, Math.ceil(displayed.length / pageSize))
   const pageItems = displayed.slice(page * pageSize, (page + 1) * pageSize)
 
   // Clear selection when page changes
