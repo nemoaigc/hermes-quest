@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type {
   KnowledgeMap, Quest, BagItem, TabId, Workflow,
+  FeedbackDigest, CycleProgress,
 } from './types'
 
 export interface AgentState {
@@ -111,6 +112,14 @@ interface Store {
   setShopSourceFilter: (s: string | null) => void
   setShopPage: (p: number) => void
 
+  // Feedback digest
+  feedbackDigest: FeedbackDigest | null
+  setFeedbackDigest: (d: FeedbackDigest | null) => void
+
+  // Cycle progress
+  cycleProgress: CycleProgress | null
+  setCycleProgress: (p: CycleProgress | null) => void
+
   // Existing actions
   setState: (s: AgentState) => void
   addEvent: (e: GameEvent) => void
@@ -146,6 +155,10 @@ export const useStore = create<Store>((set) => ({
   setSites: (s) => set({ sites: s }),
   classifying: false,
   setClassifying: (v) => set({ classifying: v }),
+  feedbackDigest: null,
+  setFeedbackDigest: (d) => set({ feedbackDigest: d }),
+  cycleProgress: null,
+  setCycleProgress: (p) => set({ cycleProgress: p }),
   hubSkills: [],
   setHubSkills: (s) => set({ hubSkills: s }),
   shopFilter: '',

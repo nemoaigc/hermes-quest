@@ -1,11 +1,18 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useStore } from '../store'
 import { formatEvent, formatTime } from '../utils/formatters'
-import { EVENT_ICONS } from '../utils/icons'
+import { EventIcon } from '../utils/icons'
 import { API_URL, failQuest, fetchActiveQuests } from '../api'
 import { LS_KEYS } from '../constants/storage'
 
 const FEEDBACKABLE_TYPES = new Set(['skill_drop', 'cycle_end', 'quest_complete', 'train_start'])
+
+const CYCLE_PHASE_STYLE: Record<string, { icon: string; color: string; label: string }> = {
+  reflect: { icon: '\uD83D\uDD2E', color: '#b48eff', label: 'REFLECTING' },
+  plan: { icon: '\uD83D\uDCDC', color: '#f0e68c', label: 'PLANNING' },
+  execute: { icon: '\u2694\uFE0F', color: '#55aaff', label: 'EXECUTING' },
+  report: { icon: '\uD83D\uDCCA', color: '#66bb6a', label: 'REPORTING' },
+}
 
 function loadFeedback(): Record<string, 'positive' | 'negative'> {
   try {
@@ -15,7 +22,11 @@ function loadFeedback(): Record<string, 'positive' | 'negative'> {
 }
 
 function saveFeedback(state: Record<string, 'positive' | 'negative'>) {
-  try { localStorage.setItem(LS_KEYS.feedback, JSON.stringify(state)) } catch {}
+  try {
+    localStorage.setItem(LS_KEYS.feedback, JSON.stringify(state))
+  } catch {
+    // Ignore localStorage failures; feedback still applies for this session.
+  }
 }
 
 function loadClearedAt(): number {
@@ -47,6 +58,13 @@ export default function AdventureLog() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [failPrompt, setFailPrompt] = useState<string | null>(null)
   const [failingQuest, setFailingQuest] = useState(false)
+  const [digestToast, setDigestToast] = useState<string | null>(null)
+  const digestToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Cleanup toast timer on unmount
+  useEffect(() => {
+    return () => { if (digestToastTimerRef.current) clearTimeout(digestToastTimerRef.current) }
+  }, [])
 
   const handleFeedback = useCallback((key: string, type: 'positive' | 'negative', event_type: string, detail: string, eventData?: Record<string, unknown>) => {
     setSentFeedback((prev) => {
@@ -55,6 +73,14 @@ export default function AdventureLog() {
       return next
     })
     sendFeedback(type, event_type, detail, key)
+    // Show digest confirmation toast (with proper cleanup)
+    if (digestToastTimerRef.current) clearTimeout(digestToastTimerRef.current)
+    if (type === 'negative') {
+      setDigestToast('Recorded. Next cycle will avoid this direction.')
+    } else {
+      setDigestToast('Recorded. Next cycle will prioritize this direction.')
+    }
+    digestToastTimerRef.current = setTimeout(() => setDigestToast(null), 3000)
     // If thumbs-down on quest-related event, prompt to fail the quest
     if (type === 'negative' && (event_type === 'quest_complete' || event_type === 'train_start') && eventData) {
       const questId = (eventData.quest_id as string) || (eventData.id as string)
@@ -114,6 +140,9 @@ export default function AdventureLog() {
             const eventKey = `${event.ts}-${event.type}-${i}`
             const canFeedback = FEEDBACKABLE_TYPES.has(type)
             const alreadySent = sentFeedback[eventKey]
+            const isCyclePhase = type === 'cycle_phase'
+            const phaseData = isCyclePhase ? (event.data as Record<string, unknown>) : null
+            const phaseStyle = phaseData ? CYCLE_PHASE_STYLE[(phaseData.phase as string) || ''] : null
             return (
               <div
                 key={eventKey}
@@ -123,6 +152,12 @@ export default function AdventureLog() {
                   padding: '4px 4px 4px 8px',
                   position: 'relative',
                   marginBottom: '2px',
+                  ...(isCyclePhase ? {
+                    background: 'rgba(30, 25, 15, 0.6)',
+                    borderLeft: `2px solid ${phaseStyle?.color || '#8b7355'}`,
+                    borderRadius: '2px',
+                    marginLeft: '-2px',
+                  } : {}),
                 }}
               >
                 {/* Timeline dot */}
@@ -137,12 +172,28 @@ export default function AdventureLog() {
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
                   {/* Icon */}
                   <span style={{ width: 14, height: 14, display: 'inline-flex', flexShrink: 0, marginTop: '1px' }}>
-                    {EVENT_ICONS[type] || EVENT_ICONS['cycle_start']}
+                    <EventIcon type={type} />
                   </span>
 
                   {/* Content */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '9px', color, lineHeight: '1.3' }}>{text}</div>
+                    {isCyclePhase && phaseStyle ? (
+                      <>
+                        <div style={{ fontSize: '8px', color: phaseStyle.color, lineHeight: '1.3', fontFamily: 'var(--font-pixel)' }}>
+                          {phaseStyle.icon} {phaseStyle.label}
+                        </div>
+                        <div style={{ fontSize: '8px', color: '#c8a87a', lineHeight: '1.3', marginTop: '1px' }}>
+                          {(phaseData?.summary as string) || (phaseData?.detail as string) || (phaseData?.reason as string) || ''}
+                        </div>
+                        {phaseData?.target_workflow && (
+                          <div style={{ fontSize: '7px', color: '#8b7355', marginTop: '1px' }}>
+                            Target: {phaseData.target_workflow as string}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div style={{ fontSize: '9px', color, lineHeight: '1.3' }}>{text}</div>
+                    )}
                     <div style={{
                       fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.6vw, 7px)',
                       color: 'var(--text-dim)', marginTop: '1px',
@@ -229,6 +280,18 @@ export default function AdventureLog() {
         </div>
       )}
       </div>
+      {/* Feedback digest toast */}
+      {digestToast && (
+        <div style={{
+          flexShrink: 0, padding: '4px 8px',
+          background: 'rgba(102, 187, 106, 0.15)',
+          borderTop: '1px solid rgba(102, 187, 106, 0.3)',
+          fontFamily: 'Georgia, serif', fontStyle: 'italic',
+          fontSize: '8px', color: '#66bb6a', textAlign: 'center',
+        }}>
+          {digestToast}
+        </div>
+      )}
       {visibleEvents.length > 0 && (
         <div style={{
           flexShrink: 0, padding: '4px 8px',

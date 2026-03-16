@@ -140,6 +140,42 @@ export interface NpcChatResponse {
   npc_mood: NpcMood
 }
 
+// --- Feedback Digest (Agent reads this to adjust behavior) ---
+
+export interface FeedbackDigest {
+  generated_at: string | null
+  summary: {
+    total_positive: number
+    total_negative: number
+    net_sentiment: number
+  }
+  recent_feedback: Array<{
+    ts: string
+    event_type: string
+    event_summary: string
+    feedback: 'up' | 'down'
+    quest_context: string
+    skill: string
+  }>
+  skill_sentiment: Record<string, { up: number; down: number }>
+  workflow_sentiment: Record<string, { up: number; down: number; suggestion: string }>
+  user_corrections: string[]
+}
+
+// --- Cycle Progress (real-time phase tracking) ---
+
+export type CyclePhase = 'reflect' | 'plan' | 'execute' | 'report'
+
+export interface CycleProgress {
+  phase: CyclePhase
+  summary: string
+  target_workflow?: string
+  reason?: string
+  progress?: number
+  outcomes?: string[]
+  ts: string
+}
+
 // --- Learning Feed ---
 
 export interface LearningEvent {

@@ -1,4 +1,4 @@
-import type { NpcChatRequest, NpcChatResponse } from './types'
+import type { NpcChatRequest, NpcChatResponse, FeedbackDigest } from './types'
 
 const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.host}`
 
@@ -221,6 +221,20 @@ export async function deleteSite(siteId: string) {
 export async function searchRumors(query: string) {
   const res = await fetch(`${API_URL}/api/rumors/search?q=${encodeURIComponent(query)}`)
   if (!res.ok) throw new Error(`Rumors search: ${res.status}`)
+  return res.json()
+}
+
+// Feedback digest
+export async function fetchFeedbackDigest(): Promise<FeedbackDigest> {
+  const res = await fetch(`${API_URL}/api/feedback/digest`)
+  if (!res.ok) throw new Error(`Feedback digest fetch: ${res.status}`)
+  return res.json()
+}
+
+// Sync quest SKILL.md
+export async function syncQuestSkill(): Promise<{ status: string; path: string }> {
+  const res = await fetch(`${API_URL}/api/skill/quest/sync`, { method: 'POST' })
+  if (!res.ok) throw new Error(`Quest skill sync: ${res.status}`)
   return res.json()
 }
 

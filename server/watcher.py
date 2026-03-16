@@ -7,11 +7,7 @@ from datetime import datetime, timezone
 
 import yaml
 
-from config import EVENTS_FILE, STATE_FILE, SKILLS_DIR
-from pathlib import Path as _Path
-
-MAP_FILE = _Path.home() / ".hermes" / "quest" / "knowledge-map.json"
-QUESTS_V2_FILE = _Path.home() / ".hermes" / "quest" / "quests.json"
+from config import EVENTS_FILE, MAP_FILE, QUESTS_V2_FILE, SKILLS_DIR, STATE_FILE
 
 from models import insert_event, upsert_state, upsert_skill, upsert_quest
 from ws_manager import manager
@@ -215,6 +211,22 @@ class QuestWatcher:
     async def _handle_event_side_effects(self, event: dict):
         etype = event.get("type")
         data = event.get("data", {})
+
+        # Broadcast cycle phase events as a dedicated message type for progress tracking
+        if etype == "cycle_phase":
+            await manager.broadcast({
+                "type": "cycle_progress",
+                "data": {
+                    "phase": data.get("phase", "unknown"),
+                    "summary": data.get("summary", data.get("detail", "")),
+                    "target_workflow": data.get("target_workflow"),
+                    "reason": data.get("reason"),
+                    "progress": data.get("progress"),
+                    "outcomes": data.get("outcomes"),
+                    "ts": event.get("ts"),
+                },
+            })
+            return
 
         if etype == "skill_drop":
             _skill_name = data.get("skill", "")

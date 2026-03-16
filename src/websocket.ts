@@ -2,7 +2,17 @@ import { useEffect, useRef } from 'react'
 import { useStore } from './store'
 import { API_URL } from './api'
 
-const WS_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.host}/ws`
+const WS_URL = (() => {
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL
+  if (backendUrl) {
+    return `${backendUrl.replace(/^http/, 'ws').replace(/\/$/, '')}/ws`
+  }
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${window.location.host}/ws`
+})()
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function safeFetch<T = any>(url: string, transform?: (data: any) => T): Promise<T | null> {
@@ -37,7 +47,7 @@ export function useWebSocket() {
   useEffect(() => {
     fetchInitialData()
 
-    let reconnectTimer: ReturnType<typeof setTimeout>
+    let reconnectTimer: ReturnType<typeof setTimeout> | undefined
     let isMounted = true
     let reconnectDelay = 1000
 
@@ -85,6 +95,9 @@ export function useWebSocket() {
               })
               safeFetch(`${API_URL}/api/map`).then(d => { if (d) store.setKnowledgeMap(d) })
             }
+          } else if (msg.type === 'cycle_progress') {
+            store.setCycleProgress(msg.data)
+            // Note: auto-clear is handled by MapBottomInfo component, not here
           }
         } catch (e) {
           console.warn('[ws] Failed to process message:', e)
@@ -93,6 +106,7 @@ export function useWebSocket() {
 
       ws.onclose = () => {
         useStore.getState().setConnected(false)
+        useStore.getState().setCycleProgress(null) // Clear stale progress on disconnect
         if (isMounted) {
           reconnectTimer = setTimeout(connect, reconnectDelay)
           reconnectDelay = Math.min(reconnectDelay * 2, 30000)
@@ -102,10 +116,11 @@ export function useWebSocket() {
       ws.onerror = () => ws.close()
     }
 
-    connect()
+    const connectTimer = setTimeout(connect, 0)
     return () => {
       isMounted = false
-      clearTimeout(reconnectTimer)
+      clearTimeout(connectTimer)
+      if (reconnectTimer) clearTimeout(reconnectTimer)
       wsRef.current?.close()
     }
   }, [])

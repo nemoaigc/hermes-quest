@@ -61,15 +61,15 @@ Hermes Quest 是基于 Hermes Agent 构建的**自我进化 RPG 系统**。Agent
 ## Core Loop / 核心循环
 
 ```
-  REFLECT -----> PLAN -----> TRAIN -----> REPORT
-  (self-review)  (pick quest) (build skill) (gain XP)
-       ^                                      |
-       +------------- EVOLVE -----------------+
+  REFLECT -----> PLAN -----> EXECUTE -----> REPORT
+  (read feedback) (pick target) (train skill)  (summarize)
+       ^                                         |
+       +--- user 👍/👎 --- feedback-digest.json --+
 ```
 
-Every **evolution cycle**, the agent reflects on mistakes, picks the weakest area, trains by writing real code, and earns XP/gold/skill drops. The dashboard shows it all live.
+Every **evolution cycle**, the agent reads user feedback, reflects on weak areas, picks a training target, executes autonomously, and reports outcomes. **Each phase is visible in real-time** via the dashboard progress indicator. User feedback (thumbs up/down) flows into `feedback-digest.json`, which the agent reads at the start of each cycle to adjust its learning direction.
 
-每个**进化周期**：自省错误 -> 选择最弱领域 -> 通过编写真实代码训练 -> 获得经验/金币/技能掉落。仪表盘全程实时展示。
+每个**进化周期**：Agent 读取用户反馈 → 反思弱点 → 选择训练目标 → 自主执行 → 报告成果。**每个阶段实时可见**。用户的 👍/👎 反馈会聚合到 `feedback-digest.json`，Agent 在下个周期开始时读取并据此调整学习方向。
 
 ---
 
@@ -111,9 +111,10 @@ The guild board **analyzes your weaknesses** and recommends targeted training qu
 | **📰 Rumors Board** | Real-time X/Twitter feed + search — "What's trending in AI?" |
 | **🎒 Inventory** | Bag items with file viewer — VIEW actual config files, training reports |
 | **📜 Adventure Chronicle** | Event timeline with 👍/👎 feedback → affects HP/MP, can mark quests failed |
-| **🔄 Evolution Cycle** | One-click autonomous training → Telegram notification on completion |
+| **🔄 Evolution Cycle** | One-click autonomous training → 4-phase progress visible in real-time |
 | **🧠 Skill Classification** | LLM-powered: rename a domain → all 44+ skills auto-reclassified |
-| **📊 NPC Persona Cards** | Click any NPC → detailed bio, personality traits, lore |
+| **🔁 Feedback Loop** | User 👍/👎 → feedback-digest.json → agent reads next cycle → adjusts direction |
+| **📊 Cycle Observability** | REFLECT → PLAN → EXECUTE → REPORT — watch the agent think in real-time |
 | **🔍 Skill Forget** | Remove unwanted skills — a true warrior knows when to let go |
 
 ---
@@ -125,15 +126,25 @@ The guild board **analyzes your weaknesses** and recommends targeted training qu
 |   Quest Skill     |   FastAPI Backend    |  React Dashboard  |
 |   (SKILL.md)      |   (Port 8420)       |  (Pixel RPG UI)   |
 |                   |                     |                   |
-| - Evolution cycle | - /api/state        | - Zustand store   |
-| - RPG rules       | - /api/quests       | - WebSocket sync  |
-| - NPC prompts     | - /api/npc/chat     | - Animated BGs    |
-| - XP/HP formulas  | - /api/hub/*        | - 18+ panels      |
-|                   | - /api/cycle/start  |                   |
+| - 4-phase cycle   | - 40+ API endpoints | - Zustand store   |
+| - Reads digest    | - feedback-digest   | - WebSocket sync  |
+| - RPG rules       | - /api/npc/chat     | - Animated BGs    |
+| - XP/HP formulas  | - /api/cycle/start  | - 18+ panels      |
+|                   | - skill_classify    | - cycle_progress  |
 +-------------------+---------------------+-------------------+
 |               Hermes Agent Runtime                          |
 |          Skills - Cron - Memory - Telegram - Hub            |
 +-------------------------------------------------------------+
+```
+
+### Feedback Closed Loop / 反馈闭环
+
+```
+User 👍/👎 → /api/feedback → MP ±15 + events.jsonl + feedback-digest.json
+                                                            ↓
+Agent cycle → SKILL.md reads digest → adjusts training direction
+      ↓
+ Writes cycle_phase events → watcher detects → WS broadcast → UI progress bar
 ```
 
 ---
@@ -180,14 +191,16 @@ npm run build
 # the FastAPI backend serves it automatically at port 8420
 ```
 
-### Install Quest Skill (on Hermes server)
+### Deploy Quest Skill / 部署 Quest 技能
 
 ```bash
-cp -r quest-skill/ ~/.hermes/skills/quest/
+# Sync SKILL.md template to Hermes (via API)
+curl -X POST http://localhost:8420/api/skill/quest/sync
+
+# Or manually
+cp templates/quest-skill.md ~/.hermes/skills/quest/SKILL.md
 
 # Add to ~/.hermes/config.yaml:
-# skills:
-#   - quest
 # cron:
 #   quest_cycle:
 #     schedule: "0 */4 * * *"
@@ -199,19 +212,24 @@ cp -r quest-skill/ ~/.hermes/skills/quest/
 ## Project Structure / 项目结构
 
 ```
-hermes-quest/
-+-- quest-skill/              # Hermes skill definition (SKILL.md + references)
-+-- hermes-quest-dashboard/
-|   +-- src/
-|   |   +-- panels/           # 18 UI panels (Map, Guild, Shop, Tavern...)
-|   |   +-- components/       # Shared (AnimatedBg, RpgButton, ErrorBoundary...)
-|   |   +-- constants/        # Theme, API endpoints, NPC definitions
-|   |   +-- store.ts          # Zustand state management
-|   |   +-- api.ts            # Backend API client
-|   +-- server/               # FastAPI backend (main.py, models, watcher, WS)
-|   +-- public/               # Pixel art assets, sprites, fonts
-|   +-- demo/                 # Demo recording scripts (Playwright)
-+-- tools/                    # CLI utilities
+hermes-quest-dashboard/
++-- src/
+|   +-- panels/           # 18 UI panels (Map, Guild, Shop, Tavern...)
+|   +-- components/       # Shared (AnimatedBg, RpgButton, ErrorBoundary...)
+|   +-- constants/        # Theme, API endpoints, NPC definitions
+|   +-- store.ts          # Zustand state (+ feedbackDigest, cycleProgress)
+|   +-- websocket.ts      # WS client + cycle_progress handler
+|   +-- api.ts            # 20+ API client functions
+|   +-- types.ts          # TypeScript interfaces
++-- server/               # FastAPI backend
+|   +-- main.py           # 40+ endpoints, feedback digest, cycle management
+|   +-- watcher.py        # File watcher + cycle_phase broadcast
+|   +-- npc_chat.py       # LLM-powered NPC responses
+|   +-- skill_classify.py # LLM skill-to-domain classification
++-- templates/
+|   +-- quest-skill.md    # SKILL.md template (feedback + 4-phase cycle)
++-- public/               # Pixel art assets, sprites, fonts
++-- demo/                 # Playwright test/demo scripts
 ```
 
 ---
@@ -220,14 +238,45 @@ hermes-quest/
 
 | Stat | Meaning | Formula |
 |:---:|:---|:---|
-| HP | Agent reliability | `50 + level * 10` |
-| MP | API token budget | `30 + level * 5` |
-| XP | Experience | Earned per cycle, quest, skill |
-| Gold | Currency | Quests, training, loot |
+| HP | Stability (reliability) | `50 + level * 10`, fail penalty: -15 |
+| MP | Morale (confidence) | 100 max, feedback: ±15, decay: -2/day |
+| XP | Experience | `level * 100` to next level |
+| Gold | Currency | Quest rewards: 100-230G scaled by level |
 
 **Classes** emerge from skill distribution: Warrior (coding), Mage (research), Ranger (automation), Paladin (balanced), Necromancer (delegation).
 
-**Economy**: Create quest 100g, retry 50g, HP potion 200g, MP potion 150g, refresh board 50g.
+**Economy**: Create quest FREE, retry 50G, HP potion 200G, MP potion 150G, skill install 300G.
+
+---
+
+## Roadmap / 路线图
+
+### P0 — Core Loop Completion / 核心闭环
+- [x] Feedback digest pipeline (user 👍/👎 → `feedback-digest.json` → agent behavior)
+- [x] Cycle observability (4-phase progress: REFLECT → PLAN → EXECUTE → REPORT)
+- [ ] End-to-end validation: deploy SKILL.md, run real cycle, verify agent reads digest
+- [ ] MP influences agent via SKILL.md prompt (low MP → safer quest choices)
+
+### P1 — Game Mechanics / 游戏机制
+- [ ] Achievement system — milestone, collection, hidden achievements with gold/title rewards
+- [ ] Gold sinks — skill rarity upgrade (common → uncommon → rare → epic → legendary)
+- [ ] NPC affinity — daily chat rewards (25G + 10XP), relationship unlocks exclusive quests
+- [ ] MP-at-zero "burnout" event — triggers recovery quest like HP's reflection letter
+- [ ] Feedback sentiment → quest recommendations (deprioritize negatively-rated domains)
+
+### P2 — Experience Polish / 体验优化
+- [ ] Manual skill classification correction (override LLM assignments)
+- [ ] Skill search/filter in SkillPanel (by category, rarity, source)
+- [ ] NPC quest chains (multi-step quests with narrative branching)
+- [ ] New player tutorial (guided first steps for the knowledge map)
+- [ ] Understanding stat transparency (tooltip explaining calculation)
+
+### P3 — Long-term Vision / 远期规划
+- [ ] Skill synergy/fusion ("Frontend + Data Science" → "Data Visualization")
+- [ ] Seasonal events (limited-time regions, temporary skills, special NPCs)
+- [ ] Agent hypothesis generation (analyze why failures happen, not just log them)
+- [ ] Knowledge representation upgrade (forgetting curves, confidence intervals)
+- [ ] Multi-agent / leaderboard support
 
 ---
 

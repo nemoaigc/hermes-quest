@@ -14,7 +14,35 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
-from config import PORT, HOST, QUESTS_PENDING_FILE, STATE_FILE, HUB_RECOMMENDATIONS_FILE, SKILLS_DIR, GAME_BALANCE, MODEL, PROXY_URL
+from config import (
+    ACCEPTED_REC_IDS_FILE,
+    BAG_FILE,
+    COMPLETIONS_DIR,
+    CYCLE_LOCK_FILE,
+    EVENTS_FILE,
+    FEEDBACK_DIGEST_FILE,
+    GAME_BALANCE,
+    HERMES_AGENT_DIR,
+    HERMES_AGENT_PYTHON,
+    HERMES_AGENT_SITE_PACKAGES_GLOB,
+    HERMES_HOME,
+    HOST,
+    HUB_RECOMMENDATIONS_FILE,
+    MAP_FILE,
+    MODEL,
+    PORT,
+    PROXY_URL,
+    QUEST_SKILL_DIR,
+    QUESTS_PENDING_FILE,
+    QUESTS_V2_FILE,
+    QUEST_DIR,
+    REFLECTION_LETTER_FILE,
+    SITES_FILE,
+    SKILLS_DIR,
+    STATE_FILE,
+    TAVERN_CACHE_FILE,
+    TWITTER_CLI,
+)
 from models import init_db, get_state, get_events, get_skills, get_quests, delete_skill, upsert_state, insert_event, upsert_quest
 from watcher import QuestWatcher
 from ws_manager import manager
@@ -23,6 +51,212 @@ _feedbacked_event_ids: set[str] = set()
 
 from npc_chat import chat_with_npc, VALID_NPCS
 from skill_classify import reclassify_skills_after_site_change
+
+
+# --- Feedback Digest ---
+
+_digest_lock = asyncio.Lock()
+_cycle_lock = asyncio.Lock()
+
+
+def _read_feedback_digest() -> dict:
+    """Read the current feedback digest, or return a fresh one."""
+    try:
+        return json.loads(FEEDBACK_DIGEST_FILE.read_text())
+    except FileNotFoundError:
+        return {
+            "generated_at": None,
+            "summary": {"total_positive": 0, "total_negative": 0, "net_sentiment": 0.0},
+            "recent_feedback": [],
+            "skill_sentiment": {},
+            "workflow_sentiment": {},
+            "user_corrections": [],
+        }
+    except json.JSONDecodeError:
+        logger.warning("feedback-digest.json is corrupted, resetting to empty digest")
+        return {
+            "generated_at": None,
+            "summary": {"total_positive": 0, "total_negative": 0, "net_sentiment": 0.0},
+            "recent_feedback": [],
+            "skill_sentiment": {},
+            "workflow_sentiment": {},
+            "user_corrections": [],
+        }
+
+
+def _resolve_event_data(event_id: str, event_type: str) -> dict:
+    """Look up the original event by event_id from events.jsonl to get skill/quest fields.
+
+    event_id format from frontend: "{ISO_ts}-{event_type}-{index}"
+    e.g. "2026-03-17T10:30:45.123Z-skill_drop-0"
+    ISO timestamps contain hyphens, so we use event_type to split correctly.
+    """
+    if not event_id or not EVENTS_FILE.exists():
+        return {}
+    try:
+        # Extract the timestamp by removing the trailing "-{type}-{index}" portion
+        # Use event_type as anchor: find "-{event_type}-" in the event_id and take everything before it
+        ts = ""
+        if event_type and f"-{event_type}-" in event_id:
+            ts = event_id.split(f"-{event_type}-")[0]
+        if not ts:
+            # Fallback: try rsplit to remove last two segments (type-index)
+            parts = event_id.rsplit("-", 2)
+            ts = parts[0] if len(parts) >= 3 else ""
+
+        from collections import deque
+        with open(EVENTS_FILE, "r") as f:
+            recent_lines = deque(f, maxlen=200)
+
+        for line in reversed(recent_lines):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                evt = json.loads(line)
+                # Match by both timestamp and event type for accuracy
+                if ts and evt.get("ts", "") == ts and evt.get("type", "") == event_type:
+                    return evt.get("data", {})
+            except json.JSONDecodeError:
+                continue
+
+        # Fallback: match by ts prefix only (if exact match failed)
+        if ts:
+            for line in reversed(recent_lines):
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    evt = json.loads(line)
+                    if evt.get("ts", "").startswith(ts[:19]) and evt.get("type", "") == event_type:
+                        return evt.get("data", {})
+                except json.JSONDecodeError:
+                    continue
+    except OSError:
+        pass
+    return {}
+
+
+def _resolve_workflow_for_event(event_id: str, event_type: str, detail: str) -> str | None:
+    """Resolve which workflow an event belongs to, using original event data + knowledge-map."""
+    # Get the original event data (with skill/quest_id fields)
+    event_data = _resolve_event_data(event_id, event_type)
+
+    try:
+        km = json.loads(MAP_FILE.read_text()) if MAP_FILE.exists() else {}
+    except (json.JSONDecodeError, OSError):
+        km = {}
+
+    skill_name = event_data.get("skill") or ""
+    quest_id = event_data.get("quest_id") or ""
+    workflows = km.get("workflows", [])
+
+    # Match by skill name in workflow's skills_involved
+    for wf in workflows:
+        if skill_name and skill_name in (wf.get("skills_involved") or []):
+            return wf.get("name", wf.get("id"))
+
+    # Match by quest's workflow_id from quests.json
+    if quest_id and QUESTS_V2_FILE.exists():
+        try:
+            quests = json.loads(QUESTS_V2_FILE.read_text())
+            quest = next((q for q in quests if q.get("id") == quest_id), None)
+            if quest and quest.get("workflow_id"):
+                wf = next((w for w in workflows if w.get("id") == quest["workflow_id"]), None)
+                if wf:
+                    return wf.get("name", wf.get("id"))
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    return None
+
+
+def update_feedback_digest(event_id: str, feedback_type: str, event_type: str, detail: str):
+    """Update the feedback digest file with a new feedback entry. Must be called under _digest_lock."""
+    digest = _read_feedback_digest()
+    now = datetime.now(timezone.utc).isoformat()
+    is_positive = feedback_type in ("up", "positive")
+
+    # Update summary
+    summary = digest["summary"]
+    if is_positive:
+        summary["total_positive"] = summary.get("total_positive", 0) + 1
+    else:
+        summary["total_negative"] = summary.get("total_negative", 0) + 1
+    total = summary["total_positive"] + summary["total_negative"]
+    summary["net_sentiment"] = round(
+        (summary["total_positive"] - summary["total_negative"]) / max(total, 1), 2
+    )
+
+    # Resolve original event data for skill/quest context
+    original_data = _resolve_event_data(event_id, event_type)
+    skill_name = original_data.get("skill", "")
+    quest_id = original_data.get("quest_id", "")
+    quest_context = ""
+    if quest_id:
+        quest_context = f"Quest: {original_data.get('title', quest_id)}"
+
+    entry = {
+        "ts": now,
+        "event_type": event_type,
+        "event_summary": detail[:200],
+        "feedback": "up" if is_positive else "down",
+        "quest_context": quest_context,
+        "skill": skill_name,
+    }
+    recent = digest.get("recent_feedback", [])
+    recent.insert(0, entry)
+    digest["recent_feedback"] = recent[:20]
+
+    # Update skill_sentiment
+    if skill_name:
+        sk_sent = digest.get("skill_sentiment", {})
+        if skill_name not in sk_sent:
+            sk_sent[skill_name] = {"up": 0, "down": 0}
+        sk_sent[skill_name]["up" if is_positive else "down"] += 1
+        digest["skill_sentiment"] = sk_sent
+
+    # Update workflow_sentiment
+    workflow_name = _resolve_workflow_for_event(event_id, event_type, detail)
+    if workflow_name:
+        wf_sent = digest.get("workflow_sentiment", {})
+        if workflow_name not in wf_sent:
+            wf_sent[workflow_name] = {"up": 0, "down": 0, "suggestion": ""}
+        wf_sent[workflow_name]["up" if is_positive else "down"] += 1
+        # Generate suggestion based on ratio
+        wf_s = wf_sent[workflow_name]
+        if wf_s["down"] > wf_s["up"] * 2 and wf_s["down"] >= 3:
+            wf_s["suggestion"] = f"User is dissatisfied with training in '{workflow_name}' — avoid or change approach"
+        elif wf_s["up"] > 3 and wf_s["down"] == 0:
+            wf_s["suggestion"] = f"User approves of '{workflow_name}' direction — deepen exploration"
+        else:
+            wf_s["suggestion"] = ""
+        digest["workflow_sentiment"] = wf_sent
+
+    # Generate user_corrections from aggregated data
+    corrections = []
+    for wf_name, wf_s in digest.get("workflow_sentiment", {}).items():
+        if wf_s["down"] > wf_s["up"] * 2 and wf_s["down"] >= 3:
+            corrections.append(
+                f"User repeatedly gave negative feedback on '{wf_name}' domain — pivot away or change approach"
+            )
+        elif wf_s["up"] > 3 and wf_s["down"] == 0:
+            corrections.append(
+                f"User consistently approves '{wf_name}' direction — prioritize this domain"
+            )
+    # Add recent negative feedback context
+    recent_neg = [r for r in digest["recent_feedback"][:5] if r["feedback"] == "down"]
+    if len(recent_neg) >= 3:
+        domains = set(r.get("quest_context", "") for r in recent_neg if r.get("quest_context"))
+        if domains:
+            corrections.append(
+                f"Last {len(recent_neg)} feedback entries are negative, related to: {', '.join(domains)}"
+            )
+    digest["user_corrections"] = corrections
+
+    digest["generated_at"] = now
+    FEEDBACK_DIGEST_FILE.parent.mkdir(parents=True, exist_ok=True)
+    FEEDBACK_DIGEST_FILE.write_text(json.dumps(digest, indent=2))
 
 # --- API Key Authentication ---
 import os
@@ -54,6 +288,48 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 logger = logging.getLogger(__name__)
 
 watcher = QuestWatcher()
+
+
+def _ensure_agent_runtime_paths():
+    import glob as _glob
+
+    if str(HERMES_AGENT_DIR) not in sys.path:
+        sys.path.insert(0, str(HERMES_AGENT_DIR))
+
+    for site_packages in _glob.glob(HERMES_AGENT_SITE_PACKAGES_GLOB):
+        if site_packages not in sys.path:
+            sys.path.insert(0, site_packages)
+
+
+def _load_hub_module():
+    import importlib.util
+
+    guard_path = HERMES_AGENT_DIR / "tools" / "skills_guard.py"
+    hub_path = HERMES_AGENT_DIR / "tools" / "skills_hub.py"
+    if not HERMES_AGENT_DIR.exists() or not guard_path.exists() or not hub_path.exists():
+        return None
+
+    _ensure_agent_runtime_paths()
+
+    def _load_module(module_name: str, path: Path):
+        spec = importlib.util.spec_from_file_location(module_name, path)
+        if spec is None or spec.loader is None:
+            raise FileNotFoundError(path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+        return module
+
+    _load_module("tools.skills_guard", guard_path)
+    return _load_module("tools.skills_hub", hub_path)
+
+
+def _create_hub_sources():
+    hub_mod = _load_hub_module()
+    if hub_mod is None:
+        return None
+    auth = hub_mod.GitHubAuth()
+    return hub_mod.create_source_router(auth)
 
 
 @asynccontextmanager
@@ -101,9 +377,8 @@ async def api_state():
                 if new_mp != state.get("mp", 100):
                     state["mp"] = new_mp
                     # Persist decayed MP
-                    state_path = Path.home() / ".hermes" / "quest" / "state.json"
                     try:
-                        state_path.write_text(json.dumps(state, indent=2))
+                        STATE_FILE.write_text(json.dumps(state, indent=2))
                     except OSError:
                         pass
         except Exception:
@@ -124,9 +399,8 @@ async def api_state():
     if grant_bonus:
         state["gold"] = state.get("gold", 0) + 100
         state["last_gold_grant"] = now_utc.isoformat()
-        state_path = Path.home() / ".hermes" / "quest" / "state.json"
         try:
-            state_path.write_text(json.dumps(state, indent=2))
+            STATE_FILE.write_text(json.dumps(state, indent=2))
             await upsert_state(state)
         except Exception:
             pass
@@ -194,27 +468,11 @@ async def api_delete_skill(skill_name: str):
 @app.get("/api/hub/search")
 async def api_hub_search(q: str = Query("", min_length=0)):
     """Search the Hermes Skills Hub (optional-skills + GitHub taps)."""
-    import sys, importlib.util
-    _agent_dir = str(Path.home() / ".hermes" / "hermes-agent")
-    sys.path.insert(0, _agent_dir)
-    # Add agent venv site-packages for httpx etc.
-    import glob as _glob
-    for _sp in _glob.glob(str(Path.home() / ".hermes" / "hermes-agent" / "venv" / "lib" / "python*" / "site-packages")):
-        if _sp not in sys.path:
-            sys.path.insert(0, _sp)
+    sources = _create_hub_sources()
+    if sources is None:
+        logger.info("Hub search unavailable; Hermes runtime not found at %s", HERMES_AGENT_DIR)
+        return []
     try:
-        guard_spec = importlib.util.spec_from_file_location("tools.skills_guard", f"{_agent_dir}/tools/skills_guard.py")
-        guard_mod = importlib.util.module_from_spec(guard_spec)
-        sys.modules["tools.skills_guard"] = guard_mod
-        guard_spec.loader.exec_module(guard_mod)
-        hub_spec = importlib.util.spec_from_file_location("tools.skills_hub", f"{_agent_dir}/tools/skills_hub.py")
-        hub_mod = importlib.util.module_from_spec(hub_spec)
-        sys.modules["tools.skills_hub"] = hub_mod
-        hub_spec.loader.exec_module(hub_mod)
-        create_source_router = hub_mod.create_source_router
-        GitHubAuth = hub_mod.GitHubAuth
-        auth = GitHubAuth()
-        sources = create_source_router(auth)
         results = []
         query = q.strip() if q.strip() else ""
         for source in sources:
@@ -240,45 +498,31 @@ async def api_hub_search(q: str = Query("", min_length=0)):
 @app.post("/api/hub/install")
 async def api_hub_install(body: dict):
     """Install a skill from the hub by identifier."""
-    import sys, importlib.util, shutil, tempfile
-    _agent_dir = str(Path.home() / ".hermes" / "hermes-agent")
-    sys.path.insert(0, _agent_dir)
+    import shutil, tempfile
     identifier = body.get("identifier", "")
     if not identifier:
         return JSONResponse(status_code=400, content={"status": "error", "message": "Missing identifier"})
+
+    sources = _create_hub_sources()
+    if sources is None:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "error", "message": f"Hermes runtime not found at {HERMES_AGENT_DIR}"},
+        )
+
     # Skill install costs gold
     skill_cost = GAME_BALANCE.get("skill_install_cost", 300)
-    state_path = Path.home() / ".hermes" / "quest" / "state.json"
     async with _state_lock:
         try:
-            _st = json.loads(state_path.read_text())
+            _st = json.loads(STATE_FILE.read_text())
         except Exception:
             _st = {}
         if _st.get("gold", 0) < skill_cost:
             return JSONResponse(status_code=400, content={"status": "error", "message": f"Not enough gold (need {skill_cost}G)"})
         _st["gold"] = _st.get("gold", 0) - skill_cost
-        state_path.write_text(json.dumps(_st, indent=2))
+        STATE_FILE.write_text(json.dumps(_st, indent=2))
         await upsert_state(_st)
     try:
-        # Load hub module (needs httpx in agent venv, so we add it)
-        agent_venv_site = str(Path.home() / ".hermes" / "hermes-agent" / "venv" / "lib")
-        import glob as _glob
-        for sp in _glob.glob(f"{agent_venv_site}/python*/site-packages"):
-            if sp not in sys.path:
-                sys.path.insert(0, sp)
-
-        guard_spec = importlib.util.spec_from_file_location("tools.skills_guard", f"{_agent_dir}/tools/skills_guard.py")
-        guard_mod = importlib.util.module_from_spec(guard_spec)
-        sys.modules["tools.skills_guard"] = guard_mod
-        guard_spec.loader.exec_module(guard_mod)
-        hub_spec = importlib.util.spec_from_file_location("tools.skills_hub", f"{_agent_dir}/tools/skills_hub.py")
-        hub_mod = importlib.util.module_from_spec(hub_spec)
-        sys.modules["tools.skills_hub"] = hub_mod
-        hub_spec.loader.exec_module(hub_mod)
-        create_source_router = hub_mod.create_source_router
-        GitHubAuth = hub_mod.GitHubAuth
-        auth = GitHubAuth()
-        sources = create_source_router(auth)
         for source in sources:
             bundle = source.fetch(identifier)
             if bundle:
@@ -304,7 +548,7 @@ async def api_hub_install(body: dict):
                 }})
                 # Broadcast state update so gold change is reflected
                 try:
-                    _updated_state = json.loads(state_path.read_text())
+                    _updated_state = json.loads(STATE_FILE.read_text())
                     await manager.broadcast({"type": "state", "data": _updated_state})
                 except Exception:
                     pass
@@ -312,11 +556,11 @@ async def api_hub_install(body: dict):
         # Skill not found -- refund gold
         async with _state_lock:
             try:
-                _st = json.loads(state_path.read_text())
+                _st = json.loads(STATE_FILE.read_text())
             except Exception:
                 _st = {}
             _st["gold"] = _st.get("gold", 0) + skill_cost
-            state_path.write_text(json.dumps(_st, indent=2))
+            STATE_FILE.write_text(json.dumps(_st, indent=2))
             await upsert_state(_st)
         return JSONResponse(status_code=404, content={"status": "error", "message": f"Skill not found: {identifier}"})
     except Exception as e:
@@ -324,11 +568,11 @@ async def api_hub_install(body: dict):
         logger.error("Hub install failed: %s", e)
         async with _state_lock:
             try:
-                _st = json.loads(state_path.read_text())
+                _st = json.loads(STATE_FILE.read_text())
             except Exception:
                 _st = {}
             _st["gold"] = _st.get("gold", 0) + skill_cost
-            state_path.write_text(json.dumps(_st, indent=2))
+            STATE_FILE.write_text(json.dumps(_st, indent=2))
             await upsert_state(_st)
         return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
 
@@ -414,11 +658,6 @@ async def create_quest(quest: QuestCreate):
 
 # === Knowledge Map v2 API Endpoints ===
 
-MAP_FILE = Path.home() / ".hermes" / "quest" / "knowledge-map.json"
-QUESTS_V2_FILE = Path.home() / ".hermes" / "quest" / "quests.json"
-COMPLETIONS_DIR = Path.home() / ".hermes" / "quest" / "completions"
-ACCEPTED_REC_IDS_FILE = Path.home() / ".hermes" / "quest" / "accepted_rec_ids.json"
-
 
 def _read_accepted_rec_ids() -> set:
     if ACCEPTED_REC_IDS_FILE.exists():
@@ -467,13 +706,13 @@ def _generate_recommended_quests(map_data):
     """Generate 3-5 recommended quests. Randomized + deduped against active quests."""
     import random
     try:
-        _state = json.loads((Path.home() / ".hermes" / "quest" / "state.json").read_text())
+        _state = json.loads(STATE_FILE.read_text())
         level = _state.get("level", 1)
     except Exception:
         level = 1
     active_titles = set()
     try:
-        qs = json.loads((Path.home() / ".hermes" / "quest" / "quests.json").read_text())
+        qs = json.loads(QUESTS_V2_FILE.read_text())
         for q in qs:
             if q.get("status") in ("active", "in_progress", "pending"):
                 active_titles.add(q.get("title", "").lower())
@@ -545,14 +784,24 @@ def _generate_recommended_quests(map_data):
     return filtered[:5]
 
 
+def _empty_knowledge_map():
+    return {
+        "version": 2,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "workflows": [],
+        "connections": [],
+        "fog_regions": [],
+        "recommended_quests": [],
+    }
+
+
 @app.get("/api/map")
 async def get_knowledge_map(refresh: bool = Query(False)):
     if refresh:
         # Bulletin board refresh costs 50 gold
-        state_path = Path.home() / ".hermes" / "quest" / "state.json"
         async with _state_lock:
             try:
-                state = json.loads(state_path.read_text())
+                state = json.loads(STATE_FILE.read_text())
             except Exception:
                 state = {}
             if state.get("gold", 0) < GAME_BALANCE["refresh_cost"]:
@@ -561,13 +810,13 @@ async def get_knowledge_map(refresh: bool = Query(False)):
             # Check if HP reached 0 -> trigger reflection letter
             if state.get("hp", 0) <= 0:
                 state["reflection_letter_pending"] = True
-            state_path.write_text(json.dumps(state, indent=2))
+            STATE_FILE.write_text(json.dumps(state, indent=2))
             await upsert_state(state)
         # Clear accepted rec IDs to regenerate fresh recommendations
         if ACCEPTED_REC_IDS_FILE.exists():
             ACCEPTED_REC_IDS_FILE.write_text("[]")
     if not MAP_FILE.exists():
-        return JSONResponse(status_code=404, content={"error": "no_map_data"})
+        return _empty_knowledge_map()
     try:
         data = json.loads(MAP_FILE.read_text())
     except (json.JSONDecodeError, OSError):
@@ -704,10 +953,9 @@ async def accept_quest_v2(body: dict):
 async def get_bag_items():
     items = []
     # Read from bag.json first
-    bag_json = Path.home() / ".hermes" / "quest" / "bag.json"
-    if bag_json.exists():
+    if BAG_FILE.exists():
         try:
-            bag_items = json.loads(bag_json.read_text())
+            bag_items = json.loads(BAG_FILE.read_text())
             for item in bag_items:
                 if "id" not in item:
                     item["id"] = f"bag-{item.get('name', 'unknown')}"
@@ -769,26 +1017,48 @@ async def websocket_endpoint(ws: WebSocket):
 @app.post("/api/cycle/start")
 async def cycle_start():
     """Manually trigger a quest evolution cycle."""
-    import subprocess, os
-    lock_path = os.path.expanduser("~/.hermes/quest/cycle.lock")
-    
-    # Check lock
-    if os.path.exists(lock_path):
+    import subprocess, os, time
+
+    # Serialize the entire check-and-launch to prevent double-cycle TOCTOU race
+    async with _cycle_lock:
+        # Check lock file
+        if CYCLE_LOCK_FILE.exists():
+            try:
+                ts = int(CYCLE_LOCK_FILE.read_text().strip())
+                if time.time() - ts < GAME_BALANCE["cycle_lock_timeout"]:  # 30 min
+                    return {"status": "already_running"}
+            except (ValueError, OSError):
+                pass
+
+        # Ensure feedback digest exists before cycle starts
+        async with _digest_lock:
+            if not FEEDBACK_DIGEST_FILE.exists():
+                FEEDBACK_DIGEST_FILE.parent.mkdir(parents=True, exist_ok=True)
+                FEEDBACK_DIGEST_FILE.write_text(json.dumps(_read_feedback_digest(), indent=2))
+
+        # Write lock file BEFORE launching subprocess to prevent concurrent launches
+        CYCLE_LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
+        CYCLE_LOCK_FILE.write_text(str(int(time.time())))
+
+        # Trigger via cron tick (non-blocking)
+        env = os.environ.copy()
+        if not HERMES_AGENT_PYTHON.exists():
+            # Clean up lock since we're not actually starting
+            CYCLE_LOCK_FILE.unlink(missing_ok=True)
+            return JSONResponse(
+                status_code=503,
+                content={"status": "error", "message": f"Hermes runtime not found at {HERMES_AGENT_PYTHON}"},
+            )
         try:
-            with open(lock_path) as f:
-                ts = int(f.read().strip())
-            import time
-            if time.time() - ts < GAME_BALANCE["cycle_lock_timeout"]:  # 30 min
-                return {"status": "already_running"}
-        except (ValueError, OSError):
-            pass
-    
-    # Trigger via cron tick (non-blocking)
-    env = os.environ.copy()
-    subprocess.Popen(
-        ["/root/.hermes/hermes-agent/venv/bin/python", "-m", "hermes_cli.main", "cron", "tick"],
-        env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-    )
+            subprocess.Popen(
+                [str(HERMES_AGENT_PYTHON), "-m", "hermes_cli.main", "cron", "tick"],
+                env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+        except OSError as exc:
+            # Clean up lock on failure
+            CYCLE_LOCK_FILE.unlink(missing_ok=True)
+            logger.error("Failed to start cycle: %s", exc)
+            return JSONResponse(status_code=500, content={"status": "error", "message": str(exc)})
     # Broadcast event so UI knows a cycle was triggered
     await manager.broadcast({"type": "event", "data": {
         "ts": datetime.now(timezone.utc).isoformat(),
@@ -802,12 +1072,10 @@ async def cycle_start():
 @app.get("/api/cycle/status")
 async def cycle_status():
     """Check if a cycle is currently running."""
-    import os, time
-    lock_path = os.path.expanduser("~/.hermes/quest/cycle.lock")
-    if os.path.exists(lock_path):
+    import time
+    if CYCLE_LOCK_FILE.exists():
         try:
-            with open(lock_path) as f:
-                ts = int(f.read().strip())
+            ts = int(CYCLE_LOCK_FILE.read_text().strip())
             if time.time() - ts < GAME_BALANCE["cycle_lock_timeout"]:
                 return {"status": "running", "started_at": ts}
         except (ValueError, OSError):
@@ -827,19 +1095,18 @@ async def quest_create(body: dict):
         return JSONResponse(status_code=400, content={"error": "Title is required (1-200 chars, no HTML)"})
 
     # Gold sink: user-created quests are FREE (retry still costs gold)
-    state_path = Path.home() / ".hermes" / "quest" / "state.json"
     is_retry = body.get("retry", False)
     if is_retry:
         async with _state_lock:
             try:
-                _st = json.loads(state_path.read_text())
+                _st = json.loads(STATE_FILE.read_text())
             except Exception:
                 _st = {}
             cost = GAME_BALANCE["quest_retry_cost"]
             if _st.get("gold", 0) < cost:
                 return JSONResponse(status_code=400, content={"error": f"Not enough gold (need {cost}G)"})
             _st["gold"] -= cost
-            state_path.write_text(json.dumps(_st, indent=2))
+            STATE_FILE.write_text(json.dumps(_st, indent=2))
         await upsert_state(_st)
         await manager.broadcast({"type": "state", "data": _st})
     
@@ -931,9 +1198,8 @@ async def quest_fail(body: dict):
         _write_quests_v2(quests)
         await upsert_quest({"id": quest_id, "title": found.get("title", ""), "status": "failed", "completed_at": found["completed_at"]})
 
-        state_path = Path.home() / ".hermes" / "quest" / "state.json"
         try:
-            state = json.loads(state_path.read_text())
+            state = json.loads(STATE_FILE.read_text())
         except Exception:
             state = {}
         hp_penalty = GAME_BALANCE["fail_hp_penalty"]
@@ -943,7 +1209,7 @@ async def quest_fail(body: dict):
         # Check if HP reached 0 -> trigger reflection letter
         if state.get("hp", 0) <= 0:
             state["reflection_letter_pending"] = True
-        state_path.write_text(json.dumps(state, indent=2))
+        STATE_FILE.write_text(json.dumps(state, indent=2))
 
     await upsert_state(state)
     await manager.broadcast({"type": "state", "data": state})
@@ -977,10 +1243,9 @@ async def quest_complete(body: dict):
     _write_quests_v2(quests)
     
     # Award XP and gold
-    state_path = Path.home() / ".hermes" / "quest" / "state.json"
     async with _state_lock:
         try:
-            state = json.loads(state_path.read_text())
+            state = json.loads(STATE_FILE.read_text())
         except Exception:
             state = {}
         
@@ -1007,19 +1272,18 @@ async def quest_complete(body: dict):
         # Check if HP reached 0 -> trigger reflection letter
         if state.get("hp", 0) <= 0:
             state["reflection_letter_pending"] = True
-        state_path.write_text(json.dumps(state, indent=2))
+        STATE_FILE.write_text(json.dumps(state, indent=2))
     await upsert_state(state)
     
     # Log event
     from datetime import datetime, timezone
-    events_path = Path.home() / ".hermes" / "quest" / "events.jsonl"
     event = {
         "ts": datetime.now(timezone.utc).isoformat(),
         "type": "quest_complete",
         "region": None,
         "data": {"quest_id": quest_id, "reward_xp": xp_reward, "reward_gold": gold_reward}
     }
-    with open(events_path, "a") as f:
+    with open(EVENTS_FILE, "a") as f:
         f.write(json.dumps(event) + "\n")
     
     # Broadcast updates
@@ -1045,12 +1309,9 @@ async def user_feedback(body: dict):
     if feedback_type not in ("up", "down", "positive", "negative"):
         return JSONResponse(status_code=400, content={"error": "type must be positive or negative"})
 
-    state_path = Path.home() / ".hermes" / "quest" / "state.json"
-    events_path = Path.home() / ".hermes" / "quest" / "events.jsonl"
-
     async with _state_lock:
         try:
-            state = json.loads(state_path.read_text())
+            state = json.loads(STATE_FILE.read_text())
         except (FileNotFoundError, json.JSONDecodeError):
             return JSONResponse(status_code=500, content={"error": "no state"})
 
@@ -1066,7 +1327,7 @@ async def user_feedback(body: dict):
         # Check if HP reached 0 -> trigger reflection letter
         if state.get("hp", 0) <= 0:
             state["reflection_letter_pending"] = True
-        state_path.write_text(json.dumps(state, indent=2))
+        STATE_FILE.write_text(json.dumps(state, indent=2))
 
     # Log event with full context
     from datetime import datetime, timezone
@@ -1081,19 +1342,45 @@ async def user_feedback(body: dict):
             "event_type": event_type,
         }
     }
-    with open(events_path, "a") as f:
+    with open(EVENTS_FILE, "a") as f:
         f.write(json.dumps(event) + "\n")
 
     # Sync state to DB immediately
     await upsert_state(state)
 
+    # Update feedback digest for agent consumption (under lock to prevent concurrent overwrites)
+    async with _digest_lock:
+        update_feedback_digest(
+            event_id=event_id,
+            feedback_type=feedback_type,
+            event_type=event_type,
+            detail=detail,
+        )
+
     # Broadcast state and event via WebSocket
     await manager.broadcast({"type": "state", "data": state})
     await manager.broadcast({"type": "event", "data": event})
 
-    return {"status": "ok", "hp": state["hp"], "mp": state["mp"]}
+    return {"status": "ok", "hp": state["hp"], "mp": state["mp"], "digest_updated": True}
 
 
+@app.get("/api/feedback/digest")
+async def feedback_digest():
+    """Return the current feedback digest for display and agent consumption."""
+    return _read_feedback_digest()
+
+
+@app.post("/api/skill/quest/sync")
+async def sync_quest_skill():
+    """Sync the quest SKILL.md template to ~/.hermes/skills/quest/SKILL.md."""
+    template_path = Path(__file__).parent.parent / "templates" / "quest-skill.md"
+    if not template_path.exists():
+        return JSONResponse(status_code=404, content={"error": "Template not found"})
+    target_dir = QUEST_SKILL_DIR
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target_file = target_dir / "SKILL.md"
+    target_file.write_text(template_path.read_text(encoding="utf-8"), encoding="utf-8")
+    return {"status": "synced", "path": str(target_file)}
 
 
 # === Reflection Letter ===
@@ -1101,15 +1388,13 @@ async def user_feedback(body: dict):
 @app.get("/api/reflection/latest")
 async def reflection_latest():
     """Get the latest reflection letter."""
-    letter_path = Path.home() / ".hermes" / "quest" / "reflection-letter.md"
-    state_path = Path.home() / ".hermes" / "quest" / "state.json"
     try:
-        _st = json.loads(state_path.read_text())
+        _st = json.loads(STATE_FILE.read_text())
     except Exception:
         _st = {}
     pending = _st.get("reflection_letter_pending", False)
-    if letter_path.exists():
-        return {"letter": letter_path.read_text(), "pending": pending}
+    if REFLECTION_LETTER_FILE.exists():
+        return {"letter": REFLECTION_LETTER_FILE.read_text(), "pending": pending}
     if pending:
         # Generate reflection letter using LLM
         try:
@@ -1160,7 +1445,7 @@ async def reflection_latest():
                                     break
                         letter = "".join(reply_parts).strip()
                         if letter:
-                            letter_path.write_text(letter)
+                            REFLECTION_LETTER_FILE.write_text(letter)
                             return {"letter": letter, "pending": True}
                     finally:
                         await http.aclose()
@@ -1171,10 +1456,9 @@ async def reflection_latest():
 @app.post("/api/reflection/acknowledge")
 async def reflection_acknowledge():
     """User acknowledges reading the reflection letter. HP recovers to 20%."""
-    state_path = Path.home() / ".hermes" / "quest" / "state.json"
     async with _state_lock:
         try:
-            state = json.loads(state_path.read_text())
+            state = json.loads(STATE_FILE.read_text())
         except (FileNotFoundError, json.JSONDecodeError):
             return {"error": "no state"}
 
@@ -1184,12 +1468,11 @@ async def reflection_acknowledge():
         # Check if HP reached 0 -> trigger reflection letter
         if state.get("hp", 0) <= 0:
             state["reflection_letter_pending"] = True
-        state_path.write_text(json.dumps(state, indent=2))
+        STATE_FILE.write_text(json.dumps(state, indent=2))
 
     # Delete old reflection letter so next HP=0 generates a fresh one
-    letter_path = Path.home() / ".hermes" / "quest" / "reflection-letter.md"
     try:
-        letter_path.unlink(missing_ok=True)
+        REFLECTION_LETTER_FILE.unlink(missing_ok=True)
     except OSError:
         pass
 
@@ -1199,8 +1482,6 @@ async def reflection_acknowledge():
 
 
 # === Tavern Ambient Chat ===
-
-TAVERN_CACHE_FILE = Path.home() / ".hermes" / "quest" / "tavern-ambient.json"
 _tavern_generating = False
 
 @app.get("/api/tavern/ambient")
@@ -1230,17 +1511,14 @@ async def tavern_generate():
     
     try:
         # Gather context
-        state_path = Path.home() / ".hermes" / "quest" / "state.json"
-        events_path = Path.home() / ".hermes" / "quest" / "events.jsonl"
-        
         state = {}
-        if state_path.exists():
-            try: state = json.loads(state_path.read_text())
+        if STATE_FILE.exists():
+            try: state = json.loads(STATE_FILE.read_text())
             except Exception: pass
         
         recent_events = []
-        if events_path.exists():
-            lines = events_path.read_text().strip().split("\n")
+        if EVENTS_FILE.exists():
+            lines = EVENTS_FILE.read_text().strip().split("\n")
             for line in lines[-10:]:
                 try: recent_events.append(json.loads(line))
                 except Exception: pass
@@ -1401,11 +1679,10 @@ async def tavern_reply(body: dict):
         return {"messages": []}
 
     # Gather game state
-    state_path = Path.home() / ".hermes" / "quest" / "state.json"
     state = {}
-    if state_path.exists():
+    if STATE_FILE.exists():
         try:
-            state = json.loads(state_path.read_text())
+            state = json.loads(STATE_FILE.read_text())
         except Exception:
             pass
 
@@ -1526,6 +1803,8 @@ Write 2-4 NPC reactions. Multiple NPCs should respond, not just one. Rules:
 async def rumors_search(q: str = Query("AI", min_length=1), max: int = Query(10, ge=1, le=50)):
     """Search X/Twitter for rumors via twitter-cli."""
     import subprocess, os
+    if not TWITTER_CLI:
+        return {"ok": False, "error": "twitter cli unavailable"}
     env = os.environ.copy()
     env["TWITTER_AUTH_TOKEN"] = os.getenv("TWITTER_AUTH_TOKEN", "")
     env["TWITTER_CT0"] = os.getenv("TWITTER_CT0", "")
@@ -1533,7 +1812,7 @@ async def rumors_search(q: str = Query("AI", min_length=1), max: int = Query(10,
     env["http_proxy"] = PROXY_URL
     try:
         result = subprocess.run(
-            ["/root/.local/bin/twitter", "search", q, "--max", str(max), "--json"],
+            [TWITTER_CLI, "search", q, "--max", str(max), "--json"],
             capture_output=True, text=True, timeout=30, env=env,
         )
         if result.returncode == 0:
@@ -1565,6 +1844,8 @@ async def rumors_search(q: str = Query("AI", min_length=1), max: int = Query(10,
 async def rumors_feed(max: int = Query(10, ge=1, le=50)):
     """Get home timeline as rumors."""
     import subprocess, os
+    if not TWITTER_CLI:
+        return {"ok": False, "error": "twitter cli unavailable"}
     env = os.environ.copy()
     env["TWITTER_AUTH_TOKEN"] = os.getenv("TWITTER_AUTH_TOKEN", "")
     env["TWITTER_CT0"] = os.getenv("TWITTER_CT0", "")
@@ -1572,7 +1853,7 @@ async def rumors_feed(max: int = Query(10, ge=1, le=50)):
     env["http_proxy"] = PROXY_URL
     try:
         result = subprocess.run(
-            ["/root/.local/bin/twitter", "feed", "--max", str(max), "--json"],
+            [TWITTER_CLI, "feed", "--max", str(max), "--json"],
             capture_output=True, text=True, timeout=30, env=env,
         )
         if result.returncode == 0:
@@ -1606,8 +1887,7 @@ async def rumors_feed(max: int = Query(10, ge=1, le=50)):
 async def bag_item_content(item_id: str):
     """Return the text content of a bag item's file."""
     # Find item in bag.json
-    bag_path = Path.home() / ".hermes" / "quest" / "bag.json"
-    bag_items = json.loads(bag_path.read_text()) if bag_path.exists() else []
+    bag_items = json.loads(BAG_FILE.read_text()) if BAG_FILE.exists() else []
 
     # Also check completions
     item = next((i for i in bag_items if i.get("id") == item_id), None)
@@ -1629,9 +1909,9 @@ async def bag_item_content(item_id: str):
         name = item.get("name", "")
         stem = Path(name).stem if name else ""
         search_dirs = [
-            Path.home() / ".hermes" / "quest",
-            Path.home() / ".hermes",
-            Path.home() / ".hermes" / "skills",
+            QUEST_DIR,
+            HERMES_HOME,
+            SKILLS_DIR,
         ]
         for d in search_dirs:
             # Exact match first
@@ -1641,8 +1921,7 @@ async def bag_item_content(item_id: str):
                 break
         if not fp and stem:
             # Broader search: glob for files matching the stem
-            hermes_root = Path.home() / ".hermes"
-            for match in hermes_root.rglob(f"*{stem}*"):
+            for match in HERMES_HOME.rglob(f"*{stem}*"):
                 if match.is_file() and "venv" not in str(match) and "__pycache__" not in str(match):
                     fp = str(match)
                     break
@@ -1664,7 +1943,6 @@ async def bag_item_content(item_id: str):
 
 
 # --- Sites endpoints ---
-SITES_FILE = Path.home() / ".hermes" / "quest" / "sites.json"
 import threading
 _sites_file_lock = threading.Lock()
 
@@ -1806,9 +2084,22 @@ async def delete_site(body: dict):
     return {"ok": True, "deleted_workflow": old_workflow_id}
 
 
-STATIC_DIR = Path(__file__).parent / "static"
-if STATIC_DIR.exists():
-    app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="assets")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+STATIC_DIR = next(
+    (
+        candidate for candidate in (
+            PROJECT_ROOT / "dist",
+            Path(__file__).parent / "static",
+        )
+        if candidate.exists()
+    ),
+    None,
+)
+
+if STATIC_DIR:
+    assets_dir = STATIC_DIR / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
@@ -1828,17 +2119,16 @@ async def bag_discard(body: dict):
     if not item_id:
         return JSONResponse(status_code=400, content={"error": "item_id required"})
     
-    bag_json = Path.home() / ".hermes" / "quest" / "bag.json"
-    if not bag_json.exists():
+    if not BAG_FILE.exists():
         return JSONResponse(status_code=404, content={"error": "bag not found"})
     
     try:
-        bag_items = json.loads(bag_json.read_text())
+        bag_items = json.loads(BAG_FILE.read_text())
         original_len = len(bag_items)
         bag_items = [i for i in bag_items if i.get("id") != item_id and f"bag-{i.get('name', 'unknown')}" != item_id]
         if len(bag_items) == original_len:
             return JSONResponse(status_code=404, content={"error": "item not found"})
-        bag_json.write_text(json.dumps(bag_items, indent=2, ensure_ascii=False))
+        BAG_FILE.write_text(json.dumps(bag_items, indent=2, ensure_ascii=False))
         # Broadcast bag update so UI refreshes
         await manager.broadcast({"type": "bag", "data": {"items": bag_items}})
         return {"ok": True, "remaining": len(bag_items)}
@@ -1860,7 +2150,7 @@ async def use_potion(body: dict):
     p = POTIONS[potion_type]
     async with _state_lock:
         try:
-            state = json.loads((Path.home() / ".hermes" / "quest" / "state.json").read_text())
+            state = json.loads(STATE_FILE.read_text())
         except (FileNotFoundError, json.JSONDecodeError, OSError):
             return JSONResponse(status_code=500, content={"error": "Game state unavailable"})
         if state.get("gold", 0) < p["cost"]:
@@ -1875,11 +2165,10 @@ async def use_potion(body: dict):
 
         state["gold"] -= p["cost"]
         state[p["stat"]] = min(current + p["amount"], max_val)
-        state_path = Path.home() / ".hermes" / "quest" / "state.json"
         # Check if HP reached 0 -> trigger reflection letter
         if state.get("hp", 0) <= 0:
             state["reflection_letter_pending"] = True
-        state_path.write_text(json.dumps(state, indent=2))
+        STATE_FILE.write_text(json.dumps(state, indent=2))
 
     await upsert_state(state)
     await manager.broadcast({"type": "state", "data": state})
@@ -1906,16 +2195,15 @@ async def update_state_field(body: dict):
         return JSONResponse(status_code=400, content={"error": "name must be 1-30 chars"})
 
     async with _state_lock:
-        state_path = Path.home() / ".hermes" / "quest" / "state.json"
         try:
-            state = json.loads(state_path.read_text())
+            state = json.loads(STATE_FILE.read_text())
         except (FileNotFoundError, json.JSONDecodeError, OSError):
             return JSONResponse(status_code=500, content={"error": "Game state unavailable"})
         state.update(updates)
         # Check if HP reached 0 -> trigger reflection letter
         if state.get("hp", 0) <= 0:
             state["reflection_letter_pending"] = True
-        state_path.write_text(json.dumps(state, indent=2))
+        STATE_FILE.write_text(json.dumps(state, indent=2))
     await upsert_state(state)
     await manager.broadcast({"type": "state", "data": state})
     return {"ok": True}
@@ -1924,4 +2212,3 @@ async def update_state_field(body: dict):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host=HOST, port=PORT)
-

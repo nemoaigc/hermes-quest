@@ -1,5 +1,5 @@
 /** Reusable RPG button */
-export default function RpgButton({ children, onClick, disabled, small, color }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; small?: boolean; color?: string }) {
+export default function RpgButton({ children, onClick, disabled, small, color, style: externalStyle }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; small?: boolean; color?: string; style?: React.CSSProperties }) {
   return (
     <button onClick={onClick} disabled={disabled}
       onMouseEnter={(e) => { if (!disabled) { e.currentTarget.style.borderColor = '#f0e68c'; e.currentTarget.style.boxShadow = '0 0 8px rgba(240,230,140,0.3), 0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,140,0.1)' } }}
@@ -15,6 +15,7 @@ export default function RpgButton({ children, onClick, disabled, small, color }:
       textShadow: '0 1px 2px rgba(0,0,0,0.5)',
       whiteSpace: 'nowrap' as const,
       transition: 'all 0.15s',
+      ...externalStyle,
     }}>{children}</button>
   )
 }
