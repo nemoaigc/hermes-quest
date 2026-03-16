@@ -342,6 +342,7 @@ export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?
   return (
     <div
       ref={containerRef}
+      onClick={() => { setSelectedSite(null); setSelectedRegion(null); onContinentSelect?.(null) }}
       style={{
         width: '100%', height: '100%',
         position: 'relative', overflow: 'hidden',

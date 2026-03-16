@@ -42,15 +42,6 @@ export default function MapBottomInfo() {
     <div style={{ display: 'flex', gap: '10px', width: '100%', fontFamily: 'var(--font-pixel)' }}>
       {/* Left: site list */}
       <PanelCard style={{ flex: 1, overflow: 'auto', minHeight: '60px' }}>
-        {classifying && (
-          <div style={{
-            fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#f0e68c',
-            padding: '3px 4px', marginBottom: '4px',
-            background: 'rgba(240,230,140,0.08)', borderRadius: '2px',
-          }}>
-            ● Classifying skills...
-          </div>
-        )}
         {definedSites.length === 0 ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '8px', color: '#6a5a3a', fontStyle: 'italic' }}>
             Start a cycle to explore...
@@ -90,7 +81,7 @@ export default function MapBottomInfo() {
         )}
       </PanelCard>
 
-      {/* Right: compact stats + action */}
+      {/* Right: stats + action + classify status */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '100px', justifyContent: 'center' }}>
         <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#8b7355', textAlign: 'center' }}>
           <span style={{ color: '#f0e68c' }}>{definedSites.length}</span> active regions
@@ -98,6 +89,14 @@ export default function MapBottomInfo() {
         <RpgButton onClick={handleStartCycle} disabled={cycleLoading}>
           {cycleStatus === 'loading' ? 'EXPLORING...' : cycleStatus === 'success' ? 'CYCLE STARTED' : cycleStatus === 'failed' ? 'FAILED' : '\u25B6 START CYCLE'}
         </RpgButton>
+        {classifying && (
+          <div style={{
+            fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#f0e68c',
+            textAlign: 'center', padding: '2px 0',
+          }}>
+            ● CLASSIFYING...
+          </div>
+        )}
       </div>
     </div>
   )
