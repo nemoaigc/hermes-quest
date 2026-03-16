@@ -92,7 +92,7 @@ function ContinentSprite({ site, allSites, skillCount, onClick, onContextMenu, i
 
   return (
     <div
-      onClick={onClick}
+      onClick={(e) => { e.stopPropagation(); onClick() }}
       onContextMenu={onContextMenu}
       style={{
         position: 'absolute',
@@ -152,7 +152,7 @@ function FogSiteSprite({ site, onClick, isActive }: {
 
   return (
     <div
-      onClick={onClick}
+      onClick={(e) => { e.stopPropagation(); onClick() }}
       style={{
         position: 'absolute',
         left: `${left}%`,
