@@ -1,4 +1,31 @@
-# Hermes Quest Dashboard — Session 4 Review Log
+# Hermes Quest Dashboard — Review Log
+
+## Session 5 — 2026-03-16 Continuous Review
+
+### Round 1 (3 fixes)
+| Expert | Issue | Fix |
+|--------|-------|-----|
+| Agent Dev | CenterTabs used `useStore.getState()` in render path for sites — not reactive | Extracted `MapBottomContent` component using `useStore()` hook |
+| Agent Dev | NPC chat didn't send `game_state` from frontend | Added game_state (name/level/class/HP/MP/gold) to NPC chat request body |
+| Algorithm | `understanding_update` formatter multiplied 0-100 value by 100 again (1880%) | Fixed to detect 0-100 vs 0-1 range |
+
+Also fixed: `skills_count` in server state updated from 3 to 4 (actual filesystem count).
+
+### Round 2 (1 fix)
+| Expert | Issue | Fix |
+|--------|-------|-----|
+| Product | Completed quests (10) invisible — no DONE tab in guild ledger | Added DONE tab between ACTIVE and CANCELED with cyan accent, completed_at date |
+
+### Round 3 (1 fix)
+| Expert | Issue | Fix |
+|--------|-------|-----|
+| Test Dev | Failing test: `AgentState uses stability/energy instead of hp/mp` | Updated test to expect v2 compat hp/mp fields from stability/energy mapping |
+
+All 14 tests pass. TypeScript: 0 errors.
+
+---
+
+# Session 4 Review Log (historical)
 
 > 2026-03-16 00:30 — 09:50 (9+ hours, 52 commits)
 

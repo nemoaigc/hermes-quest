@@ -20,13 +20,14 @@ async function safeFetch<T>(url: string, transform?: (data: any) => T): Promise<
 }
 
 function fetchInitialData() {
-  const { setState, setSkills, setEvents, setKnowledgeMap, setQuests, setBagItems } = useStore.getState()
+  const { setState, setSkills, setEvents, setKnowledgeMap, setQuests, setBagItems, setSites } = useStore.getState()
   safeFetch(`${API_URL}/api/state`).then(d => { if (d) setState(d) })
   safeFetch(`${API_URL}/api/skills`).then(d => { if (d) setSkills(d) })
   safeFetch(`${API_URL}/api/events`).then(d => { if (d) setEvents(d) })
   safeFetch(`${API_URL}/api/map`).then(d => { if (d) setKnowledgeMap(d) })
   safeFetch(`${API_URL}/api/quest/active`, d => d.quests || []).then(d => { if (d) setQuests(d) })
   safeFetch(`${API_URL}/api/bag/items`, d => d.items || []).then(d => { if (d) setBagItems(d) })
+  safeFetch(`${API_URL}/api/sites`, d => d.sites || d).then(d => { if (d && Array.isArray(d)) setSites(d) })
 }
 
 export function useWebSocket() {
@@ -67,6 +68,12 @@ export function useWebSocket() {
             safeFetch(`${API_URL}/api/quest/active`, d => d.quests || []).then(d => { if (d) store.setQuests(d) })
           } else if (msg.type === 'bag') {
             safeFetch(`${API_URL}/api/bag/items`, d => d.items || []).then(d => { if (d) store.setBagItems(d) })
+          } else if (msg.type === 'skills_reclassified') {
+            // Skills were reclassified after a site change — refresh skills and sites
+            safeFetch(`${API_URL}/api/skills`).then(d => { if (d) store.setSkills(d) })
+            safeFetch(`${API_URL}/api/sites`, d => d.sites || d).then(d => {
+              if (d && Array.isArray(d)) store.setSites(d)
+            })
           }
         } catch (e) {
           console.warn('[ws] Failed to process message:', e)
