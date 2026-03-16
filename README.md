@@ -2,9 +2,9 @@
 
 <img src="assets/banner.svg" alt="Hermes Quest" width="100%"/>
 
-**A self-evolving RPG system built on Hermes Agent — where AI learns, grows, and levels up like a real adventurer.**
+**Turn aimless AI evolution into goal-directed growth — guided by you, visualized as an RPG.**
 
-**基于 Hermes Agent 构建的自我进化 RPG 系统 — AI 像真正的冒险者一样学习、成长、升级。**
+**将 AI 的无方向进化变成有目标的成长 — 由你引导，以 RPG 形式呈现。**
 
 [![MIT License](https://img.shields.io/badge/License-MIT-gold.svg?style=for-the-badge)](LICENSE)
 [![Built on Hermes](https://img.shields.io/badge/Built_on-Hermes_Agent-8B5CF6?style=for-the-badge)](https://github.com/NousResearch/hermes-agent)
@@ -15,19 +15,29 @@
 
 ---
 
-## What is Hermes Quest?
+## The Problem / 问题
 
-Hermes Quest is a **self-evolving RPG system** built on [Hermes Agent](https://github.com/NousResearch/hermes-agent). The agent autonomously discovers knowledge domains, trains skills, completes quests, and levels up — all driven by Hermes's native evolution cycle. **You define the world, the agent conquers it.**
+AI agents can run autonomously — but they can't decide **what to get better at**. AutoGPT, CrewAI, Devin — they execute tasks, but no one tells them "focus on Rust, not Python" or "stop wasting time on DevOps." The agent evolves, but **without direction**.
 
-The key innovation: **user-defined learning domains**. Name a continent "Music" or "Machine Learning" — the agent starts learning skills in that area. Skills are auto-classified by LLM, visualized as star constellations, and tracked through an RPG progression system. Five LLM-powered NPCs serve as intelligent interfaces — the bartender searches X/Twitter, the sage analyzes your stats, the guild master recommends quests. **Zero modifications to Hermes source code** — everything runs through native extension points (Skills + Cron + Memory).
+AI Agent 可以自主运行 — 但它们无法决定**该往哪个方向变强**。它们执行任务，但没人告诉它们"专攻 Rust，别学 Python"或"别在 DevOps 上浪费时间了"。Agent 在进化，但**没有方向**。
 
-**The complete loop**: Define a learning domain (e.g. "Music") → Agent discovers and learns relevant skills → Skills auto-classified by LLM → Guild recommends targeted quests → Agent trains autonomously → Levels up → Repeat. All visualized in real-time.
+## The Solution / 方案
 
-**完整闭环**：定义学习方向（如"音乐"）→ Agent 自动发现并学习相关技能 → LLM 自动分类 → 公会推荐针对性任务 → Agent 自主训练 → 升级 → 循环。全程实时可视化。
+Hermes Quest turns **you** into the agent's guide. Define learning domains, give thumbs up/down on outcomes, and the agent adjusts its training direction — automatically, every cycle. It's **prompt-level RLHF**: your feedback doesn't retrain the model, it reshapes the agent's decision context. Same effect, zero cost.
 
-Hermes Quest 是基于 Hermes Agent 构建的**自我进化 RPG 系统**。Agent 自主发现知识领域、训练技能、完成任务、升级。**你定义世界，Agent 去征服它。**
+Hermes Quest 让**你**成为 Agent 的引路人。定义学习领域、对结果点赞/差评，Agent 自动调整训练方向 — 每个周期都会。这是**提示词级别的 RLHF**：你的反馈不改模型权重，而是重塑 Agent 的决策上下文。相同效果，零成本。
 
-核心创新：**用户自定义学习领域**。给大陆命名"音乐"或"机器学习"— Agent 就开始自学。技能由 LLM 自动分类、以星座图可视化、通过 RPG 进度系统追踪。五个 LLM 驱动的 NPC 是智能交互界面 — 酒保搜 X 新闻，贤者分析数据，公会推荐任务。
+The RPG layer isn't decoration — it **lowers the cognitive cost of steering an AI**. Instead of editing prompts and reading logs, you click a thumbs-down on a quest result, and the agent pivots. No technical background required.
+
+RPG 层不是装饰 — 它**降低了指挥 AI 的认知门槛**。你不需要改 prompt、看日志，只需要对任务结果点个 👎，Agent 就会自动转向。
+
+|  | Traditional Agent | Hermes Quest |
+|---|---|---|
+| **Evolution direction** | Agent decides (or random) | User defines domains + feedback guides |
+| **Correction method** | Rewrite prompts, restart | Click 👎, auto-adjusts next cycle |
+| **Observability** | Read logs | RPG dashboard, 4-phase live progress |
+| **Cost to redirect** | High (rewrite instructions) | Near-zero (one click) |
+| **User mental model** | "I operate the AI" | "I guide the adventurer" |
 
 ---
 
@@ -58,7 +68,7 @@ Hermes Quest 是基于 Hermes Agent 构建的**自我进化 RPG 系统**。Agent
 
 ---
 
-## Core Loop / 核心循环
+## How It Works / 核心循环
 
 ```
   REFLECT -----> PLAN -----> EXECUTE -----> REPORT
@@ -67,33 +77,42 @@ Hermes Quest 是基于 Hermes Agent 构建的**自我进化 RPG 系统**。Agent
        +--- user 👍/👎 --- feedback-digest.json --+
 ```
 
-Every **evolution cycle**, the agent reads user feedback, reflects on weak areas, picks a training target, executes autonomously, and reports outcomes. **Each phase is visible in real-time** via the dashboard progress indicator. User feedback (thumbs up/down) flows into `feedback-digest.json`, which the agent reads at the start of each cycle to adjust its learning direction.
+1. **You define the world** — name continents ("Machine Learning", "Music", "Rust") on the fog-of-war map
+2. **Agent trains autonomously** — each evolution cycle, it reflects, plans, executes, and reports (all 4 phases visible live)
+3. **You steer with feedback** — 👍 on good outcomes, 👎 on bad ones → aggregated into `feedback-digest.json`
+4. **Agent adjusts next cycle** — reads the digest, avoids negatively-rated domains, deepens positively-rated ones
+5. **Repeat** — the agent gets better at what *you* care about, not what *it* randomly picks
 
-每个**进化周期**：Agent 读取用户反馈 → 反思弱点 → 选择训练目标 → 自主执行 → 报告成果。**每个阶段实时可见**。用户的 👍/👎 反馈会聚合到 `feedback-digest.json`，Agent 在下个周期开始时读取并据此调整学习方向。
+**你定义世界** → Agent 自主训练（4 阶段实时可见） → **你用 👍/👎 引导方向** → Agent 下个周期自动调整 → 循环。Agent 在你关心的方向上越来越强。
 
 ---
 
 ## What Makes It Special / 核心亮点
 
-### 🗺️ Define Your Own World
-Click the fog → name a new continent → the agent starts learning that domain. **Music? Cooking? Quantum Physics?** You decide what your AI studies. Skills are automatically classified by LLM into the domains you define. Delete a domain, and skills redistribute. Your world, your rules.
+### 🗺️ Define Your Own World / 定义你的世界
+Click the fog → name a new continent → the agent starts learning that domain. **Music? Cooking? Quantum Physics?** You decide what your AI studies. Skills are automatically classified by LLM into the domains you define. Delete a domain, and skills redistribute.
 
-点击迷雾 → 命名新大陆 → Agent 开始自学该领域。**音乐？烹饪？量子物理？** 你来决定。技能由 LLM 自动分类到你定义的领域。
+点击迷雾 → 命名新大陆 → Agent 开始自学该领域。**音乐？烹饪？量子物理？** 你来决定。
 
-### 🍺 NPCs That Actually Do Things
-5 NPCs powered by real LLM — not scripted dialogue trees. **Gus the bartender searches X/Twitter for real-time news** and retells it as tavern gossip. **Orin the sage analyzes your actual game stats** and gives strategic advice. Ask Gus if he has a crush on Lyra — he'll blush. They have group conversations too.
+### 🔁 Feedback That Actually Works / 真正有效的反馈
+Not just a vanity metric. Your 👍/👎 flows into a structured `feedback-digest.json` — tracking sentiment per skill, per domain, with auto-generated corrections. The agent reads this at the start of every cycle and explicitly states how it's responding to your feedback.
 
-5 个 NPC 由真实 LLM 驱动 — 酒保能搜 X 新闻，贤者能分析你的真实数据，还有群聊模式。
+不只是数字变化。你的 👍/👎 会流入结构化的反馈摘要 — 按技能、按领域追踪情感倾向。Agent 每个周期开始时读取，并明确说明如何回应你的反馈。
 
-### ⚔️ Multi-Agent Group Chat
-The tavern CHATTER mode lets 5 NPCs discuss your adventures among themselves. You can jump in and steer the conversation. Each NPC has distinct personality, speech patterns, secrets, and cross-NPC relationships.
+### 📊 Watch the Agent Think / 看 Agent 思考
+Every evolution cycle runs 4 observable phases: **REFLECT → PLAN → EXECUTE → REPORT**. The dashboard shows a live progress indicator — you see the agent analyzing its weaknesses, picking a target, training, and summarizing results. No more black-box "cycle complete" messages.
 
-酒馆群聊：5 个 NPC 自由讨论，你也能参与。每个 NPC 有独特人格、语言风格和秘密。
+每个进化周期有 4 个可观测阶段。仪表盘实时显示进度 — 你能看到 Agent 在分析弱点、选择目标、训练、总结。不再是黑箱。
 
-### 🎯 Smart Quest System
-The guild board **analyzes your weaknesses** and recommends targeted training quests. Accept one, and the agent trains autonomously in the next evolution cycle. You can also post custom quests. Quests scale rewards with your level.
+### 🍺 NPCs That Actually Do Things / 有用的 NPC
+5 NPCs powered by real LLM — not scripted dialogue trees. **Gus the bartender searches X/Twitter** and retells it as tavern gossip. **Orin the sage analyzes your actual game stats**. The guild master recommends quests based on your weakest domains. They have group conversations too.
 
-公会任务板**分析你的弱点**，推荐针对性训练任务。任务奖励随等级缩放。
+5 个 NPC 由真实 LLM 驱动 — 酒保搜 X 新闻，贤者分析真实数据，公会长推荐任务，还有群聊模式。
+
+### 🎯 Zero Hermes Modifications / 零侵入
+Everything runs through Hermes Agent's native extension points: Skills, Cron, Memory. No source code modifications. The dashboard is a pure observation + steering layer.
+
+全部通过 Hermes Agent 原生扩展点运行。零源码修改。Dashboard 是纯粹的观测 + 引导层。
 
 ---
 
@@ -103,19 +122,17 @@ The guild board **analyzes your weaknesses** and recommends targeted training qu
 |---------|-------------|
 | **🧙 Character Panel** | HP (stability), MP (morale), XP, Gold, Level, Class, Title — all real-time |
 | **🗺️ Custom World Map** | 6 user-definable sites, fog-of-war, skill constellation star graphs |
-| **⚔️ Guild Quest Board** | AI-recommended quests, custom creation, ACCEPT/EDIT/CANCEL lifecycle |
-| **🏪 Skill Shop** | Browse 80+ community skills from Hermes Hub, one-click install (300G) |
-| **🧪 Potion Shop** | HP Potion (200G) and MP Potion (150G) — gold sink economy |
-| **🍺 NPC Tavern** | 5 LLM-powered NPCs: Lyra, Aldric, Kael, Gus, Orin — each with unique personality |
-| **💬 Group Chat** | Multi-agent tavern chatter — NPCs discuss your adventures autonomously |
-| **📰 Rumors Board** | Real-time X/Twitter feed + search — "What's trending in AI?" |
-| **🎒 Inventory** | Bag items with file viewer — VIEW actual config files, training reports |
-| **📜 Adventure Chronicle** | Event timeline with 👍/👎 feedback → affects HP/MP, can mark quests failed |
-| **🔄 Evolution Cycle** | One-click autonomous training → 4-phase progress visible in real-time |
-| **🧠 Skill Classification** | LLM-powered: rename a domain → all 44+ skills auto-reclassified |
-| **🔁 Feedback Loop** | User 👍/👎 → feedback-digest.json → agent reads next cycle → adjusts direction |
+| **⚔️ Guild Quest Board** | AI-recommended quests targeting weak domains, custom creation, full lifecycle |
+| **🔁 Feedback Loop** | 👍/👎 → feedback-digest.json → agent reads next cycle → adjusts direction |
 | **📊 Cycle Observability** | REFLECT → PLAN → EXECUTE → REPORT — watch the agent think in real-time |
-| **🔍 Skill Forget** | Remove unwanted skills — a true warrior knows when to let go |
+| **🍺 NPC Tavern** | 5 LLM-powered NPCs: Lyra, Aldric, Kael, Gus, Orin — each with unique role |
+| **💬 Group Chat** | Multi-agent tavern chatter — NPCs discuss your adventures autonomously |
+| **🏪 Skill Shop** | Browse 80+ community skills from Hermes Hub, one-click install (300G) |
+| **📰 Rumors Board** | Real-time X/Twitter feed via Gus the bartender |
+| **📜 Adventure Chronicle** | Event timeline with feedback buttons — can mark quests as failed |
+| **🧠 Skill Classification** | LLM-powered: rename a domain → all skills auto-reclassified |
+| **🎒 Inventory** | Bag items with file viewer — research notes, training reports, code snippets |
+| **🧪 Potions** | HP Potion (200G) and MP Potion (150G) |
 
 ---
 
@@ -137,15 +154,15 @@ The guild board **analyzes your weaknesses** and recommends targeted training qu
 +-------------------------------------------------------------+
 ```
 
-### Feedback Closed Loop / 反馈闭环
+### Key Data Files / 关键数据文件
 
-```
-User 👍/👎 → /api/feedback → MP ±15 + events.jsonl + feedback-digest.json
-                                                            ↓
-Agent cycle → SKILL.md reads digest → adjusts training direction
-      ↓
- Writes cycle_phase events → watcher detects → WS broadcast → UI progress bar
-```
+| File | Location | Role |
+|------|----------|------|
+| `state.json` | `~/.hermes/quest/` | Character stats — agent reads/writes, dashboard observes |
+| `events.jsonl` | `~/.hermes/quest/` | Event stream — agent appends, watcher broadcasts |
+| `feedback-digest.json` | `~/.hermes/quest/` | Aggregated user feedback — dashboard writes, agent reads |
+| `knowledge-map.json` | `~/.hermes/quest/` | Skill domains, mastery levels, connections |
+| `SKILL.md` | `~/.hermes/skills/quest/` | Agent behavior template (sync via API) |
 
 ---
 
@@ -155,40 +172,26 @@ Agent cycle → SKILL.md reads digest → adjusts training direction
 
 - [Hermes Agent](https://github.com/NousResearch/hermes-agent) installed
 - Node.js 18+ and Python 3.11+
-- Telegram bot token (optional, for notifications)
 
 ### Setup
 
 ```bash
 # Clone
-git clone https://github.com/nemoverse/hermes-quest.git
+git clone https://github.com/nemoaigc/hermes-quest.git
 cd hermes-quest/hermes-quest-dashboard
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your values
+# Edit .env with your API keys
 
-# Install frontend
+# Frontend
 npm install
+npm run dev
 
-# Install backend dependencies
+# Backend (another terminal)
 cd server
 pip install -r requirements.txt
-cd ..
-
-# Start backend
-python server/main.py  # Runs on port 8420
-
-# Start frontend dev server (in another terminal)
-npm run dev
-```
-
-### Production Build
-
-```bash
-npm run build
-# Serve dist/ with your preferred static server, or
-# the FastAPI backend serves it automatically at port 8420
+python -m uvicorn main:app --host 0.0.0.0 --port 8420
 ```
 
 ### Deploy Quest Skill / 部署 Quest 技能
@@ -199,13 +202,29 @@ curl -X POST http://localhost:8420/api/skill/quest/sync
 
 # Or manually
 cp templates/quest-skill.md ~/.hermes/skills/quest/SKILL.md
-
-# Add to ~/.hermes/config.yaml:
-# cron:
-#   quest_cycle:
-#     schedule: "0 */4 * * *"
-#     skill: quest
 ```
+
+### Production Build
+
+```bash
+npm run build
+# FastAPI serves dist/ automatically at port 8420
+```
+
+---
+
+## RPG Systems / RPG 系统
+
+| Stat | Meaning | Formula |
+|:---:|:---|:---|
+| HP | Stability (agent reliability) | `50 + level * 10`, fail penalty: -15 |
+| MP | Morale (user confidence) | 100 max, feedback: ±15, decay: -2/day |
+| XP | Experience | `level * 100` to next level |
+| Gold | Currency | Quest rewards: 100-230G scaled by level |
+
+**Classes** emerge from skill distribution: Warrior (coding), Mage (research), Ranger (automation), Paladin (balanced), Necromancer (delegation).
+
+**Economy**: Quest create FREE, retry 50G, HP potion 200G, MP potion 150G, skill install 300G, board refresh 50G.
 
 ---
 
@@ -216,78 +235,63 @@ hermes-quest-dashboard/
 +-- src/
 |   +-- panels/           # 18 UI panels (Map, Guild, Shop, Tavern...)
 |   +-- components/       # Shared (AnimatedBg, RpgButton, ErrorBoundary...)
-|   +-- constants/        # Theme, API endpoints, NPC definitions
-|   +-- store.ts          # Zustand state (+ feedbackDigest, cycleProgress)
-|   +-- websocket.ts      # WS client + cycle_progress handler
+|   +-- constants/        # Theme, API config, NPC definitions
+|   +-- store.ts          # Zustand state management
+|   +-- websocket.ts      # WebSocket client + cycle_progress handler
 |   +-- api.ts            # 20+ API client functions
 |   +-- types.ts          # TypeScript interfaces
-+-- server/               # FastAPI backend
-|   +-- main.py           # 40+ endpoints, feedback digest, cycle management
-|   +-- watcher.py        # File watcher + cycle_phase broadcast
-|   +-- npc_chat.py       # LLM-powered NPC responses
++-- server/
+|   +-- main.py           # FastAPI app (40+ endpoints)
+|   +-- watcher.py        # File watcher (2s poll) + event broadcasting
+|   +-- npc_chat.py       # LLM-powered NPC dialogue
 |   +-- skill_classify.py # LLM skill-to-domain classification
+|   +-- ws_manager.py     # WebSocket broadcast manager
 +-- templates/
-|   +-- quest-skill.md    # SKILL.md template (feedback + 4-phase cycle)
+|   +-- quest-skill.md    # SKILL.md template (feedback rules + 4-phase cycle)
 +-- public/               # Pixel art assets, sprites, fonts
-+-- demo/                 # Playwright test/demo scripts
 ```
-
----
-
-## RPG Systems / RPG 系统
-
-| Stat | Meaning | Formula |
-|:---:|:---|:---|
-| HP | Stability (reliability) | `50 + level * 10`, fail penalty: -15 |
-| MP | Morale (confidence) | 100 max, feedback: ±15, decay: -2/day |
-| XP | Experience | `level * 100` to next level |
-| Gold | Currency | Quest rewards: 100-230G scaled by level |
-
-**Classes** emerge from skill distribution: Warrior (coding), Mage (research), Ranger (automation), Paladin (balanced), Necromancer (delegation).
-
-**Economy**: Create quest FREE, retry 50G, HP potion 200G, MP potion 150G, skill install 300G.
 
 ---
 
 ## Roadmap / 路线图
 
-### P0 — Core Loop Completion / 核心闭环
-- [x] Feedback digest pipeline (user 👍/👎 → `feedback-digest.json` → agent behavior)
+### P0 — Close the Loop / 闭环验证
+- [x] Feedback digest pipeline (👍/👎 → `feedback-digest.json` → agent behavior)
 - [x] Cycle observability (4-phase progress: REFLECT → PLAN → EXECUTE → REPORT)
 - [ ] End-to-end validation: deploy SKILL.md, run real cycle, verify agent reads digest
 - [ ] MP influences agent via SKILL.md prompt (low MP → safer quest choices)
 
-### P1 — Game Mechanics / 游戏机制
-- [ ] Achievement system — milestone, collection, hidden achievements with gold/title rewards
+### P1 — Deepen the Game / 深化游戏
+- [ ] Achievement system — milestones, collections, hidden achievements with rewards
 - [ ] Gold sinks — skill rarity upgrade (common → uncommon → rare → epic → legendary)
-- [ ] NPC affinity — daily chat rewards (25G + 10XP), relationship unlocks exclusive quests
-- [ ] MP-at-zero "burnout" event — triggers recovery quest like HP's reflection letter
-- [ ] Feedback sentiment → quest recommendations (deprioritize negatively-rated domains)
+- [ ] NPC affinity — daily chat rewards, relationship unlocks exclusive quests
+- [ ] MP-at-zero "burnout" event — triggers recovery quest
+- [ ] Feedback sentiment drives quest recommendations
 
-### P2 — Experience Polish / 体验优化
-- [ ] Manual skill classification correction (override LLM assignments)
-- [ ] Skill search/filter in SkillPanel (by category, rarity, source)
-- [ ] NPC quest chains (multi-step quests with narrative branching)
-- [ ] New player tutorial (guided first steps for the knowledge map)
-- [ ] Understanding stat transparency (tooltip explaining calculation)
+### P2 — Polish the Experience / 体验打磨
+- [ ] Manual skill classification override
+- [ ] Skill search/filter (by category, rarity, source)
+- [ ] NPC quest chains (multi-step narrative quests)
+- [ ] New player tutorial
+- [ ] Understanding stat transparency
 
-### P3 — Long-term Vision / 远期规划
-- [ ] Skill synergy/fusion ("Frontend + Data Science" → "Data Visualization")
-- [ ] Seasonal events (limited-time regions, temporary skills, special NPCs)
-- [ ] Agent hypothesis generation (analyze why failures happen, not just log them)
-- [ ] Knowledge representation upgrade (forgetting curves, confidence intervals)
+### P3 — Expand the World / 扩展世界
+- [ ] Skill synergy/fusion ("Frontend + Data" → "Data Visualization")
+- [ ] Seasonal events (limited-time regions, special NPCs)
+- [ ] Agent hypothesis generation (analyze *why* failures happen)
+- [ ] Forgetting curves + confidence intervals for mastery
 - [ ] Multi-agent / leaderboard support
 
 ---
 
 ## License
 
-[MIT](LICENSE) -- Use it, fork it, evolve it.
+[MIT](LICENSE) — Use it, fork it, evolve it.
 
 <div align="center">
 
-**Built by [Nemoverse](https://github.com/nemoverse) | Powered by [Hermes Agent](https://github.com/NousResearch/hermes-agent)**
+**Built by [Nemoverse](https://github.com/nemoaigc) | Powered by [Hermes Agent](https://github.com/NousResearch/hermes-agent)**
 
-*The adventurer never rests. The cycle never ends.*
+*You define the world. The agent conquers it.*
 
 </div>
