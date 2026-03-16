@@ -27,7 +27,7 @@ function PotionShopButton({ type, label, cost, icon, color }: {
       // Sync state: gold/HP/MP changed server-side
       fetch(`${API_URL}/api/state`).then(r => r.ok ? r.json() : null).then(d => {
         if (d) useStore.getState().setState(d)
-      })
+      }).catch(() => { /* state sync failed — WS will catch up */ })
       setMsg(`+${res.healed} ${label}!`)
       setTimeout(() => setMsg(''), 2000)
     } catch (e: unknown) {
