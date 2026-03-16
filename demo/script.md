@@ -1,7 +1,7 @@
 # Hermes Quest Demo Script
 
 > Target: 4-5 min | Subtitles + 8-bit BGM | Playwright automated recording
-> Core narrative: "Your AI isn't just a tool — it's an adventurer that grows, and you can watch it happen."
+> Core narrative: "An AI that doesn't just serve you — it grows, fights, falls, and rises again."
 
 ---
 
@@ -9,163 +9,154 @@
 
 | Phase | Time | Purpose |
 |-------|------|---------|
-| Hook | 0:00-0:10 | Emotional resonance in 10 seconds |
-| Reveal | 0:10-0:20 | One-line product pitch |
-| Character | 0:20-0:35 | RPG immersion — stats mean something |
-| World | 0:35-1:15 | Visual impact — map + name sites + star graph |
-| Social | 1:15-2:30 | Deep features — NPCs are real tools |
-| Quest | 2:30-3:20 | Core loop — quests + shop + skills |
-| Feedback | 3:20-3:50 | Closed loop — chronicle + feedback + fail |
-| Climax | 3:50-4:15 | Evolution cycle — the whole system in action |
-| Credits | 4:15-4:30 | Thank you + links |
+| Hook | 0:00-0:10 | Dark mystery, pull them in |
+| Reveal | 0:10-0:20 | The world awakens |
+| Character | 0:20-0:35 | Meet the adventurer |
+| World | 0:35-1:15 | Uncharted lands |
+| Social | 1:15-2:30 | Allies in the tavern |
+| Quest | 2:30-3:20 | The path of the warrior |
+| Feedback | 3:20-3:50 | The cycle of fate |
+| Climax | 3:50-4:15 | Evolution unleashed |
+| Credits | 4:15-4:35 | The legend continues |
 
 ---
 
 ## S01: Hook (0:00-0:05)
-**Visual**: Pure black screen, pixel text fades in letter by letter
-**Subtitle**: "Your AI helps you every day... but did you know it's getting stronger?"
-**SFX**: Silence, faint chiptune intro fading in
+**Visual**: Pure black. Pixel text appears one letter at a time.
+**Subtitle**: "Somewhere in the digital realm... an intelligence stirs."
+**SFX**: Dead silence → faint heartbeat chiptune
 
 ## S02: Reveal (0:05-0:20)
-**Visual**: Black fades to full Dashboard panorama
-**Subtitle**: "Hermes Quest — turn your Agent's evolution into a visible RPG adventure."
-**SFX**: intro.wav melody kicks in
+**Visual**: Black cracks open → Dashboard panorama blazes to life
+**Subtitle**: "It doesn't just answer your questions. It trains. It grows. It evolves."
+**Then**: "Welcome to Hermes Quest."
+**SFX**: intro.wav — epic 8-bit fanfare
 
 ## S03: Character Panel (0:20-0:35)
-**Action**: Hover left panel HP → MP → XP bars, hover gold, hover level/class
+**Action**: Hover HP → MP → XP → Gold → Level/Class
 **Subtitle**:
-- "HP = Stability. Succeeds → goes up. Fails → drops."
-- "MP = Morale. Driven by YOUR feedback."
-- "XP = Experience. Every evolution cycle adds up."
-- "Gold fuels potions, skills, and exploration."
+- "HP — the warrior's resolve. Fall to zero, and a reckoning awaits."
+- "MP — the fire within. Fed by your faith... or starved by your doubt."
+- "XP — every battle scar is a lesson learned."
+- "Gold — the currency of ambition."
 **SFX**: ambient.wav
 
 ## S04: World Map (0:35-0:50)
-**Action**: MAP tab, slowly hover each continent sprite + road lines + fog areas
+**Action**: MAP tab, slowly hover continents + roads + fog
 **Subtitle**:
-- "The World Map — each continent is a knowledge domain."
-- "Roads connect related domains. Fog hides the unexplored."
+- "A world forged from knowledge. Each continent — a domain conquered."
+- "But beyond the roads... the fog whispers of lands unknown."
 **SFX**: whoosh.wav
 
 ## S05: Name a Continent (0:50-1:05)
-**Action**: Click fog "???" → "NAME THIS REGION" dialog → type "Machine Learning" → click DEFINE → continent appears with sprite
+**Action**: Click fog "???" → dialog → type "Machine Learning" → DEFINE → continent materializes
 **Subtitle**:
-- "Click the fog → name a new region for your Agent."
-- "Your world, your rules."
-**SFX**: click.wav → confirm.wav
-> Also show: right-click existing continent → RENAME / DELETE menu
+- "Brave the fog. Give the unknown a name."
+- "And watch a new land rise from nothing."
+**SFX**: click.wav → confirm.wav → magical shimmer
+> Right-click existing continent → RENAME / DELETE
 
 ## S06: Star Graph (1:05-1:15)
-**Action**: Click a continent (e.g. Software) → bottom panel shows SubRegion star graph → hover skill nodes
+**Action**: Click continent → bottom star constellation → hover nodes
 **Subtitle**:
-- "Click a continent → skill constellation."
-- "Every star is a learned skill. git, docker, python..."
+- "Within each land — a constellation of skills."
+- "Every star was earned. git... docker... python... rust..."
 **SFX**: click.wav
 
 ## S07: Tavern Group Chat (1:15-1:35)
-**Action**: TAVERN tab → scene area CHATTER → watch NPCs auto-chat → type a message to join
+**Action**: TAVERN → CHATTER → watch NPCs auto-chat → type to join
 **Subtitle**:
-- "The Tavern — five NPCs discuss your recent adventures."
+- "The tavern. Where allies gather and secrets flow like ale."
 - [User types]: "What new skill should I learn next?"
-- "Not scripted — every NPC runs on real data + LLM."
+- "Five souls. Five minds. All powered by LLM. None of it scripted."
 **SFX**: typing.wav
 
-## S08: Gus Searches X/Twitter (1:35-2:00)
-**Action**: Bottom NPC gallery → click Gus → CHAT → type "What's the latest AI news?" → wait for reply
+## S08: Gus Searches the Outside World (1:35-2:00)
+**Action**: Click Gus → CHAT → "What's the latest AI news?" → wait
 **Subtitle**:
-- "Gus the bartender can search X/Twitter for real-time news."
-- [Reply appears — tavern gossip style retelling]
-- "NPCs are tools. Conversation IS the interface."
+- "The bartender hears everything. Even whispers from X and Twitter."
+- [Reply — tavern gossip retelling of real news]
+- "NPCs aren't decoration. They're your weapons."
 **SFX**: typing.wav → confirm.wav
 
-## S09: Orin Deep Analysis (2:00-2:15)
-**Action**: Back → click Orin → CHAT → "Analyze my growth" → wait for reply
+## S09: Orin Reads Your Soul (2:00-2:15)
+**Action**: Click Orin → CHAT → "Analyze my growth" → wait
 **Subtitle**:
-- "The Sage reads your REAL game data — not hallucinations."
+- "The ancient sage sees what you cannot. Your real stats. Your true trajectory."
 **SFX**: typing.wav
 
-## S10: Personal NPC Chat — Gus's Secret (2:15-2:30)
-**Action**: Back → click Gus → CHAT → "Do you have a crush on Lyra?" → wait for reply
+## S10: Gus's Weakness (2:15-2:30)
+**Action**: Click Gus → "Do you have a crush on Lyra?" → wait
 **Subtitle**:
-- "Every NPC has personality, secrets, and relationships."
-- [Gus nervously deflects]
-**SFX**: typing.wav
+- "Even the strongest warriors have... vulnerabilities."
+- [Gus stammers and deflects]
+**SFX**: typing.wav → comedic chiptune sting
 
 ## S11: Guild Quest Board (2:30-2:50)
-**Action**: GUILD tab → show bulletin board recommended quests → hover → click ACCEPT on one
+**Action**: GUILD → bulletin board → hover quests → ACCEPT
 **Subtitle**:
-- "The Guild Board — Agent analyzes weaknesses and recommends quests."
-- "Click ACCEPT → Agent executes in the next evolution cycle."
+- "The Guild sees your weaknesses before you do."
+- "Accept a quest. The agent will train in your stead."
 **SFX**: click.wav → confirm.wav
 
-## S12: Create Custom Quest (2:50-3:00)
-**Action**: Bottom input → type "Learn Docker containerization" → POST → quest appears in ACTIVE list
+## S12: Forge Your Own Quest (2:50-3:00)
+**Action**: Type "Learn Docker containerization" → POST
 **Subtitle**:
-- [User types]: "Learn Docker containerization"
-- "You can also assign custom quests."
+- "Or write your own destiny."
+- [Quest appears in ACTIVE]
 **SFX**: typing.wav → confirm.wav
 
-## S13: Skill Shop + Install + Potions (3:00-3:20)
-**Action**: SHOP tab → browse shelf → click a skill → ACQUIRE SKILL → bottom POTIONS bar → click HP POTION
+## S13: The Armory — Skills & Potions (3:00-3:20)
+**Action**: SHOP → shelf → click skill → ACQUIRE SKILL (300G) → POTIONS → HP POTION
 **Subtitle**:
-- "The Skill Shop — browse community skills from Hermes Hub."
-- "One click to install. Gold to heal."
-- "HP Potion 200G. MP Potion 150G."
+- "The armory. Community-forged skills from the Hermes Hub."
+- "One click to arm yourself. Gold to mend your wounds."
 **SFX**: click.wav → level-up.wav
 
-## S14: Skills Panel — Learn & Forget (3:20-3:35)
-**Action**: Right side SKILLS panel → hover skills → click one → FORGET → confirm
+## S14: Master & Forget (3:20-3:35)
+**Action**: SKILLS panel → hover → click one → FORGET
 **Subtitle**:
-- "44 learned skills, organized by domain."
-- "Don't need one? Forget it — make room for new growth."
+- "44 skills in the arsenal. Each one hard-won."
+- "But a true warrior knows when to let go."
 **SFX**: click.wav
 
-## S15: Chronicle + Feedback + Fail Quest (3:35-3:50)
-**Action**: Left CHRONICLE → hover events → click 👍 → HP/MP changes → click 👎 on quest event → "Mark quest as failed?" → AYE
+## S15: The Chronicle of Fate (3:35-3:50)
+**Action**: CHRONICLE → hover → 👍 → stats change → 👎 quest → "Mark as failed?" → AYE
 **Subtitle**:
-- "The Chronicle logs every action."
-- "Thumbs up → stability restored, morale boosted."
-- "Thumbs down → mark the quest as failed."
-- "The human-AI feedback loop."
+- "Every triumph. Every failure. Written in the Chronicle."
+- "Your judgment shapes the adventurer's path."
+- "Praise gives strength. Doubt marks defeat."
 **SFX**: level-up.wav
 
-## S16: Skill Classification (3:50-4:00)
-**Action**: MAP tab → show bottom panel site list with skill counts → right-click a site → RENAME → new name → watch "SORTING" progress bar → skills redistribute
+## S16: The Sorting (3:50-4:00)
+**Action**: MAP → right-click site → RENAME → "SORTING" bar fills → skills redistribute
 **Subtitle**:
-- "Rename a region → AI reclassifies all skills automatically."
-- "LLM-powered skill sorting across your knowledge map."
+- "Reshape the world — and the mind reshapes itself."
+- "AI-powered skill classification. Instant. Automatic."
 **SFX**: confirm.wav
 
-## S17: Evolution Cycle (4:00-4:15)
-**Action**: MAP tab → bottom panel → click START CYCLE → watch status change
+## S17: The Evolution (4:00-4:15)
+**Action**: MAP → START CYCLE → status changes
 **Subtitle**:
-- "The Evolution Cycle —"
-- "Agent analyzes → discovers patterns → trains new skills → levels up."
-- "Runs every 2 hours. Or trigger it manually."
-**SFX**: level-up.wav crescendo
+- "And now... the Evolution Cycle."
+- "The agent reflects. Discovers. Trains. Ascends."
+- "Every two hours, the cycle turns. Or... command it yourself."
+**SFX**: level-up.wav crescendo into epic 8-bit climax
 
 ## S18: Closing (4:15-4:25)
 **Visual**: Dashboard panorama → slow fade to black
 **Subtitle**:
-- "Hermes Quest"
-- "Make your Agent's evolution an adventure you can see."
+- "Hermes Quest."
+- "Your AI's evolution — an adventure you can see."
 
 ## S19: Credits (4:25-4:35)
-**Visual**: Black screen + centered pixel text
+**Visual**: Black + centered pixel text, one line at a time
 **Subtitle**:
 - "Built for the Nous Research x Hermes Hackathon"
 - "Thank you, Nous Research."
 - "github.com/nemoaigc/hermes-quest"
-**SFX**: intro.wav outro variation
+**SFX**: intro.wav — quiet, reverent outro
 
 ---
 
 ## Total Duration: ~4 min 35 sec
-
-## Key Changes from Previous Script
-1. **All English** — subtitles and narration in English
-2. **Added S10** — Gus's secret crush on Lyra (NPC personality showcase)
-3. **Added S14** — Skills panel: learn & forget (skill lifecycle)
-4. **Added S16** — Skill classification with rename + SORTING progress
-5. **Credits** — Thank Nous Research only, no tool name-dropping
-6. **19 scenes** covering ALL major features
