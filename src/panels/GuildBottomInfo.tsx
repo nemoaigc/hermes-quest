@@ -120,10 +120,6 @@ export default function GuildBottomInfo() {
         paddingBottom: '6px', marginBottom: '6px', flexShrink: 0,
         borderBottom: '1px solid rgba(107,76,42,0.3)',
       }}>
-        <span style={{
-          fontFamily: 'var(--font-pixel)', fontSize: '8px',
-          color: '#c8a87a', letterSpacing: '2px', flexShrink: 0,
-        }}>QUESTS</span>
         <div style={{ display: 'flex', gap: '2px' }}>
           {TAB_CONFIG.map(tab => {
             const count = tab.key === 'active' ? activeQuests.length : tab.key === 'cancelled' ? cancelledQuests.length : failedQuests.length
