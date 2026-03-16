@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../store'
-import { startCycle as apiStartCycle, fetchSites } from '../api'
+import { startCycle as apiStartCycle } from '../api'
 import PanelCard from '../components/PanelCard'
 import RpgButton from '../components/RpgButton'
 
@@ -28,9 +28,6 @@ export default function MapBottomInfo() {
     ;(window as any).__prevClassifying = classifying
   }, [classifying])
   const workflows = km?.workflows || km?.continents || []
-  const avgMastery = workflows.length > 0
-    ? workflows.reduce((a, w) => a + ((w as any).mastery || 0), 0) / workflows.length
-    : 0
 
   const [cycleStatus, setCycleStatus] = useState<'idle' | 'loading' | 'success' | 'failed'>('idle')
 

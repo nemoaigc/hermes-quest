@@ -137,8 +137,13 @@ export default function Shop() {
     setInstalling(identifier)
     try {
       await apiInstallSkill(identifier)
-      const res = await fetch(`${API_URL}/api/skills`)
-      setSkills(await res.json())
+      const [skillsRes, stateRes] = await Promise.all([
+        fetch(`${API_URL}/api/skills`),
+        fetch(`${API_URL}/api/state`),
+      ])
+      if (skillsRes.ok) setSkills(await skillsRes.json())
+      // Sync state: gold deducted after install
+      if (stateRes.ok) useStore.getState().setState(await stateRes.json())
       // Use current store state to avoid stale closure
       const currentSkills = useStore.getState().hubSkills
       setAllSkills(currentSkills.filter((s) => s.identifier !== identifier))
