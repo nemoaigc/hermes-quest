@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../store'
+import type { AgentState } from '../store'
 import { API_URL } from '../api'
 
 export default function ReflectionLetter() {
@@ -58,7 +59,7 @@ export default function ReflectionLetter() {
       if (!res.ok) throw new Error(`${res.status}`)
     } catch {}
     // Clear local state as fallback (don't wait for WebSocket)
-    useStore.getState().setState({ reflection_letter_pending: false } as any)
+    useStore.getState().setState({ reflection_letter_pending: false } as AgentState)
     setAcknowledging(false)
   }
 

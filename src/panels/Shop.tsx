@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react'
-// useMemo used in displayed computation
 import { SkillIcon } from '../utils/icons'
 import { API_URL, searchHub, installSkill as apiInstallSkill } from '../api'
 import { useStore } from '../store'
