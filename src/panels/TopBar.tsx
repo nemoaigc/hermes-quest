@@ -9,8 +9,8 @@ export default function TopBar() {
         <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: 'var(--gold)', letterSpacing: '2px' }}>
           HERMES QUEST
         </span>
-        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: 'var(--text-dim)', letterSpacing: '1px', marginTop: '2px' }}>
-          AI Self-Evolution RPG
+        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '4px', color: 'var(--text-dim)', letterSpacing: '1px', marginTop: '2px' }}>
+          Built on Nous Research Hermes Agent
         </span>
       </div>
       <span style={{
