@@ -27,7 +27,7 @@ const EVENT_CONFIG: Record<string, { color: string; format: (data: Record<string
   },
   level_up: {
     color: 'var(--gold)',
-    format: (d) => `LEVEL UP! Hermes is now Lv.${(d.to as number) ?? (d.new_level as number) ?? '?'} (${(d.title as string) || (d.new_title as string) || 'Hero'})`,
+    format: (d) => `LEVEL UP! Hermes is now Lv.${(d.level as number) ?? (d.to as number) ?? (d.new_level as number) ?? '?'} (${(d.title as string) || (d.new_title as string) || 'Hero'})`,
   },
   boss_fight: {
     color: 'var(--red)',
