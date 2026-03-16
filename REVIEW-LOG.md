@@ -39,6 +39,22 @@ All 14 tests pass. TypeScript: 0 errors.
 |--------|-------|-----|
 | Test Dev | 10 event types had no pixel art icons — silently fell back to cycle_start | Added unique SVG icons for user_feedback, positive/correction signals, understanding, reflection, workflow_discover, mp_change, fog events |
 
+### Round 7 (2 fixes)
+| Expert | Issue | Fix |
+|--------|-------|-----|
+| Agent Dev | Font preload `<link>` was in `<body>` instead of `<head>` | Moved to `<head>` for faster font loading |
+| Product | Skill FORGET silently failed with no user feedback | Added RPG-themed error message: "The skill resists being forgotten..." |
+
+### Round 8 (4 fixes)
+| Expert | Issue | Fix |
+|--------|-------|-----|
+| Agent Dev | `usePotion()` function name triggered ESLint react-hooks/rules-of-hooks | Renamed to `drinkPotion()` — it's an API call, not a React hook |
+| Agent Dev | Unused `CAT_TO_CONTINENT` constant in icon-registry | Removed dead code |
+| Agent Dev | Unused `state` subscription in App.tsx and MapBottomInfo.tsx | Removed — saves unnecessary Zustand re-renders |
+| Agent Dev | Unused `category` parameter in `getSkillIconPath` | Prefixed with underscore |
+
+ESLint errors: 36 -> 32 (remaining are intentional patterns: refs-in-render, no-explicit-any).
+
 ---
 
 # Session 4 Review Log (historical)
