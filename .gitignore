@@ -19,6 +19,10 @@ __pycache__
 .env.local
 .env.*.local
 
+# Internal docs & superpowers
+docs/superpowers/
+.superpowers/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
