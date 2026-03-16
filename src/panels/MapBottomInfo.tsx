@@ -4,10 +4,7 @@ import { startCycle as apiStartCycle, fetchSites } from '../api'
 import PanelCard from '../components/PanelCard'
 import RpgButton from '../components/RpgButton'
 
-const CAT_COLOR: Record<string, string> = {
-  coding: 'var(--cyan)', research: 'var(--purple)', automation: 'var(--gold)',
-  creative: '#ff9944', general: '#8b7355', ml: '#42a5f5',
-}
+const SITE_COLORS = ['#ff5555', '#ff9944', '#f0e68c', '#66bb6a', '#55aaff', '#b48eff']
 
 /** MAP bottom — site list + stats & cycle action */
 export default function MapBottomInfo() {
@@ -48,11 +45,11 @@ export default function MapBottomInfo() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            {definedSites.map(site => {
+            {definedSites.map((site, idx) => {
               const wf = site.workflow_id ? workflows.find((w: any) => w.id === site.workflow_id) : null
               const skillCount = wf ? ((wf as any).skills_involved?.length ?? 0) : 0
               const mastery = wf ? Math.round(((wf as any).mastery || 0) * 100) : 0
-              const color = CAT_COLOR[site.domain || 'general'] || '#8b7355'
+              const color = SITE_COLORS[idx % SITE_COLORS.length]
               return (
                 <div key={site.id} style={{
                   flex: 1, display: 'flex', alignItems: 'center', gap: '6px',
