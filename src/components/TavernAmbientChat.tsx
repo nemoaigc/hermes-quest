@@ -72,7 +72,7 @@ export default function TavernAmbientChat({ hideHeader, refreshRef }: {
   useEffect(() => {
     if (refreshRef) refreshRef.current = handleRefresh
     return () => { if (refreshRef) refreshRef.current = null }
-  })
+  }) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally re-registers on every render to capture latest handleRefresh
 
   async function handleUserSend() {
     const text = userInput.trim()

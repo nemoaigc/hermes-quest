@@ -229,7 +229,7 @@ export default function BulletinBoard() {
   // Clamp page when recommendations change
   useEffect(() => {
     setPage(p => Math.min(p, Math.max(0, totalPages - 1)))
-  }, [recommendations.length])
+  }, [totalPages])
 
   const selectedQuestData = selectedQuest ? recommendations.find(q => q?.id === selectedQuest) : null
 

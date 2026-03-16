@@ -77,7 +77,7 @@ export default function SkillInventory() {
             <div style={{ display: 'flex', gap: '6px' }}>
               <button
                 className="pixel-btn"
-                onClick={() => { setConfirmForget(false); forgetSkill(selectedSkill.name) }}
+                onClick={() => forgetSkill(selectedSkill.name)}
                 disabled={forgetting}
                 style={{ fontSize: '6px', padding: '3px 8px', color: '#ff6b6b', borderColor: '#ff6b6b', background: 'rgba(255,107,107,0.15)', cursor: forgetting ? 'wait' : 'pointer' }}
               >{forgetting ? '...' : 'YES'}</button>

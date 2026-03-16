@@ -115,6 +115,18 @@ export interface NpcChatRequest {
     selected_bag_items: string[]
     selected_region: string | null
   }
+  game_state?: {
+    name: string
+    level: number
+    class: string
+    title: string
+    hp: number
+    hp_max: number
+    mp: number
+    mp_max: number
+    gold: number
+    skills_count: number
+  }
 }
 
 export interface NpcAction {

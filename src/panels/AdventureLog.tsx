@@ -25,12 +25,12 @@ function loadClearedAt(): number {
   } catch { return 0 }
 }
 
-async function sendFeedback(type: 'positive' | 'negative', event_type: string, detail: string) {
+async function sendFeedback(type: 'positive' | 'negative', event_type: string, detail: string, eventId?: string) {
   try {
     const res = await fetch(`${API_URL}/api/feedback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, event_type, detail }),
+      body: JSON.stringify({ type, event_type, detail, event_id: eventId || '' }),
     })
     if (!res.ok) throw new Error(`Feedback failed: ${res.status}`)
     return await res.json()
@@ -54,7 +54,7 @@ export default function AdventureLog() {
       saveFeedback(next)
       return next
     })
-    sendFeedback(type, event_type, detail)
+    sendFeedback(type, event_type, detail, key)
     // If thumbs-down on quest-related event, prompt to fail the quest
     if (type === 'negative' && (event_type === 'quest_complete' || event_type === 'train_start') && eventData) {
       const questId = (eventData.quest_id as string) || (eventData.id as string)
