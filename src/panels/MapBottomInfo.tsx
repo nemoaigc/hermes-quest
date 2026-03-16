@@ -36,11 +36,14 @@ export default function MapBottomInfo() {
     setCycleStatus('loading')
     try {
       await apiStartCycle()
-      setCycleStatus('success')
-      setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 2000)
+      // Show loading for 5s so progress bar fills visually, then DONE for 3s
+      setTimeout(() => {
+        setCycleStatus('success')
+        setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 3000)
+      }, 5000)
     } catch {
       setCycleStatus('failed')
-      setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 2000)
+      setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 3000)
     }
   }
 
@@ -101,25 +104,25 @@ export default function MapBottomInfo() {
         }}>
           <div style={{
             width: '100%',
-            height: classifying ? '95%' : classifyDone ? '100%' : cycleLoading ? '95%' : '0%',
+            height: classifying ? '95%' : classifyDone ? '100%' : cycleStatus === 'success' ? '100%' : cycleLoading ? '95%' : '0%',
             background: classifying
               ? 'linear-gradient(0deg, #3a2210, #f0e68c)'
-              : classifyDone
+              : classifyDone || cycleStatus === 'success'
                 ? '#66bb6a'
                 : cycleLoading
                   ? 'linear-gradient(0deg, #1a3a1a, #66bb6a)'
                   : 'transparent',
-            transition: classifying ? 'height 8s linear' : classifyDone ? 'height 0.3s' : cycleLoading ? 'height 10s linear' : 'height 0.5s',
+            transition: classifying ? 'height 8s linear' : (classifyDone || cycleStatus === 'success') ? 'height 0.3s' : cycleLoading ? 'height 5s linear' : 'height 0.5s',
           }} />
           <div style={{
             position: 'absolute', inset: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'var(--font-pixel)', fontSize: '6px',
-            color: classifying ? '#f0e68c' : classifyDone ? '#fff' : cycleLoading ? '#66bb6a' : '#3a2a1a',
+            color: classifying ? '#f0e68c' : classifyDone ? '#fff' : cycleStatus === 'success' ? '#fff' : cycleLoading ? '#66bb6a' : '#3a2a1a',
             textShadow: (classifying || cycleLoading || classifyDone) ? '0 1px 3px rgba(0,0,0,0.8)' : 'none',
             letterSpacing: '1px',
           }}>
-            {classifying ? 'SORTING' : classifyDone ? 'DONE' : cycleLoading ? 'CYCLING' : 'IDLE'}
+            {classifying ? 'SORTING' : classifyDone ? 'DONE' : cycleStatus === 'success' ? 'DONE' : cycleLoading ? 'CYCLING' : 'IDLE'}
           </div>
         </div>
         <RpgButton onClick={handleStartCycle} disabled={cycleLoading || classifying}>
