@@ -241,9 +241,9 @@ export default function BulletinBoard() {
     try {
       const d = await fetchMap(true)
       setKnowledgeMap(d)
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e)
-      const msg = e?.message || 'Refresh failed'
+      const msg = e instanceof Error ? e.message : 'Refresh failed'
       if (msg.includes('Map fetch failed')) {
         setRefreshMsg(msg)
         setTimeout(() => setRefreshMsg(null), 3000)

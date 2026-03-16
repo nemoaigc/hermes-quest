@@ -94,9 +94,10 @@ export default function RpgDialogInline({ npc, onClose, chatHistoryRef, prefillM
       }
       const data = await res.json()
       setMessages((m) => [...m, { role: 'npc', text: data.reply || '...' }])
-    } catch (err: any) {
-      console.error('[NPC chat] fetch error:', err?.message || err)
-      setMessages((m) => [...m, { role: 'npc', text: `*stares silently* (${err?.message || 'Connection error'})` }])
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Connection error'
+      console.error('[NPC chat] fetch error:', errMsg)
+      setMessages((m) => [...m, { role: 'npc', text: `*stares silently* (${errMsg})` }])
     }
     setLoading(false)
   }

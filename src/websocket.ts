@@ -69,6 +69,8 @@ export function useWebSocket() {
             safeFetch(`${API_URL}/api/quest/active`, d => d.quests || []).then(d => { if (d) store.setQuests(d) })
           } else if (msg.type === 'bag') {
             safeFetch(`${API_URL}/api/bag/items`, d => d.items || []).then(d => { if (d) store.setBagItems(d) })
+          } else if (msg.type === 'sites') {
+            if (Array.isArray(msg.data)) store.setSites(msg.data)
           } else if (msg.type === 'skills_reclassified') {
             safeFetch(`${API_URL}/api/skills`).then(d => { if (d) store.setSkills(d) })
             safeFetch(`${API_URL}/api/sites`, d => d.sites || d).then(d => {

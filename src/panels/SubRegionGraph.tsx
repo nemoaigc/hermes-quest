@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import type { Continent, Connection } from '../types'
+import type { Continent, SubNode, Connection } from '../types'
 
-type AnyContinent = Continent & { sub_regions?: any[]; sub_nodes?: any[]; skills_involved?: string[] }
+type AnyContinent = Continent & { sub_regions?: SubNode[]; sub_nodes?: SubNode[]; skills_involved?: string[] }
 
 interface Props {
   continent: AnyContinent
@@ -35,8 +35,8 @@ export default function SubRegionGraph({ continent, connections, onBack, extraAc
   const animRef = useRef<number>(0)
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
 
-  const subRegions: any[] = continent.sub_nodes || continent.sub_regions || []
-  const allSkills: string[] = [...new Set(continent.skills_involved || subRegions.flatMap((sr: any) => sr.skills || []))]
+  const subRegions: SubNode[] = continent.sub_nodes || continent.sub_regions || []
+  const allSkills: string[] = [...new Set(continent.skills_involved || subRegions.flatMap((sr) => sr.name ? [sr.name] : []))]
   const allSkillsRef = useRef(allSkills)
   allSkillsRef.current = allSkills
 

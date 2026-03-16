@@ -264,8 +264,8 @@ export default function BagPanel() {
                   <button
                     onClick={() => {
                       const msg = `Look at this ${detailItem.name}: ${detailItem.description || ''}`
-                      if ((window as any).__hermesShowToNpc) {
-                        (window as any).__hermesShowToNpc(msg)
+                      if (window.__hermesShowToNpc) {
+                        window.__hermesShowToNpc(msg)
                       }
                     }}
                     style={{
@@ -400,8 +400,8 @@ export default function BagPanel() {
               const msg = items.length === 1
                 ? `Look at this ${items[0].name}: ${items[0].description || ''}`
                 : `Look at these items: ${itemDesc}`
-              if ((window as any).__hermesShowToNpc) {
-                (window as any).__hermesShowToNpc(msg)
+              if (window.__hermesShowToNpc) {
+                window.__hermesShowToNpc(msg)
               }
             }}
             style={{

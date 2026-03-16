@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../store'
 import { startCycle as apiStartCycle } from '../api'
 import PanelCard from '../components/PanelCard'
 import RpgButton from '../components/RpgButton'
+import type { Workflow } from '../types'
 
 const SITE_COLORS = ['#ff5555', '#ff9944', '#f0e68c', '#66bb6a', '#55aaff', '#b48eff']
 
@@ -13,6 +14,7 @@ export default function MapBottomInfo() {
   const classifying = useStore((s) => s.classifying)
   const [classifyDone, setClassifyDone] = useState(false)
   const [cycleLoading, setCycleLoading] = useState(false)
+  const prevClassifyingRef = useRef(false)
 
   // Track classify done state
   useEffect(() => {
@@ -20,14 +22,13 @@ export default function MapBottomInfo() {
   }, [classifying])
   // When classifying stops, briefly show DONE
   useEffect(() => {
-    const prev = (window as any).__prevClassifying
-    if (prev && !classifying) {
+    if (prevClassifyingRef.current && !classifying) {
       setClassifyDone(true)
       setTimeout(() => setClassifyDone(false), 3000)
     }
-    ;(window as any).__prevClassifying = classifying
+    prevClassifyingRef.current = classifying
   }, [classifying])
-  const workflows = km?.workflows || km?.continents || []
+  const workflows: Workflow[] = km?.workflows || km?.continents || []
 
   const [cycleStatus, setCycleStatus] = useState<'idle' | 'loading' | 'success' | 'failed'>('idle')
 
@@ -61,9 +62,9 @@ export default function MapBottomInfo() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             {definedSites.map((site, idx) => {
-              const wf = site.workflow_id ? workflows.find((w: any) => w.id === site.workflow_id) : null
-              const skillCount = wf ? ((wf as any).skills_involved?.length ?? 0) : 0
-              const mastery = wf ? Math.round(((wf as any).mastery || 0) * 100) : 0
+              const wf = site.workflow_id ? workflows.find((w) => w.id === site.workflow_id) : null
+              const skillCount = wf ? (wf.skills_involved?.length ?? 0) : 0
+              const mastery = wf ? Math.round((wf.mastery || 0) * 100) : 0
               const color = SITE_COLORS[idx % SITE_COLORS.length]
               return (
                 <div key={site.id} style={{

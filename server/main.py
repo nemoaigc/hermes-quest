@@ -403,6 +403,10 @@ async def create_quest(quest: QuestCreate):
             pending = []
     pending.append(new_quest)
     QUESTS_PENDING_FILE.write_text(json.dumps(pending, indent=2))
+    # Broadcast quest update so UI refreshes
+    all_quests = _read_quests_v2()
+    active = [q for q in all_quests if q.get("status") in ("active", "in_progress", "pending")]
+    await manager.broadcast({"type": "quest", "data": {"quests": active}})
     return {"id": quest_id, "status": "active"}
 
 
@@ -761,6 +765,13 @@ async def cycle_start():
         ["/root/.hermes/hermes-agent/venv/bin/python", "-m", "hermes_cli.main", "cron", "tick"],
         env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
+    # Broadcast event so UI knows a cycle was triggered
+    await manager.broadcast({"type": "event", "data": {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "type": "cycle_start",
+        "region": None,
+        "data": {},
+    }})
     return {"status": "started"}
 
 
@@ -912,6 +923,9 @@ async def quest_fail(body: dict):
 
     await upsert_state(state)
     await manager.broadcast({"type": "state", "data": state})
+    # Broadcast quest list update so UI refreshes
+    active = [q for q in quests if q.get("status") in ("active", "in_progress", "pending")]
+    await manager.broadcast({"type": "quest", "data": {"quests": active}})
 
     return {"ok": True, "quest_id": quest_id, "hp_penalty": hp_penalty, "mp_penalty": mp_penalty}
 
@@ -1680,6 +1694,8 @@ async def define_site(body: dict):
             MAP_FILE.write_text(json.dumps(km, indent=2))
     except Exception as e:
         logger.error(f"Failed to create workflow for site: {e}")
+    # Broadcast sites update so UI refreshes immediately
+    await manager.broadcast({"type": "sites", "data": sites})
     # Trigger LLM skill reclassification in background
     asyncio.create_task(reclassify_skills_after_site_change(sites, MODEL, manager.broadcast))
     return {"ok": True, "site": site}
@@ -1715,6 +1731,8 @@ async def rename_site(body: dict):
             MAP_FILE.write_text(json.dumps(km, indent=2))
         except Exception as e:
             logger.error(f"Failed to update workflow name: {e}")
+    # Broadcast sites update so UI refreshes immediately
+    await manager.broadcast({"type": "sites", "data": sites})
     asyncio.create_task(reclassify_skills_after_site_change(sites, MODEL, manager.broadcast))
     return {"ok": True, "site": site}
 
@@ -1750,6 +1768,8 @@ async def delete_site(body: dict):
         except Exception as e:
             logger.error(f"Failed to remove workflow: {e}")
     
+    # Broadcast sites update so UI refreshes immediately
+    await manager.broadcast({"type": "sites", "data": sites})
     # Trigger LLM skill reclassification in background
     asyncio.create_task(reclassify_skills_after_site_change(sites, MODEL, manager.broadcast))
     return {"ok": True, "deleted_workflow": old_workflow_id}
@@ -1788,6 +1808,8 @@ async def bag_discard(body: dict):
         if len(bag_items) == original_len:
             return JSONResponse(status_code=404, content={"error": "item not found"})
         bag_json.write_text(json.dumps(bag_items, indent=2, ensure_ascii=False))
+        # Broadcast bag update so UI refreshes
+        await manager.broadcast({"type": "bag", "data": {"items": bag_items}})
         return {"ok": True, "remaining": len(bag_items)}
     except (json.JSONDecodeError, OSError) as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
