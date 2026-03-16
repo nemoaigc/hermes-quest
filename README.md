@@ -56,18 +56,16 @@ Every cycle, the agent:
 
 ## 🗺️ The World / 世界观
 
-A fantasy continent with **6 explorable regions**, each mapped to real AI capability domains:
+A dynamic world with **custom sites** that emerge from the agent's real work patterns. Each site maps to a discovered workflow domain. Fog regions represent undiscovered territory.
 
-一块拥有 **6 个可探索区域**的奇幻大陆，每个区域映射真实 AI 能力领域：
+一个动态世界，**自定义站点**从 Agent 的真实工作模式中涌现。每个站点映射一个已发现的工作流领域。迷雾区域代表未探索的领域。
 
-| Region / 区域 | Domain / 领域 | Boss / 守关者 | Unlock / 解锁条件 |
-|:---:|:---:|:---:|:---:|
-| 🌲 **Emerald Forest** | Basic programming | Syntax Serpent | *Start zone* |
-| 🕳️ **Shadow Cavern** | Debugging & errors | Memory Leak Ghost | Level 2 |
-| 🏰 **Iron Forge Castle** | System architecture | Monolith Colossus | Level 4 |
-| 🌋 **Flame Peaks** | Performance & concurrency | Deadlock Demon | Level 6 |
-| ⭐ **Starlight Academy** | AI/ML knowledge | Overfitting Lich | Level 5 |
-| 🌀 **Abyssal Rift** | Advanced & unknown | ??? | Level 10 + 3 regions |
+| Site Type / 站点类型 | Description / 说明 | Example / 示例 |
+|:---:|:---|:---|
+| 🏠 **Starter Town** | Starting hub for uncategorized skills | Always present |
+| 🗺️ **Workflow Sites** | Auto-discovered from agent workflows | Software Engineering, Creative Arts, Tools |
+| 🌫️ **Fog Regions** | Undiscovered domains, unlocked via quests | Data & Analytics, DevOps |
+| ✏️ **Custom Sites** | User-defined regions on the hex map | Up to 6 map slots |
 
 ---
 
@@ -87,6 +85,10 @@ A fantasy continent with **6 explorable regions**, each mapped to real AI capabi
 │               │ • /api/hub/*          │ • Guild Panel    │
 │               │ • /api/events         │ • Adventure Log  │
 │               │ • /api/skills         │ • NPC Tavern     │
+│               │ • /api/tavern/*       │ • Rumors Board   │
+│               │ • /api/rumors/*       │ • Feedback       │
+│               │ • /api/bag/*          │ • Custom Sites   │
+│               │ • /api/sites/*        │                  │
 ├───────────────┴───────────────────────┴─────────────────┤
 │                    Hermes Agent Runtime                   │
 │         Skills · Cron · Memory · Telegram · Hub          │
@@ -142,11 +144,13 @@ A fantasy continent with **6 explorable regions**, each mapped to real AI capabi
 ### Feature Highlights / 功能亮点
 
 - **Character Panel** — Real-time HP/MP/XP, dynamic class system, level & title / 实时属性条、动态职业、等级头衔
-- **Bulletin Board** — Quest recommendations with gold & XP preview / 任务推荐，金币经验预览
-- **Skill Shop** — Browse & install from Hermes Skills Hub / 浏览并安装 Hermes 技能中心的技能
-- **Knowledge Map** — Interactive continent with region progression / 可交互大陆地图，区域解锁进度
-- **NPC Tavern** — LLM-powered conversations with 5 unique NPCs / LLM 驱动的 5 位 NPC 对话
-- **Guild Panel** — Quest slots, status tracking, history / 任务槽位、状态追踪、历史记录
+- **Knowledge Map** — Custom hex sites, fog regions, workflow mastery, skill constellation graphs / 自定义六边形站点、迷雾区域、工作流精通度、技能星座图
+- **Guild Panel** — Bulletin board with AI-recommended quests, quest creation & lifecycle tracking / 公告板 AI 推荐任务、创建任务、生命周期追踪
+- **Skill Shop** — Browse & install from Hermes Skills Hub with search / 搜索浏览并安装 Hermes 技能中心的技能
+- **NPC Tavern** — LLM-powered 1-on-1 chat with 5 unique NPCs + group ambient chatter / LLM 驱动的 5 位 NPC 私聊 + 群聊
+- **Rumors Board** — Real-time X/Twitter social feed with search / 实时 X/Twitter 社交信息流 + 搜索
+- **Bag & Inventory** — Collected artifacts with "Show to NPC" interaction / 收集的产出物，可展示给 NPC
+- **Adventure Log** — Event chronicle with thumbs up/down feedback affecting HP/MP / 事件日志，反馈直接影响属性
 
 ---
 
@@ -173,13 +177,15 @@ A fantasy continent with **6 explorable regions**, each mapped to real AI capabi
 
 ### Economy / 经济
 
-| Item / 物品 | Effect / 效果 | Price / 价格 |
-|:---:|:---|:---:|
-| 🧪 Red Potion | +25 HP | 30g |
-| 💧 Blue Potion | +20 MP | 40g |
-| 📜 XP Scroll | Next cycle XP ×1.5 | 100g |
-| 🌀 Teleport Scroll | Instant travel to unlocked region | 80g |
-| ✨ Revive Elixir | Auto-use at HP=0, restore 50% | 150g |
+| Action / 行为 | Cost / 价格 | Reward / 回报 |
+|:---:|:---:|:---|
+| 🧪 HP Potion | 200g | Restore HP |
+| 💧 MP Potion | 150g | Restore MP |
+| 📋 Create Quest | 100g | Post a custom quest |
+| 🔄 Retry Quest | 50g | Re-attempt a failed quest |
+| 🔃 Refresh Board | 50g | New bulletin board quests |
+| ⚔️ Complete Quest | — | Earn Gold + XP (varies by rank) |
+| 📈 Evolution Cycle | — | XP, skill drops, workflow mastery |
 
 ---
 

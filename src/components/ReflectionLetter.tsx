@@ -76,7 +76,7 @@ export default function ReflectionLetter() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: fadeIn ? 'rgba(0, 0, 0, 0.92)' : 'rgba(0, 0, 0, 0)',
+        background: fadeIn ? 'rgba(0, 0, 0, 0.98)' : 'rgba(0, 0, 0, 0)',
         transition: 'background 0.6s ease',
       }}
     >

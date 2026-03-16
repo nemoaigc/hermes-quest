@@ -18,7 +18,6 @@ from config import PORT, HOST, QUESTS_PENDING_FILE, STATE_FILE, HUB_RECOMMENDATI
 from models import init_db, get_state, get_events, get_skills, get_quests, delete_skill, upsert_state, insert_event, upsert_quest
 from watcher import QuestWatcher
 from ws_manager import manager
-import asyncio
 _state_lock = asyncio.Lock()
 _feedbacked_event_ids: set[str] = set()
 
@@ -244,14 +243,15 @@ async def api_hub_install(body: dict):
     # Skill install costs gold
     skill_cost = GAME_BALANCE.get("skill_install_cost", 300)
     state_path = Path.home() / ".hermes" / "quest" / "state.json"
-    try:
-        _st = json.loads(state_path.read_text())
-    except Exception:
-        _st = {}
-    if _st.get("gold", 0) < skill_cost:
-        return JSONResponse(status_code=400, content={"status": "error", "message": f"Not enough gold (need {skill_cost}G)"})
-    _st["gold"] = _st.get("gold", 0) - skill_cost
-    state_path.write_text(json.dumps(_st, indent=2))
+    async with _state_lock:
+        try:
+            _st = json.loads(state_path.read_text())
+        except Exception:
+            _st = {}
+        if _st.get("gold", 0) < skill_cost:
+            return JSONResponse(status_code=400, content={"status": "error", "message": f"Not enough gold (need {skill_cost}G)"})
+        _st["gold"] = _st.get("gold", 0) - skill_cost
+        state_path.write_text(json.dumps(_st, indent=2))
     try:
         # Load hub module (needs httpx in agent venv, so we add it)
         agent_venv_site = str(Path.home() / ".hermes" / "hermes-agent" / "venv" / "lib")
@@ -289,9 +289,25 @@ async def api_hub_install(body: dict):
                 # Re-sync skills
                 await watcher._sync_filesystem_skills()
                 return {"status": "installed", "name": skill_name, "message": f"Installed {skill_name} from {bundle.source}"}
+        # Skill not found -- refund gold
+        async with _state_lock:
+            try:
+                _st = json.loads(state_path.read_text())
+            except Exception:
+                _st = {}
+            _st["gold"] = _st.get("gold", 0) + skill_cost
+            state_path.write_text(json.dumps(_st, indent=2))
         return JSONResponse(status_code=404, content={"status": "error", "message": f"Skill not found: {identifier}"})
     except Exception as e:
+        # Install failed -- refund gold
         logger.error("Hub install failed: %s", e)
+        async with _state_lock:
+            try:
+                _st = json.loads(state_path.read_text())
+            except Exception:
+                _st = {}
+            _st["gold"] = _st.get("gold", 0) + skill_cost
+            state_path.write_text(json.dumps(_st, indent=2))
         return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
 
 @app.get("/api/regions")
@@ -517,10 +533,10 @@ async def get_knowledge_map(refresh: bool = Query(False)):
                 return JSONResponse(status_code=400, content={"error": f"Not enough gold (need {GAME_BALANCE['refresh_cost']}G)"})
             state["gold"] -= GAME_BALANCE["refresh_cost"]
             # Check if HP reached 0 -> trigger reflection letter
-        if state.get("hp", 0) <= 0:
-            state["reflection_letter_pending"] = True
-        state_path.write_text(json.dumps(state, indent=2))
-        await upsert_state(state)
+            if state.get("hp", 0) <= 0:
+                state["reflection_letter_pending"] = True
+            state_path.write_text(json.dumps(state, indent=2))
+            await upsert_state(state)
         # Clear accepted rec IDs to regenerate fresh recommendations
         if ACCEPTED_REC_IDS_FILE.exists():
             ACCEPTED_REC_IDS_FILE.write_text("[]")
@@ -977,10 +993,6 @@ async def user_feedback(body: dict):
         # Check if HP reached 0 -> trigger reflection letter
         if state.get("hp", 0) <= 0:
             state["reflection_letter_pending"] = True
-
-        # Check if HP reached 0 -> trigger reflection letter
-        if state.get("hp", 0) <= 0:
-            state["reflection_letter_pending"] = True
         state_path.write_text(json.dumps(state, indent=2))
 
     # Log event with full context
@@ -1056,12 +1068,27 @@ async def reflection_latest():
                 if result:
                     client, http = result
                     try:
-                        response = await client.responses.create(
-                            model=MODEL, input=template, store=False
+                        import re as _re
+                        _instr_match = _re.search(r'instruction:\s*"([^"]+)"', template)
+                        _sys_instr = _instr_match.group(1) if _instr_match else "You write heartfelt reflection letters from an RPG adventurer's perspective."
+                        stream = await client.responses.create(
+                            model=MODEL,
+                            instructions=_sys_instr,
+                            input=[{"role": "user", "content": template}],
+                            store=False,
+                            stream=True,
                         )
-                        letter = response.output_text
-                        letter_path.write_text(letter)
-                        return {"letter": letter, "pending": True}
+                        reply_parts = []
+                        async for event in stream:
+                            if hasattr(event, "type"):
+                                if event.type == "response.output_text.delta":
+                                    reply_parts.append(event.delta)
+                                elif event.type == "response.completed":
+                                    break
+                        letter = "".join(reply_parts).strip()
+                        if letter:
+                            letter_path.write_text(letter)
+                            return {"letter": letter, "pending": True}
                     finally:
                         await http.aclose()
         except Exception as e:
