@@ -98,6 +98,8 @@ interface Store {
   // Sites
   sites: Array<{id: string; name: string | null; is_default: boolean; defined: boolean; domain: string | null; workflow_id?: string | null; sprite?: string | null}>
   setSites: (s: Array<{id: string; name: string | null; is_default: boolean; defined: boolean; domain: string | null; workflow_id?: string | null; sprite?: string | null}>) => void
+  classifying: boolean
+  setClassifying: (v: boolean) => void
 
   // Shop: shared hub skills + filter (shared between Shop scene + bottom bar)
   hubSkills: HubSkill[]
@@ -142,6 +144,8 @@ export const useStore = create<Store>((set) => ({
   selectedRegion: null,
   sites: [],
   setSites: (s) => set({ sites: s }),
+  classifying: false,
+  setClassifying: (v) => set({ classifying: v }),
   hubSkills: [],
   setHubSkills: (s) => set({ hubSkills: s }),
   shopFilter: '',

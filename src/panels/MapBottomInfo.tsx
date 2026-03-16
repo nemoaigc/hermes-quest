@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useStore } from '../store'
-import { startCycle as apiStartCycle } from '../api'
+import { startCycle as apiStartCycle, fetchSites } from '../api'
 import PanelCard from '../components/PanelCard'
 import RpgButton from '../components/RpgButton'
 
@@ -13,6 +13,7 @@ const CAT_COLOR: Record<string, string> = {
 export default function MapBottomInfo() {
   const km = useStore((s) => s.knowledgeMap)
   const sites = useStore((s) => s.sites)
+  const classifying = useStore((s) => s.classifying)
   const [cycleLoading, setCycleLoading] = useState(false)
   const workflows = km?.workflows || km?.continents || []
   const avgMastery = workflows.length > 0
@@ -41,6 +42,15 @@ export default function MapBottomInfo() {
     <div style={{ display: 'flex', gap: '10px', width: '100%', fontFamily: 'var(--font-pixel)' }}>
       {/* Left: site list */}
       <PanelCard style={{ flex: 1, overflow: 'auto', minHeight: '60px' }}>
+        {classifying && (
+          <div style={{
+            fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#f0e68c',
+            padding: '3px 4px', marginBottom: '4px',
+            background: 'rgba(240,230,140,0.08)', borderRadius: '2px',
+          }}>
+            ● Classifying skills...
+          </div>
+        )}
         {definedSites.length === 0 ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '8px', color: '#6a5a3a', fontStyle: 'italic' }}>
             Start a cycle to explore...

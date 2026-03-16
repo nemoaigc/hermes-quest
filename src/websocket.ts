@@ -70,11 +70,19 @@ export function useWebSocket() {
           } else if (msg.type === 'bag') {
             safeFetch(`${API_URL}/api/bag/items`, d => d.items || []).then(d => { if (d) store.setBagItems(d) })
           } else if (msg.type === 'skills_reclassified') {
-            // Skills were reclassified after a site change — refresh skills and sites
             safeFetch(`${API_URL}/api/skills`).then(d => { if (d) store.setSkills(d) })
             safeFetch(`${API_URL}/api/sites`, d => d.sites || d).then(d => {
               if (d && Array.isArray(d)) store.setSites(d)
             })
+          } else if (msg.type === 'classify_status') {
+            store.setClassifying(msg.status === 'started')
+            if (msg.status === 'completed') {
+              // Refresh sites + map after classification
+              safeFetch(`${API_URL}/api/sites`, d => d.sites || d).then(d => {
+                if (d && Array.isArray(d)) store.setSites(d)
+              })
+              safeFetch(`${API_URL}/api/map`).then(d => { if (d) store.setKnowledgeMap(d) })
+            }
           }
         } catch (e) {
           console.warn('[ws] Failed to process message:', e)
