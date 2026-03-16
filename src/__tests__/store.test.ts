@@ -19,7 +19,7 @@ describe('store', () => {
     })
   })
 
-  it('AgentState uses stability/energy instead of hp/mp', () => {
+  it('AgentState maps stability/energy to hp/mp (v2 compat)', () => {
     useStore.getState().setState({
       version: 1, name: 'Hermes', level: 2, class: 'artificer', title: 'Novice',
       xp: 50, xp_to_next: 200,
@@ -33,11 +33,14 @@ describe('store', () => {
       started_at: null, last_cycle_at: null,
     })
     const s = useStore.getState().state!
+    // v2 compat: stability/energy are mapped to hp/mp and vice versa
     expect(s.stability).toBe(80)
     expect(s.energy).toBe(60)
-    expect(s).not.toHaveProperty('hp')
-    expect(s).not.toHaveProperty('mp')
-    expect(s).not.toHaveProperty('total_boss_kills')
+    expect(s.hp).toBe(80)
+    expect(s.hp_max).toBe(100)
+    expect(s.mp).toBe(60)
+    expect(s.mp_max).toBe(80)
+    expect(s.gold).toBe(250)
   })
 
   it('sets and retrieves knowledge map', () => {
@@ -51,8 +54,8 @@ describe('store', () => {
 
   it('manages quests', () => {
     const quest: Quest = {
-      id: 'q1', title: 'Test', description: '', region: '', rank: 'C',
-      status: 'active', progress: 0, reward_gold: 100, reward_xp: 100,
+      id: 'q1', title: 'Test', description: '',
+      status: 'active', progress: 0, reward_xp: 100,
       related_skills: [], accepted_at: '', completed_at: null, source: 'bulletin_board',
     }
     useStore.getState().setQuests([quest])
