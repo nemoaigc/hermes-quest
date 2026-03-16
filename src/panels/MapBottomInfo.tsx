@@ -83,7 +83,7 @@ export default function MapBottomInfo() {
       {/* Right: compact stats + action */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '100px', justifyContent: 'center' }}>
         <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#8b7355', textAlign: 'center' }}>
-          <span style={{ color: '#f0e68c' }}>{definedSites.length}</span> regions · <span style={{ color: 'var(--cyan)' }}>{Math.round(avgMastery * 100)}%</span> mastery
+          <span style={{ color: '#f0e68c' }}>{definedSites.length}</span> active regions
         </div>
         <RpgButton onClick={handleStartCycle} disabled={cycleLoading}>
           {cycleStatus === 'loading' ? 'EXPLORING...' : cycleStatus === 'success' ? 'CYCLE STARTED' : cycleStatus === 'failed' ? 'FAILED' : '\u25B6 START CYCLE'}
