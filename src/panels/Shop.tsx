@@ -9,8 +9,8 @@ import type { HubSkill } from '../store'
 // 9 shelf slots — 3 rows × 3 columns aligned to shop-bg.png (1024x572)
 // Measured from pixel analysis: cols at 26.2/41.5/58.7%, rows at 26.2/46.7/65.7%
 const SHELF_SLOTS: Array<{ left: number; top: number; width: number; height: number }> = []
-const SHOP_COLS = [26.5, 41.8, 59.0]
-const SHOP_ROWS = [27.5, 47.5, 66.5]
+const SHOP_COLS = [26.5, 43.0, 59.5]
+const SHOP_ROWS = [27.0, 46.5, 66.0]
 const SHOP_CW = 13.5  // cell width % (reduced to prevent text overlap)
 const SHOP_CH = 17.5   // cell height %
 for (let row = 0; row < 3; row++) {
