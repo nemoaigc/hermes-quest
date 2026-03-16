@@ -69,8 +69,8 @@ export default function BagPanel() {
     try {
       const data = await fetchBagItemContent(itemId)
       setViewContent(data)
-    } catch (e: any) {
-      setViewError(e.message || 'Failed to load content')
+    } catch (e: unknown) {
+      setViewError(e instanceof Error ? e.message : 'Failed to load content')
     }
     setViewLoading(false)
   }

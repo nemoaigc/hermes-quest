@@ -26,8 +26,8 @@ function PotionShopButton({ type, label, cost, icon, color }: {
       const res = await usePotion(type)
       setMsg(`+${res.healed} ${label}!`)
       setTimeout(() => setMsg(''), 2000)
-    } catch (e: any) {
-      setMsg(e.message || 'Failed...')
+    } catch (e: unknown) {
+      setMsg(e instanceof Error ? e.message : 'Failed...')
       setTimeout(() => setMsg(''), 3000)
     } finally {
       setLoading(false)

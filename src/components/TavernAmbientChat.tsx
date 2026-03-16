@@ -16,9 +16,7 @@ const NPC_STYLE: Record<string, { color: string; mark: string }> = {
   you:    { color: '#90ee90', mark: '>' },
 }
 
-export default function TavernAmbientChat({ onRumorsClick, rumorsLoading, hideHeader, refreshRef }: {
-  onRumorsClick?: () => void
-  rumorsLoading?: boolean
+export default function TavernAmbientChat({ hideHeader, refreshRef }: {
   hideHeader?: boolean
   refreshRef?: React.MutableRefObject<(() => void) | null>
 }) {

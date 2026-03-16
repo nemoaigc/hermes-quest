@@ -8,6 +8,7 @@ import {
   fetchAllQuests,
 } from '../api'
 import RpgButton from '../components/RpgButton'
+import type { Quest } from '../types'
 
 const TAB_CONFIG = [
   { key: 'active' as const, label: 'ACTIVE', color: '#66bb6a', dim: '#3a5a3a' },
@@ -85,7 +86,7 @@ export default function GuildBottomInfo() {
     setRetrying(null)
   }
 
-  const [allQuests, setAllQuests] = useState<any[]>([])
+  const [allQuests, setAllQuests] = useState<Quest[]>([])
   const [allQuestsTrigger, setAllQuestsTrigger] = useState(0)
   useEffect(() => {
     fetchAllQuests().then(d => setAllQuests(Array.isArray(d) ? d : [])).catch(e => console.error('allQuests fetch failed', e))

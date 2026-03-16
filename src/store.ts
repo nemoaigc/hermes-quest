@@ -97,7 +97,7 @@ interface Store {
 
   // Sites
   sites: Array<{id: string; name: string | null; is_default: boolean; defined: boolean; domain: string | null; workflow_id?: string | null; sprite?: string | null}>
-  setSites: (s: any[]) => void
+  setSites: (s: Array<{id: string; name: string | null; is_default: boolean; defined: boolean; domain: string | null; workflow_id?: string | null; sprite?: string | null}>) => void
 
   // Shop: shared hub skills + filter (shared between Shop scene + bottom bar)
   hubSkills: HubSkill[]

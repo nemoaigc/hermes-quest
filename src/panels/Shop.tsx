@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+// useMemo used in displayed computation
 import { SkillIcon } from '../utils/icons'
 import { API_URL, searchHub, installSkill as apiInstallSkill } from '../api'
 import { useStore } from '../store'
@@ -95,16 +96,7 @@ export default function Shop() {
       }
       setLoading(false)
     })()
-  }, [])
-
-  const sources = useMemo(() => {
-    const s = new Map<string, number>()
-    for (const sk of allSkills) {
-      const src = sk.trust_level === 'builtin' ? 'official' : sk.source
-      s.set(src, (s.get(src) || 0) + 1)
-    }
-    return Array.from(s.entries()).sort((a, b) => b[1] - a[1])
-  }, [allSkills])
+  }, [setAllSkills])
 
   const displayed = useMemo(() => {
     // Dedup by identifier (matches ShopBottomInfo logic)
