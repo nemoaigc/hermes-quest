@@ -2587,13 +2587,13 @@ git commit -m "feat: add SkillPanel with SKILLS/BAG sub-tabs, replace SkillInven
 - Modify: `/opt/hermes-quest/watcher.py`
 - Modify: `/opt/hermes-quest/ws_manager.py`
 
-> **Note:** These changes are on the remote server (118.196.105.22). Execute via SSH.
-> SSH: `ssh -i /Users/nemo/Documents/project/hermes/nemo.pem root@118.196.105.22`
+> **Note:** These changes are on the remote server (YOUR_SERVER_IP). Execute via SSH.
+> SSH: `ssh -i YOUR_PEM_PATH root@YOUR_SERVER_IP`
 
 - [ ] **Step 1: Read current main.py to understand existing structure**
 
 ```bash
-ssh -i /Users/nemo/Documents/project/hermes/nemo.pem root@118.196.105.22 "cat /opt/hermes-quest/main.py"
+ssh -i YOUR_PEM_PATH root@YOUR_SERVER_IP "cat /opt/hermes-quest/main.py"
 ```
 
 - [ ] **Step 2: Add `/api/map` endpoint**
@@ -2748,8 +2748,8 @@ async def npc_chat(body: dict):
 - [ ] **Step 6: Read current watcher.py and ws_manager.py**
 
 ```bash
-ssh -i /Users/nemo/Documents/project/hermes/nemo.pem root@118.196.105.22 "cat /opt/hermes-quest/watcher.py"
-ssh -i /Users/nemo/Documents/project/hermes/nemo.pem root@118.196.105.22 "cat /opt/hermes-quest/ws_manager.py"
+ssh -i YOUR_PEM_PATH root@YOUR_SERVER_IP "cat /opt/hermes-quest/watcher.py"
+ssh -i YOUR_PEM_PATH root@YOUR_SERVER_IP "cat /opt/hermes-quest/ws_manager.py"
 ```
 
 Then update watcher.py to also watch `~/.hermes/quest/knowledge-map.json` and `~/.hermes/quest/quests.json`. When these files change, read them and broadcast:
@@ -2763,31 +2763,31 @@ The ws_manager should already support broadcasting arbitrary JSON messages. Veri
 - [ ] **Step 8: Restart the backend service**
 
 ```bash
-ssh -i /Users/nemo/Documents/project/hermes/nemo.pem root@118.196.105.22 "systemctl restart hermes-quest"
+ssh -i YOUR_PEM_PATH root@YOUR_SERVER_IP "systemctl restart hermes-quest"
 ```
 
 - [ ] **Step 9: Test endpoints**
 
 ```bash
 # Test map endpoint (404 expected if no map yet)
-curl http://118.196.105.22:8000/api/map
+curl http://YOUR_SERVER_IP:8000/api/map
 
 # Test NPC chat
-curl -X POST http://118.196.105.22:8000/api/npc/chat \
+curl -X POST http://YOUR_SERVER_IP:8000/api/npc/chat \
   -H "Content-Type: application/json" \
   -d '{"npc":"guild_master","message":"hello","context":{"active_tab":"guild","selected_bag_items":[],"selected_region":null}}'
 
 # Test quest active
-curl http://118.196.105.22:8000/api/quest/active
+curl http://YOUR_SERVER_IP:8000/api/quest/active
 
 # Test bag items
-curl http://118.196.105.22:8000/api/bag/items
+curl http://YOUR_SERVER_IP:8000/api/bag/items
 ```
 
 - [ ] **Step 10: Commit backend changes**
 
 ```bash
-ssh -i /Users/nemo/Documents/project/hermes/nemo.pem root@118.196.105.22 "cd /opt/hermes-quest && git add -A && git commit -m 'feat: add map, quest, bag, npc API endpoints'"
+ssh -i YOUR_PEM_PATH root@YOUR_SERVER_IP "cd /opt/hermes-quest && git add -A && git commit -m 'feat: add map, quest, bag, npc API endpoints'"
 ```
 
 ---
@@ -2860,7 +2860,7 @@ npm run build
 - [ ] **Step 2: Deploy to server**
 
 ```bash
-scp -i /Users/nemo/Documents/project/hermes/nemo.pem -r dist/* root@118.196.105.22:/opt/hermes-quest/static/
+scp -i YOUR_PEM_PATH -r dist/* root@YOUR_SERVER_IP:/opt/hermes-quest/static/
 ```
 
 - [ ] **Step 3: Verify in browser**

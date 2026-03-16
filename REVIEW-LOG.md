@@ -244,4 +244,4 @@ Sites on the map represent workflow categories. Each site:
 
 ## Deployment
 
-Final deploy at `aaf6aa1` — full redeploy to server at 118.196.105.22:8420 with SubRegionGraph fallback fix.
+Final deploy at `aaf6aa1` — full redeploy to server with SubRegionGraph fallback fix.

@@ -8,7 +8,7 @@
 
 **Tech Stack:** Markdown (SKILL.md), JSON (state.json, knowledge-map.json), Hermes agent tools (session_search, read_file, write_file, terminal, delegate_task, send_message)
 
-**Server:** 118.196.105.22, SSH via `ssh -i /Users/nemo/Documents/project/hermes/nemo.pem root@118.196.105.22`
+**Server:** YOUR_SERVER_IP, SSH via `ssh -i /Users/nemo/Documents/project/hermes/YOUR_PEM_FILE root@YOUR_SERVER_IP`
 
 **Target files on server:**
 ```
@@ -38,7 +38,7 @@
 - [ ] **Step 1: Create values.md on server**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "cat > ~/.hermes/skills/quest/references/values.md << 'VALEOF'
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "cat > ~/.hermes/skills/quest/references/values.md << 'VALEOF'
 # Values & Economy Rules (v2)
 
 ## Level & XP
@@ -126,7 +126,7 @@ VALEOF"
 - [ ] **Step 2: Verify file exists and content is correct**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "head -20 ~/.hermes/skills/quest/references/values.md"
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "head -20 ~/.hermes/skills/quest/references/values.md"
 ```
 
 - [ ] **Step 3: Commit note** — No git repo on server for skills, just verify file is in place.
@@ -141,7 +141,7 @@ ssh -i nemo.pem root@118.196.105.22 "head -20 ~/.hermes/skills/quest/references/
 - [ ] **Step 1: Create workflows.md on server**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "cat > ~/.hermes/skills/quest/references/workflows.md << 'WFEOF'
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "cat > ~/.hermes/skills/quest/references/workflows.md << 'WFEOF'
 # Workflow Discovery & Management (v2)
 
 ## What is a Workflow?
@@ -243,7 +243,7 @@ WFEOF"
 - [ ] **Step 2: Verify**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "wc -l ~/.hermes/skills/quest/references/workflows.md"
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "wc -l ~/.hermes/skills/quest/references/workflows.md"
 ```
 
 ---
@@ -256,7 +256,7 @@ ssh -i nemo.pem root@118.196.105.22 "wc -l ~/.hermes/skills/quest/references/wor
 - [ ] **Step 1: Append new event types**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "cat >> ~/.hermes/skills/quest/references/event-schema.md << 'EVEOF'
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "cat >> ~/.hermes/skills/quest/references/event-schema.md << 'EVEOF'
 
 ## New Event Types (v2)
 
@@ -277,7 +277,7 @@ EVEOF"
 - [ ] **Step 2: Verify**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "tail -15 ~/.hermes/skills/quest/references/event-schema.md"
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "tail -15 ~/.hermes/skills/quest/references/event-schema.md"
 ```
 
 ---
@@ -290,13 +290,13 @@ ssh -i nemo.pem root@118.196.105.22 "tail -15 ~/.hermes/skills/quest/references/
 - [ ] **Step 1: Back up current state**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "cp ~/.hermes/quest/state.json ~/.hermes/quest/state.v1.backup.json"
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "cp ~/.hermes/quest/state.json ~/.hermes/quest/state.v1.backup.json"
 ```
 
 - [ ] **Step 2: Write v2 state.json**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "python3 -c \"
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "python3 -c \"
 import json
 # Read v1
 with open('/root/.hermes/quest/state.json') as f:
@@ -356,7 +356,7 @@ if not os.path.exists(qp):
 - [ ] **Step 3: Verify migration**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "python3 -c \"import json; d=json.load(open('/root/.hermes/quest/state.json')); print('version:', d['version'], 'mp:', d['mp'], 'understanding:', d['understanding'])\""
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "python3 -c \"import json; d=json.load(open('/root/.hermes/quest/state.json')); print('version:', d['version'], 'mp:', d['mp'], 'understanding:', d['understanding'])\""
 ```
 
 ---
@@ -369,7 +369,7 @@ ssh -i nemo.pem root@118.196.105.22 "python3 -c \"import json; d=json.load(open(
 - [ ] **Step 1: Back up current knowledge-map**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "cp ~/.hermes/quest/knowledge-map.json ~/.hermes/quest/knowledge-map.v1.backup.json"
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "cp ~/.hermes/quest/knowledge-map.json ~/.hermes/quest/knowledge-map.v1.backup.json"
 ```
 
 - [ ] **Step 2: Write v2 knowledge-map.json**
@@ -377,7 +377,7 @@ ssh -i nemo.pem root@118.196.105.22 "cp ~/.hermes/quest/knowledge-map.json ~/.he
 The v1 knowledge-map has fixed continents (software-engineering, etc.) with sub_regions containing skills. In v2, these become the initial "workflows" derived from existing skill distribution.
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "python3 -c \"
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "python3 -c \"
 import json
 
 # Read v1
@@ -465,7 +465,7 @@ print(f'Migrated: {len(workflows)} workflows, {len(connections)} connections, {l
 - [ ] **Step 3: Verify**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "python3 -c \"import json; d=json.load(open('/root/.hermes/quest/knowledge-map.json')); print('version:', d['version'], 'workflows:', len(d['workflows']))\""
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "python3 -c \"import json; d=json.load(open('/root/.hermes/quest/knowledge-map.json')); print('version:', d['version'], 'workflows:', len(d['workflows']))\""
 ```
 
 ---
@@ -480,7 +480,7 @@ This is the biggest task. The new SKILL.md replaces fixed regions with workflow 
 - [ ] **Step 1: Write new SKILL.md**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "cat > ~/.hermes/skills/quest/SKILL.md << 'SKILLEOF'
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "cat > ~/.hermes/skills/quest/SKILL.md << 'SKILLEOF'
 ---
 name: quest
 description: \"Hermes Quest v2: Self-evolving RPG adventurer with workflow-based learning. Runs reflect→plan→train→report cycles. Discovers user work patterns, tracks mastery, manages HP/MP/XP. Triggers on any mention of quest, training, self-improvement, or evolution cycle.\"
@@ -620,7 +620,7 @@ SKILLEOF"
 - [ ] **Step 2: Verify SKILL.md**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "head -10 ~/.hermes/skills/quest/SKILL.md && echo '---' && wc -l ~/.hermes/skills/quest/SKILL.md"
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "head -10 ~/.hermes/skills/quest/SKILL.md && echo '---' && wc -l ~/.hermes/skills/quest/SKILL.md"
 ```
 
 Expected: version 2.0.0, ~100+ lines
@@ -636,7 +636,7 @@ Expected: version 2.0.0, ~100+ lines
 - [ ] **Step 1: Remove old files (keep backups)**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "
 mkdir -p ~/.hermes/quest/backups-v1
 cp ~/.hermes/skills/quest/references/leveling.md ~/.hermes/quest/backups-v1/
 cp ~/.hermes/skills/quest/references/regions.md ~/.hermes/quest/backups-v1/
@@ -656,7 +656,7 @@ Expected output: `values.md  workflows.md  rpg-mapping.md  event-schema.md  npcs
 - [ ] **Step 1: Check cron job exists**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "cat ~/.hermes/cron/jobs.json | python3 -c 'import json,sys; jobs=json.load(sys.stdin)[\"jobs\"]; [print(j[\"name\"], j[\"schedule_display\"], j[\"enabled\"]) for j in jobs]'"
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "cat ~/.hermes/cron/jobs.json | python3 -c 'import json,sys; jobs=json.load(sys.stdin)[\"jobs\"]; [print(j[\"name\"], j[\"schedule_display\"], j[\"enabled\"]) for j in jobs]'"
 ```
 
 Expected: `quest-evolution-cycle 0 */2 * * * True`
@@ -664,7 +664,7 @@ Expected: `quest-evolution-cycle 0 */2 * * * True`
 - [ ] **Step 2: Verify gateway is running (needed for cron execution)**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "systemctl --user is-active hermes-gateway.service"
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "systemctl --user is-active hermes-gateway.service"
 ```
 
 Expected: `active`
@@ -672,8 +672,8 @@ Expected: `active`
 - [ ] **Step 3: Test a manual cycle trigger**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "
-export TELEGRAM_HOME_CHANNEL=8131139520
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "
+export TELEGRAM_HOME_CHANNEL=YOUR_TELEGRAM_USER_ID
 /root/.hermes/hermes-agent/venv/bin/python -m hermes_cli.main cron tick 2>&1 | tail -20
 "
 ```
@@ -681,13 +681,13 @@ export TELEGRAM_HOME_CHANNEL=8131139520
 - [ ] **Step 4: Check if new events were written**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "tail -5 ~/.hermes/quest/events.jsonl"
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "tail -5 ~/.hermes/quest/events.jsonl"
 ```
 
 - [ ] **Step 5: Check if state.json was updated**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "cat ~/.hermes/quest/state.json | python3 -m json.tool | head -15"
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "cat ~/.hermes/quest/state.json | python3 -m json.tool | head -15"
 ```
 
 ---
@@ -697,7 +697,7 @@ ssh -i nemo.pem root@118.196.105.22 "cat ~/.hermes/quest/state.json | python3 -m
 - [ ] **Step 1: Restart hermes-quest service**
 
 ```bash
-ssh -i nemo.pem root@118.196.105.22 "systemctl restart hermes-quest && sleep 2 && systemctl is-active hermes-quest"
+ssh -i YOUR_PEM_FILE root@YOUR_SERVER_IP "systemctl restart hermes-quest && sleep 2 && systemctl is-active hermes-quest"
 ```
 
 Expected: `active`
@@ -705,7 +705,7 @@ Expected: `active`
 - [ ] **Step 2: Verify API returns v2 state**
 
 ```bash
-curl -s "http://118.196.105.22:8420/api/state" | python3 -c "import json,sys; d=json.load(sys.stdin); print('version:', d.get('version'), 'mp:', d.get('mp'), 'understanding:', d.get('understanding'))"
+curl -s "http://YOUR_SERVER_IP:8420/api/state" | python3 -c "import json,sys; d=json.load(sys.stdin); print('version:', d.get('version'), 'mp:', d.get('mp'), 'understanding:', d.get('understanding'))"
 ```
 
 Expected: `version: 2 mp: 100 understanding: 0.0`
@@ -713,7 +713,7 @@ Expected: `version: 2 mp: 100 understanding: 0.0`
 - [ ] **Step 3: Verify API returns v2 knowledge-map**
 
 ```bash
-curl -s "http://118.196.105.22:8420/api/map" | python3 -c "import json,sys; d=json.load(sys.stdin); print('version:', d.get('version'), 'workflows:', len(d.get('workflows', [])))"
+curl -s "http://YOUR_SERVER_IP:8420/api/map" | python3 -c "import json,sys; d=json.load(sys.stdin); print('version:', d.get('version'), 'workflows:', len(d.get('workflows', [])))"
 ```
 
 Expected: `version: 2 workflows: 4`

@@ -1,7 +1,7 @@
 # Pre-Recording Checklist
 
 > Last verified: 2026-03-16
-> Tested against: http://118.196.105.22:8420
+> Tested against: http://localhost:8420
 
 ---
 
@@ -36,7 +36,7 @@ Two demo scripts exist with overlapping but different scene structures:
 ## Scene-by-Scene Checklist
 
 ### S01: Loading Screen (5s)
-- [ ] Dashboard loads at http://118.196.105.22:8420
+- [ ] Dashboard loads at http://localhost:8420
 - [ ] Loading bar animation shows correctly
 - **State needed:** None (fresh page load)
 
@@ -201,7 +201,7 @@ Two demo scripts exist with overlapping but different scene structures:
 
 ## Recording Environment
 
-- **URL:** http://118.196.105.22:8420
+- **URL:** http://localhost:8420
 - **Resolution:** 1280x720 (per Playwright config in docs script)
 - **Browser:** Chromium via Playwright
 - **Audio:** 8-bit sound effects (pre-prepared in `demo/audio/`)

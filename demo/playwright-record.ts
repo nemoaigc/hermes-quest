@@ -28,7 +28,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 // --- Config ---
-const BASE_URL = 'http://118.196.105.22:8420'
+const BASE_URL = process.env.QUEST_BASE_URL || 'http://localhost:8420'
 const DEMO_DIR = '/Users/nemo/Documents/project/hermes/demo'
 const VIDEO_DIR = path.join(DEMO_DIR, 'recordings')
 const SRT_PATH = path.join(DEMO_DIR, 'subtitles.srt')
