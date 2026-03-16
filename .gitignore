@@ -44,3 +44,8 @@ public/bg/originals/
 public/sprites/originals/
 public/npc/sprites/
 *.jiuguan.png
+
+# Internal docs
+REVIEW-LOG.md
+demo/checklist.md
+docs/
