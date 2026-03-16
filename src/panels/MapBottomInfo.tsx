@@ -81,22 +81,31 @@ export default function MapBottomInfo() {
         )}
       </PanelCard>
 
-      {/* Right: stats + action + classify status */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '100px', justifyContent: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#8b7355', textAlign: 'center' }}>
-          <span style={{ color: '#f0e68c' }}>{definedSites.length}</span> active regions
+      {/* Right: classify progress bar + cycle button */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '100px', justifyContent: 'flex-end', alignItems: 'center' }}>
+        {/* Vertical pixel progress bar for classification */}
+        <div style={{
+          flex: 1, width: '12px', minHeight: '30px',
+          background: '#1a140c', border: '2px solid #3a2210',
+          display: 'flex', flexDirection: 'column-reverse',
+          overflow: 'hidden', borderRadius: '1px',
+        }}>
+          <div style={{
+            width: '100%',
+            height: classifying ? '60%' : '0%',
+            background: classifying
+              ? 'linear-gradient(0deg, #f0e68c, #5c3a1e)'
+              : 'linear-gradient(0deg, #66bb6a, #2a5a2a)',
+            transition: classifying ? 'height 2s ease-in-out' : 'height 0.3s',
+            animation: classifying ? 'classifyPulse 1.5s ease-in-out infinite alternate' : 'none',
+          }} />
+        </div>
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: classifying ? '#f0e68c' : '#5a4a3a', textAlign: 'center' }}>
+          {classifying ? 'SORTING' : ''}
         </div>
         <RpgButton onClick={handleStartCycle} disabled={cycleLoading}>
           {cycleStatus === 'loading' ? 'EXPLORING...' : cycleStatus === 'success' ? 'CYCLE STARTED' : cycleStatus === 'failed' ? 'FAILED' : '\u25B6 START CYCLE'}
         </RpgButton>
-        {classifying && (
-          <div style={{
-            fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#f0e68c',
-            textAlign: 'center', padding: '2px 0',
-          }}>
-            ● CLASSIFYING...
-          </div>
-        )}
       </div>
     </div>
   )
