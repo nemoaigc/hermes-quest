@@ -181,6 +181,12 @@ async def api_delete_skill(skill_name: str):
     # Delete from DB
     deleted_db = await delete_skill(skill_name)
     if deleted_fs or deleted_db:
+        # Broadcast skill change so other tabs/components refresh
+        skills = await get_skills()
+        await manager.broadcast({"type": "event", "data": {
+            "ts": datetime.now(timezone.utc).isoformat(), "type": "skill_drop",
+            "region": None, "data": {"skill": skill_name, "action": "forget"},
+        }})
         return {"status": "deleted", "name": skill_name}
     return {"status": "not_found", "name": skill_name}
 
@@ -624,6 +630,9 @@ async def accept_quest_v2(body: dict):
                     quests.append(new_quest)
                     _write_quests_v2(quests)
                     _save_accepted_rec_id(quest_id)
+                    # Broadcast quest update so UI refreshes
+                    active = [q for q in quests if q.get("status") in ("active", "in_progress", "pending")]
+                    await manager.broadcast({"type": "quest", "data": {"quests": active}})
                     return {"quest_id": new_quest["id"], "status": "active"}
             except (json.JSONDecodeError, OSError):
                 pass
@@ -653,6 +662,9 @@ async def accept_quest_v2(body: dict):
                     }
                     quests.append(new_quest)
                     _write_quests_v2(quests)
+                    # Broadcast quest update so UI refreshes
+                    active_qs = [q for q in quests if q.get("status") in ("active", "in_progress", "pending")]
+                    await manager.broadcast({"type": "quest", "data": {"quests": active_qs}})
                     return {"quest_id": new_quest["id"], "status": "active"}
             except (json.JSONDecodeError, OSError):
                 pass
@@ -794,6 +806,7 @@ async def quest_create(body: dict):
             _st["gold"] -= cost
             state_path.write_text(json.dumps(_st, indent=2))
         await upsert_state(_st)
+        await manager.broadcast({"type": "state", "data": _st})
     
     task = {
         "id": f"task-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:8]}",
@@ -835,6 +848,9 @@ async def quest_edit(body: dict):
         if not found:
             return JSONResponse(status_code=404, content={"error": "quest not found"})
         _write_quests_v2(quests)
+    # Broadcast quest update so UI refreshes
+    active = [q for q in quests if q.get("status") in ("active", "in_progress", "pending")]
+    await manager.broadcast({"type": "quest", "data": {"quests": active}})
     return {"status": "updated", "quest_id": quest_id, "title": title}
 
 @app.post("/api/quest/cancel")
@@ -855,6 +871,9 @@ async def quest_cancel(body: dict):
         _write_quests_v2(quests)
         # Also update SQLite DB so /api/quests reflects the cancel
         await upsert_quest({"id": quest_id, "title": "", "status": "cancelled", "completed_at": None})
+    # Broadcast quest update so UI refreshes
+    active = [q for q in quests if q.get("status") in ("active", "in_progress", "pending")]
+    await manager.broadcast({"type": "quest", "data": {"quests": active}})
     return {"status": "cancelled", "quest_id": quest_id}
 
 @app.post("/api/quest/fail")
