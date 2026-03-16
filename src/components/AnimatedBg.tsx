@@ -26,13 +26,15 @@ export default function AnimatedBg({
     let timer: ReturnType<typeof setInterval>
     let unmounted = false
 
+    let failed = false
+
     for (let i = 1; i <= frames; i++) {
       const src = `/bg/anim/${prefix}-f${i}.png`
       srcs.push(src)
       const img = new Image()
       img.onload = () => {
         loaded++
-        if (!unmounted && loaded === frames && imgRef.current) {
+        if (!unmounted && !failed && loaded === frames && imgRef.current) {
           imgRef.current.src = srcs[0]
           timer = setInterval(() => {
             frame = (frame + 1) % frames
@@ -42,7 +44,10 @@ export default function AnimatedBg({
           }, 1000 / fps)
         }
       }
-      img.onerror = () => {}
+      img.onerror = () => {
+        // If any frame fails, stay on fallback — don't start animation
+        failed = true
+      }
       img.src = src
     }
 
@@ -55,6 +60,10 @@ export default function AnimatedBg({
       src={fallback}
       alt=""
       draggable={false}
+      onError={(e) => {
+        // Hide broken image icon if fallback also fails
+        ;(e.target as HTMLImageElement).style.visibility = 'hidden'
+      }}
       style={{
         width: '100%',
         height: '100%',
