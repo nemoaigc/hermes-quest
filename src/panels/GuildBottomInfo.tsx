@@ -12,6 +12,7 @@ import type { Quest } from '../types'
 
 const TAB_CONFIG = [
   { key: 'active' as const, label: 'ACTIVE', color: '#66bb6a', dim: '#3a5a3a' },
+  { key: 'completed' as const, label: 'DONE', color: '#4ecdc4', dim: '#3a5a5a' },
   { key: 'cancelled' as const, label: 'CANCELED', color: '#fdd835', dim: '#5a5a3a' },
   { key: 'failed' as const, label: 'FAILED', color: '#ff6b6b', dim: '#5a3a3a' },
 ] as const
@@ -54,7 +55,7 @@ export default function GuildBottomInfo() {
     setCreating(false)
   }
 
-  const [questTab, setQuestTab] = useState<'active' | 'cancelled' | 'failed'>('active')
+  const [questTab, setQuestTab] = useState<'active' | 'completed' | 'cancelled' | 'failed'>('active')
   const [cancelling, setCancelling] = useState<string | null>(null)
   const [editingQuest, setEditingQuest] = useState<string | null>(null)
 
@@ -91,9 +92,10 @@ export default function GuildBottomInfo() {
   useEffect(() => {
     fetchAllQuests().then(d => setAllQuests(Array.isArray(d) ? d : [])).catch(e => console.error('allQuests fetch failed', e))
   }, [allQuestsTrigger])
+  const completedQuests = allQuests.filter(q => q.status === 'completed')
   const cancelledQuests = allQuests.filter(q => q.status === 'cancelled')
   const failedQuests = allQuests.filter(q => q.status === 'failed')
-  const tabQuests = questTab === 'active' ? activeQuests : questTab === 'cancelled' ? cancelledQuests : failedQuests
+  const tabQuests = questTab === 'active' ? activeQuests : questTab === 'completed' ? completedQuests : questTab === 'cancelled' ? cancelledQuests : failedQuests
   const tabColor = TAB_CONFIG.find(t => t.key === questTab)?.color || '#f0e68c'
 
   return (
@@ -106,7 +108,7 @@ export default function GuildBottomInfo() {
       }}>
         <div style={{ display: 'flex', gap: '2px' }}>
           {TAB_CONFIG.map(tab => {
-            const count = tab.key === 'active' ? activeQuests.length : tab.key === 'cancelled' ? cancelledQuests.length : failedQuests.length
+            const count = tab.key === 'active' ? activeQuests.length : tab.key === 'completed' ? completedQuests.length : tab.key === 'cancelled' ? cancelledQuests.length : failedQuests.length
             const isActive = questTab === tab.key
             return (
               <button key={tab.key} onClick={() => setQuestTab(tab.key)} style={{
@@ -132,7 +134,7 @@ export default function GuildBottomInfo() {
             fontSize: '10px', color: '#5a4a3a', fontStyle: 'italic',
             fontFamily: 'Georgia, serif', padding: '12px', textAlign: 'center',
           }}>
-            {questTab === 'active' ? 'The quest board is empty...' : questTab === 'cancelled' ? 'No abandoned quests.' : 'No fallen quests.'}
+            {questTab === 'active' ? 'The quest board is empty...' : questTab === 'completed' ? 'No conquered quests yet.' : questTab === 'cancelled' ? 'No abandoned quests.' : 'No fallen quests.'}
           </div>
         ) : tabQuests.map((q) => {
           const isExpanded = expandedQuest === q.id
@@ -177,7 +179,7 @@ export default function GuildBottomInfo() {
                   ) : (
                     <div style={{
                       fontSize: '10px',
-                      color: questTab === 'active' ? '#e8d5b0' : questTab === 'cancelled' ? '#7a7a7a' : '#ff8a8a',
+                      color: questTab === 'active' ? '#e8d5b0' : questTab === 'completed' ? '#4ecdc4' : questTab === 'cancelled' ? '#7a7a7a' : '#ff8a8a',
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                       textDecoration: questTab === 'cancelled' ? 'line-through' : 'none',
                       opacity: questTab === 'cancelled' ? 0.6 : 1,
@@ -239,6 +241,11 @@ export default function GuildBottomInfo() {
                     <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355', marginTop: '3px', fontStyle: 'normal' }}>
                       {q.reward_gold ? `${q.reward_gold}G` : ''}{q.reward_gold && q.reward_xp ? ' / ' : ''}{q.reward_xp ? `${q.reward_xp}XP` : ''}
                       {q.rank ? ` [${q.rank}]` : ''}
+                      {q.completed_at && (
+                        <span style={{ color: '#6a5a3a', marginLeft: '6px' }}>
+                          {new Date(q.completed_at).toLocaleDateString()}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
