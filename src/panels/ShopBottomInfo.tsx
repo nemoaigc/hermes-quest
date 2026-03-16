@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useStore } from '../store'
 import { SOURCE_COLOR } from '../constants/theme'
 import PanelCard from '../components/PanelCard'
-import { usePotion } from '../api'
+import { drinkPotion } from '../api'
 
 function PotionShopButton({ type, label, cost, icon, color }: {
   type: 'hp_potion' | 'mp_potion'
@@ -23,7 +23,7 @@ function PotionShopButton({ type, label, cost, icon, color }: {
     setLoading(true)
     setMsg('')
     try {
-      const res = await usePotion(type)
+      const res = await drinkPotion(type)
       setMsg(`+${res.healed} ${label}!`)
       setTimeout(() => setMsg(''), 2000)
     } catch (e: unknown) {

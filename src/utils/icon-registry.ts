@@ -11,21 +11,6 @@ type Manifest = {
 let manifest: Manifest | null = null
 let loadPromise: Promise<void> | null = null
 
-// Category → continent mapping
-const CAT_TO_CONTINENT: Record<string, string> = {
-  'coding': 'software-engineering',
-  'software-development': 'software-engineering',
-  'research': 'research-knowledge',
-  'automation': 'automation-tools',
-  'creative': 'creative-arts',
-  'media': 'creative-arts',
-  'quest': 'software-engineering',
-  'dogfood': 'automation-tools',
-  'gaming': 'creative-arts',
-  'mlops': 'research-knowledge',
-  'leisure': 'creative-arts',
-}
-
 // Hand-curated mapping: actual skill name → generated icon
 const EXACT_MAP: Record<string, string> = {
   // coding / software-development (b1)
@@ -112,7 +97,7 @@ ensureManifestLoaded()
  * Get icon path for a skill by name + category.
  * Uses deterministic hash so same name always gets same icon.
  */
-export function getSkillIconPath(name: string, category?: string): string | null {
+export function getSkillIconPath(name: string, _category?: string): string | null {
   const key = name.toLowerCase().trim()
 
   // 1. Exact curated match

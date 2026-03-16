@@ -68,7 +68,7 @@ export async function discardBagItem(itemId: string): Promise<void> {
   if (!res.ok) throw new Error(`Discard item failed: ${res.status}`)
 }
 
-export async function usePotion(type: 'hp_potion' | 'mp_potion'): Promise<{
+export async function drinkPotion(type: 'hp_potion' | 'mp_potion'): Promise<{
   ok: boolean
   potion: string
   cost: number

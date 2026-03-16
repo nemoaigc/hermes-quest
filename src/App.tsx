@@ -155,7 +155,6 @@ function ConnectionIndicator() {
 export default function App() {
   const [ready, setReady] = useState(false)
   const [progress, setProgress] = useState(0)
-  const state = useStore((s) => s.state)
 
   useWebSocket()
 

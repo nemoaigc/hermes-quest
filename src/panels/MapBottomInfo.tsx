@@ -7,7 +7,6 @@ import RpgButton from '../components/RpgButton'
 /** MAP bottom — two columns: workflow list + stats & action */
 export default function MapBottomInfo() {
   const km = useStore((s) => s.knowledgeMap)
-  const state = useStore((s) => s.state)
   const [cycleLoading, setCycleLoading] = useState(false)
   const workflows = km?.workflows || km?.continents || []
   const fogCount = km?.fog_regions?.length || 0
