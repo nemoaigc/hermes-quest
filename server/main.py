@@ -1828,7 +1828,10 @@ async def use_potion(body: dict):
 
     p = POTIONS[potion_type]
     async with _state_lock:
-        state = json.loads((Path.home() / ".hermes" / "quest" / "state.json").read_text())
+        try:
+            state = json.loads((Path.home() / ".hermes" / "quest" / "state.json").read_text())
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            return JSONResponse(status_code=500, content={"error": "Game state unavailable"})
         if state.get("gold", 0) < p["cost"]:
             cost = p["cost"]
             return JSONResponse(status_code=400, content={"error": f"Not enough gold (need {cost}G)"})
@@ -1873,7 +1876,10 @@ async def update_state_field(body: dict):
 
     async with _state_lock:
         state_path = Path.home() / ".hermes" / "quest" / "state.json"
-        state = json.loads(state_path.read_text())
+        try:
+            state = json.loads(state_path.read_text())
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            return JSONResponse(status_code=500, content={"error": "Game state unavailable"})
         state.update(updates)
         # Check if HP reached 0 -> trigger reflection letter
         if state.get("hp", 0) <= 0:
