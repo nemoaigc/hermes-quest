@@ -78,38 +78,37 @@ export default function MapBottomInfo() {
         )}
       </PanelCard>
 
-      {/* Right: classify progress + cycle button — fill remaining space */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, maxWidth: '180px' }}>
-        {/* Vertical progress bar for classification */}
+      {/* Right: status + cycle button */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '90px', flexShrink: 0, justifyContent: 'center' }}>
+        {/* Status indicator */}
         <div style={{
-          flex: 1, width: '100%', minHeight: '40px',
+          flex: 1, width: '100%',
           background: '#1a140c', border: '2px solid #3a2210',
           position: 'relative', overflow: 'hidden', borderRadius: '2px',
           display: 'flex', flexDirection: 'column-reverse',
         }}>
           <div style={{
             width: '100%',
-            height: classifying ? '100%' : '0%',
+            height: classifying ? '100%' : cycleLoading ? '100%' : '0%',
             background: classifying
               ? 'linear-gradient(0deg, #5c3a1e 0%, #f0e68c 50%, #5c3a1e 100%)'
-              : 'transparent',
-            transition: classifying ? 'none' : 'height 0.3s',
-            animation: classifying ? 'classifyPulse 2s ease-in-out infinite alternate' : 'none',
+              : 'linear-gradient(0deg, #2a4a2a 0%, #66bb6a 50%, #2a4a2a 100%)',
+            transition: classifying || cycleLoading ? 'none' : 'height 0.3s',
+            animation: classifying || cycleLoading ? 'classifyPulse 2s ease-in-out infinite alternate' : 'none',
           }} />
-          {/* Center label */}
           <div style={{
             position: 'absolute', inset: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'var(--font-pixel)', fontSize: '7px',
-            color: classifying ? '#f0e68c' : '#3a2a1a',
-            textShadow: classifying ? '0 1px 3px rgba(0,0,0,0.8)' : 'none',
+            fontFamily: 'var(--font-pixel)', fontSize: '6px',
+            color: classifying ? '#f0e68c' : cycleLoading ? '#66bb6a' : cycleStatus === 'success' ? '#66bb6a' : '#3a2a1a',
+            textShadow: (classifying || cycleLoading) ? '0 1px 3px rgba(0,0,0,0.8)' : 'none',
             letterSpacing: '1px',
           }}>
-            {classifying ? 'SORTING...' : 'IDLE'}
+            {classifying ? 'SORTING' : cycleLoading ? 'CYCLING' : cycleStatus === 'success' ? 'DONE' : 'IDLE'}
           </div>
         </div>
-        <RpgButton onClick={handleStartCycle} disabled={cycleLoading}>
-          {cycleStatus === 'loading' ? 'EXPLORING...' : cycleStatus === 'success' ? 'CYCLE STARTED' : cycleStatus === 'failed' ? 'FAILED' : '\u25B6 START CYCLE'}
+        <RpgButton onClick={handleStartCycle} disabled={cycleLoading || classifying}>
+          {cycleStatus === 'loading' ? '...' : cycleStatus === 'success' ? 'DONE' : cycleStatus === 'failed' ? 'FAILED' : '\u25B6 CYCLE'}
         </RpgButton>
       </div>
     </div>
