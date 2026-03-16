@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useStore } from '../store'
-import { fetchSites, defineSite } from '../api'
+import { fetchSites, defineSite, renameSite, deleteSite } from '../api'
 import AnimatedBg from '../components/AnimatedBg'
 
 // Sprite image mapping: site sprite/workflow_id → sprite filename
@@ -76,10 +76,12 @@ function getSpriteForSite(site: Site, allSites: Site[]): string {
   return ALL_SPRITES[idx]
 }
 
-function ContinentSprite({ site, allSites, onClick, isActive }: {
+function ContinentSprite({ site, allSites, skillCount, onClick, onContextMenu, isActive }: {
   site: Site
   allSites: Site[]
+  skillCount: number
   onClick: () => void
+  onContextMenu?: (e: React.MouseEvent) => void
   isActive: boolean
 }) {
   const sprite = getSpriteForSite(site, allSites)
@@ -91,6 +93,7 @@ function ContinentSprite({ site, allSites, onClick, isActive }: {
   return (
     <div
       onClick={onClick}
+      onContextMenu={onContextMenu}
       style={{
         position: 'absolute',
         left: `${left}%`,
@@ -123,7 +126,7 @@ function ContinentSprite({ site, allSites, onClick, isActive }: {
         textShadow: '0 0 3px rgba(228,216,192,0.9)',
         whiteSpace: 'nowrap',
       }}>
-        {site.name || site.id}
+        {site.name || site.id} ({skillCount})
       </div>
       {isStarter && (
         <div style={{
@@ -248,15 +251,19 @@ function RoadLines({ definedSites, containerW, containerH }: {
 export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?: (id: string | null) => void } = {}) {
   const sites = useStore((s) => s.sites)
   const setSites = useStore((s) => s.setSites)
+  const knowledgeMap = useStore((s) => s.knowledgeMap)
   const [selectedSite, setSelectedSite] = useState<string | null>(null)
   const setSelectedRegion = useStore((s) => s.setSelectedRegion)
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ w: 600, h: 400 })
 
-  // Define modal state
+  // Define / rename / delete modal state
   const [defineModal, setDefineModal] = useState<{ siteId: string } | null>(null)
   const [defineName, setDefineName] = useState('')
   const [defining, setDefining] = useState(false)
+  const [contextMenu, setContextMenu] = useState<{ siteId: string; x: number; y: number } | null>(null)
+  const [renameModal, setRenameModal] = useState<{ siteId: string; currentName: string } | null>(null)
+  const [renameName, setRenameName] = useState('')
 
   // Fetch sites on mount
   useEffect(() => {
@@ -303,6 +310,27 @@ export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?
     } finally {
       setDefining(false)
     }
+  }
+
+  async function handleRename() {
+    if (!renameModal || !renameName.trim()) return
+    try {
+      await renameSite(renameModal.siteId, renameName.trim())
+      const data = await fetchSites()
+      setSites(Array.isArray(data.sites || data) ? (data.sites || data) : [])
+      setRenameModal(null)
+      setRenameName('')
+    } catch (err) { console.error('Rename failed:', err) }
+  }
+
+  async function handleDelete(siteId: string) {
+    if (!confirm('Skills will move to Starter Town. Delete this site?')) return
+    try {
+      await deleteSite(siteId)
+      const data = await fetchSites()
+      setSites(Array.isArray(data.sites || data) ? (data.sites || data) : [])
+      setContextMenu(null)
+    } catch (err) { console.error('Delete failed:', err) }
   }
 
   const definedSites = sites.filter((s) => s.defined)
@@ -362,16 +390,65 @@ export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?
           ))}
 
           {/* Defined sites (continents) */}
-          {definedSites.map((site) => (
-            <ContinentSprite
-              key={site.id}
-              site={site}
-              allSites={sites}
-              onClick={() => handleSiteClick(site.id)}
-              isActive={selectedSite === site.id}
-            />
-          ))}
+          {definedSites.map((site) => {
+            const wfId = site.workflow_id
+            const wf = wfId && knowledgeMap ? (knowledgeMap.workflows || []).find(w => w.id === wfId) : null
+            const sc = wf ? (wf.skills_involved?.length ?? 0) : 0
+            return (
+              <ContinentSprite
+                key={site.id}
+                site={site}
+                allSites={sites}
+                skillCount={sc}
+                onClick={() => handleSiteClick(site.id)}
+                onContextMenu={site.is_default ? undefined : (e) => {
+                  e.preventDefault()
+                  setContextMenu({ siteId: site.id, x: e.clientX, y: e.clientY })
+                }}
+                isActive={selectedSite === site.id}
+              />
+            )
+          })}
         </>
+      )}
+
+      {/* Right-click context menu */}
+      {contextMenu && (
+        <div onClick={() => setContextMenu(null)} style={{ position: 'fixed', inset: 0, zIndex: 40 }}>
+          <div style={{
+            position: 'fixed', left: contextMenu.x, top: contextMenu.y,
+            background: 'linear-gradient(180deg, #3a2a18, #2a1c0e)',
+            border: '2px solid #8b6a3c', borderRadius: '4px', padding: '4px 0', zIndex: 41, minWidth: '100px',
+          }}>
+            <button onClick={() => {
+              const site = sites.find(s => s.id === contextMenu.siteId)
+              setRenameModal({ siteId: contextMenu.siteId, currentName: site?.name || '' })
+              setRenameName(site?.name || '')
+              setContextMenu(null)
+            }} style={{ display: 'block', width: '100%', padding: '6px 12px', textAlign: 'left', fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#e8d5b0', background: 'transparent', border: 'none', cursor: 'pointer' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(90,60,20,0.4)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+            >RENAME</button>
+            <button onClick={() => handleDelete(contextMenu.siteId)} style={{ display: 'block', width: '100%', padding: '6px 12px', textAlign: 'left', fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#ff6b6b', background: 'transparent', border: 'none', cursor: 'pointer' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(90,30,20,0.4)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+            >DELETE</button>
+          </div>
+        </div>
+      )}
+
+      {/* Rename modal */}
+      {renameModal && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 30, background: 'rgba(10,8,4,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'linear-gradient(180deg, #3a2a18, #2a1c0e)', border: '2px solid #8b6a3c', borderRadius: '4px', padding: '16px 20px', textAlign: 'center' }}>
+            <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '8px', color: '#f0e68c', marginBottom: '12px' }}>RENAME REGION</div>
+            <input autoFocus value={renameName} onChange={(e) => setRenameName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleRename()} style={{ width: '200px', padding: '5px 8px', background: 'rgba(10,8,4,0.6)', border: '1px solid #5c3a1e', color: '#e8d5b0', fontFamily: 'var(--font-pixel)', fontSize: '8px', outline: 'none', marginBottom: '10px', display: 'block' }} />
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              <button onClick={() => setRenameModal(null)} style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', padding: '4px 12px', background: 'transparent', border: '1px solid rgba(139,94,60,0.5)', color: '#8b7355', cursor: 'pointer' }}>CANCEL</button>
+              <button onClick={handleRename} disabled={!renameName.trim()} style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', padding: '4px 12px', background: 'linear-gradient(180deg, #6a4428, #3a2210)', border: '2px solid #6b4c2a', color: '#f0e68c', cursor: 'pointer', opacity: !renameName.trim() ? 0.5 : 1 }}>RENAME</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Define site modal */}

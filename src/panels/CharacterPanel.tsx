@@ -9,6 +9,11 @@ const CLASS_DISPLAY: Record<string, string> = {
   ranger: 'Automancer', automancer: 'Automancer',
   paladin: 'Polymath', polymath: 'Polymath',
   necromancer: 'Hivemind', hivemind: 'Hivemind',
+  coding: 'Artificer',
+  research: 'Scholar',
+  automation: 'Automancer',
+  creative: 'Artisan',
+  ml: 'Sage',
 }
 
 function Bar({ label, current, max, color }: { label: string; current: number; max: number; color: string }) {
