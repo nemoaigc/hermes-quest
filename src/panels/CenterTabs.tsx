@@ -217,9 +217,26 @@ export default function CenterTabs() {
             )
           }
           // Resolve site ID to workflow_id for SubRegionGraph lookup
-          const sites = useStore.getState().sites
-          const clickedSite = sites.find(s => s.id === mapSelectedContinent)
-          const workflowId = clickedSite?.workflow_id || mapSelectedContinent
+          const sitesList = useStore.getState().sites
+          const clickedSite = sitesList.find(s => s.id === mapSelectedContinent)
+          const workflowId = clickedSite?.workflow_id
+
+          // Site has no workflow (Starter Town, new sites) → show empty site info
+          if (clickedSite && !workflowId) {
+            return (
+              <PanelCard style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: '#f0e68c', marginBottom: '6px' }}>
+                  {clickedSite.name || clickedSite.id}
+                </div>
+                <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '11px', color: '#6a5a3a', textAlign: 'center', maxWidth: '250px', lineHeight: '1.6' }}>
+                  {clickedSite.is_default
+                    ? 'The starting point of your journey. Uncategorized skills reside here.'
+                    : 'This region has been claimed but awaits its first cycle of exploration.'}
+                </div>
+              </PanelCard>
+            )
+          }
+
           const selected = workflowId && knowledgeMap
             ? (knowledgeMap.continents || knowledgeMap.workflows || []).find((c) => c.id === workflowId)
             : null
