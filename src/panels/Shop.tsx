@@ -227,7 +227,7 @@ export default function Shop() {
           </div>
           <div style={{
             fontSize: '9px', color: '#c8a87a', lineHeight: '1.3',
-            marginBottom: '6px', maxHeight: '30px', overflow: 'auto',
+            marginBottom: '6px', maxHeight: '60px', overflow: 'auto',
           }}>
             {selected.description}
           </div>
