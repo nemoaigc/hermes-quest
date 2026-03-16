@@ -19,7 +19,11 @@
 
 Hermes Quest is a **self-evolving RPG system** built on [Hermes Agent](https://github.com/NousResearch/hermes-agent). The agent autonomously discovers knowledge domains, trains skills, completes quests, and levels up — all driven by Hermes's native evolution cycle. **You define the world, the agent conquers it.**
 
-The key innovation: **user-defined learning domains**. Name a continent "Music" or "Machine Learning" — the agent starts learning skills in that area. Skills are auto-classified by LLM, visualized as star constellations, and tracked through an RPG progression system. Five LLM-powered NPCs serve as intelligent interfaces — the bartender searches X/Twitter, the sage analyzes your stats, the guild master recommends quests.
+The key innovation: **user-defined learning domains**. Name a continent "Music" or "Machine Learning" — the agent starts learning skills in that area. Skills are auto-classified by LLM, visualized as star constellations, and tracked through an RPG progression system. Five LLM-powered NPCs serve as intelligent interfaces — the bartender searches X/Twitter, the sage analyzes your stats, the guild master recommends quests. **Zero modifications to Hermes source code** — everything runs through native extension points (Skills + Cron + Memory).
+
+**The complete loop**: Define a learning domain (e.g. "Music") → Agent discovers and learns relevant skills → Skills auto-classified by LLM → Guild recommends targeted quests → Agent trains autonomously → Levels up → Repeat. All visualized in real-time.
+
+**完整闭环**：定义学习方向（如"音乐"）→ Agent 自动发现并学习相关技能 → LLM 自动分类 → 公会推荐针对性任务 → Agent 自主训练 → 升级 → 循环。全程实时可视化。
 
 Hermes Quest 是基于 Hermes Agent 构建的**自我进化 RPG 系统**。Agent 自主发现知识领域、训练技能、完成任务、升级。**你定义世界，Agent 去征服它。**
 
