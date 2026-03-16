@@ -323,12 +323,14 @@ export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?
     } catch (err) { console.error('Rename failed:', err) }
   }
 
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+
   async function handleDelete(siteId: string) {
-    if (!confirm('Skills will move to Starter Town. Delete this site?')) return
     try {
       await deleteSite(siteId)
       const data = await fetchSites()
       setSites(Array.isArray(data.sites || data) ? (data.sites || data) : [])
+      setDeleteConfirm(null)
       setContextMenu(null)
     } catch (err) { console.error('Delete failed:', err) }
   }
@@ -435,7 +437,7 @@ export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
             >RENAME</button>
             <div style={{ height: '1px', background: 'rgba(139,106,60,0.3)', margin: '2px 8px' }} />
-            <button onClick={() => handleDelete(contextMenu.siteId)} style={{ display: 'block', width: '100%', padding: '8px 16px', textAlign: 'left', fontFamily: 'var(--font-pixel)', fontSize: '10px', color: '#ff6b6b', background: 'transparent', border: 'none', cursor: 'pointer' }}
+            <button onClick={() => { setDeleteConfirm(contextMenu.siteId); setContextMenu(null) }} style={{ display: 'block', width: '100%', padding: '8px 16px', textAlign: 'left', fontFamily: 'var(--font-pixel)', fontSize: '10px', color: '#ff6b6b', background: 'transparent', border: 'none', cursor: 'pointer' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(90,30,20,0.4)' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
             >DELETE</button>
@@ -452,6 +454,40 @@ export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
               <button onClick={() => setRenameModal(null)} style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', padding: '4px 12px', background: 'transparent', border: '1px solid rgba(139,94,60,0.5)', color: '#8b7355', cursor: 'pointer' }}>CANCEL</button>
               <button onClick={handleRename} disabled={!renameName.trim()} style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', padding: '4px 12px', background: 'linear-gradient(180deg, #6a4428, #3a2210)', border: '2px solid #6b4c2a', color: '#f0e68c', cursor: 'pointer', opacity: !renameName.trim() ? 0.5 : 1 }}>RENAME</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirm modal */}
+      {deleteConfirm && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 30,
+          background: 'rgba(10,8,4,0.9)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: 'linear-gradient(180deg, #3a2a18, #2a1c0e)',
+            border: '2px solid #8b6a3c', borderRadius: '4px',
+            padding: '16px 20px', textAlign: 'center', maxWidth: '260px',
+          }}>
+            <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '8px', color: '#ff6b6b', marginBottom: '10px' }}>
+              ABANDON REGION
+            </div>
+            <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '10px', color: '#c8a87a', lineHeight: '1.6', marginBottom: '14px' }}>
+              Skills from this region will return to Starter Town. This cannot be undone.
+            </div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              <button onClick={() => setDeleteConfirm(null)} style={{
+                fontFamily: 'var(--font-pixel)', fontSize: '6px', padding: '5px 14px',
+                background: 'transparent', border: '1px solid rgba(139,94,60,0.5)',
+                color: '#8b7355', cursor: 'pointer',
+              }}>NAY</button>
+              <button onClick={() => handleDelete(deleteConfirm)} style={{
+                fontFamily: 'var(--font-pixel)', fontSize: '6px', padding: '5px 14px',
+                background: 'rgba(180,40,40,0.3)', border: '1px solid #ff6b6b',
+                color: '#ff6b6b', cursor: 'pointer',
+              }}>AYE, ABANDON</button>
             </div>
           </div>
         </div>

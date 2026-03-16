@@ -80,17 +80,10 @@ export default function MapBottomInfo() {
         )}
       </PanelCard>
 
-      {/* Right: stats column + action */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '120px' }}>
-        <div style={{ display: 'flex', gap: '6px' }}>
-          <PanelCard style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: '14px', color: '#f0e68c', lineHeight: 1 }}>{workflows.length}</div>
-            <div style={{ fontSize: '5px', color: '#8b7355', marginTop: '2px' }}>REGIONS</div>
-          </PanelCard>
-          <PanelCard style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: '14px', color: 'var(--cyan)', lineHeight: 1 }}>{Math.round(avgMastery * 100)}%</div>
-            <div style={{ fontSize: '5px', color: '#8b7355', marginTop: '2px' }}>MASTERY</div>
-          </PanelCard>
+      {/* Right: compact stats + action */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '100px', justifyContent: 'center' }}>
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#8b7355', textAlign: 'center' }}>
+          <span style={{ color: '#f0e68c' }}>{workflows.length}</span> regions · <span style={{ color: 'var(--cyan)' }}>{Math.round(avgMastery * 100)}%</span> mastery
         </div>
         <RpgButton onClick={handleStartCycle} disabled={cycleLoading}>
           {cycleStatus === 'loading' ? 'EXPLORING...' : cycleStatus === 'success' ? 'CYCLE STARTED' : cycleStatus === 'failed' ? 'FAILED' : '\u25B6 START CYCLE'}
