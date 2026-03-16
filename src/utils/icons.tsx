@@ -325,4 +325,14 @@ export const EVENT_ICONS: Record<string, ReactElement> = {
   telegram_sent: px([[2,4,12,8,'#42A5F5'],[3,5,10,6,'#64B5F6'],[14,6,1,1,'#1E88E5'],[7,8,3,1,'#BBDEFB']]), // message
   cycle_end: px([[2,12,12,2,'#78909C'],[7,3,2,9,'#78909C'],[4,3,2,2,'#B0BEC5'],[10,3,2,2,'#B0BEC5']]), // flag
   cycle_skip: px([[4,4,8,8,'#546E7A'],[5,5,6,6,'#37474F'],[7,6,2,1,'#78909C'],[6,8,4,1,'#78909C']]), // zzz
+  // Feedback & signals
+  user_feedback: px([[6,2,4,3,'#FFD54F'],[5,5,6,3,'#FFC107'],[4,8,8,3,'#FFD54F'],[6,11,4,3,'#FFC107']]), // speech bubble
+  positive_signal: px([[7,2,2,3,'#66BB6A'],[5,5,6,3,'#4CAF50'],[3,8,10,2,'#66BB6A'],[5,10,6,2,'#4CAF50'],[7,12,2,2,'#66BB6A']]), // green up arrow
+  correction_signal: px([[7,12,2,3,'#EF5350'],[5,8,6,3,'#E53935'],[3,6,10,2,'#EF5350'],[5,4,6,2,'#E53935'],[7,2,2,2,'#EF5350']]), // red down arrow
+  understanding_update: px([[5,2,6,6,'#4DD0E1'],[6,3,4,4,'#80DEEA'],[7,4,2,2,'#00BCD4'],[5,9,6,1,'#4DD0E1'],[5,11,4,1,'#4DD0E1'],[5,13,2,1,'#4DD0E1']]), // brain/eye
+  reflection_letter: px([[4,2,8,11,'#FFF8E1'],[5,3,6,9,'#F5E6C8'],[6,5,4,1,'#8D6E63'],[6,7,4,1,'#8D6E63'],[6,9,3,1,'#8D6E63'],[3,1,2,2,'#C62828'],[11,1,2,2,'#C62828']]), // sealed letter
+  workflow_discover: px([[3,2,10,10,'#8D6E63'],[4,3,8,8,'#D7CCC8'],[6,5,4,4,'#FFD54F'],[5,12,6,2,'#FFD54F']]), // map with star
+  mp_change: px([[6,2,4,4,'#4DD0E1'],[5,3,1,2,'#80DEEA'],[10,3,1,2,'#80DEEA'],[7,6,2,4,'#00BCD4'],[6,6,4,1,'#4DD0E1'],[4,10,8,4,'#26C6DA']]), // morale crystal
+  fog_appear: px([[3,3,10,10,'#9E9E9E'],[4,4,8,8,'#BDBDBD'],[6,6,4,4,'#E0E0E0'],[7,7,2,2,'#9E9E9E']]), // fog cloud
+  fog_clear: px([[3,3,10,10,'#90CAF9'],[4,4,8,8,'#BBDEFB'],[6,2,4,2,'#FFC107'],[6,5,4,4,'#FFD54F']]), // sun through fog
 }
