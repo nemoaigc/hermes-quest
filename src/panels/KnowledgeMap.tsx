@@ -5,7 +5,7 @@ import AnimatedBg from '../components/AnimatedBg'
 
 // Sprite image mapping: site sprite/workflow_id → sprite filename
 const SPRITE_MAP: Record<string, string> = {
-  'starter-town': '/sprites/continent-web-frontend.png',
+  'starter-town': '/sprites/continent-creative-arts.png',
   'software-engineering': '/sprites/continent-software-engineering.png',
   'research-knowledge': '/sprites/continent-research-knowledge.png',
   'automation-tools': '/sprites/continent-automation-tools.png',
