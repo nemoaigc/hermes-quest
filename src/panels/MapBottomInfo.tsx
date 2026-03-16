@@ -47,7 +47,7 @@ export default function MapBottomInfo() {
             Start a cycle to explore...
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             {definedSites.map(site => {
               const wf = site.workflow_id ? workflows.find((w: any) => w.id === site.workflow_id) : null
               const skillCount = wf ? ((wf as any).skills_involved?.length ?? 0) : 0
@@ -55,8 +55,8 @@ export default function MapBottomInfo() {
               const color = CAT_COLOR[site.domain || 'general'] || '#8b7355'
               return (
                 <div key={site.id} style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  padding: '2px 4px',
+                  flex: 1, display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '0 4px',
                   borderLeft: `2px solid ${color}`,
                 }}>
                   <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: color, flexShrink: 0 }} />
@@ -73,7 +73,7 @@ export default function MapBottomInfo() {
               )
             })}
             {undefinedCount > 0 && (
-              <div style={{ fontSize: '6px', color: '#5a4a3a', padding: '2px 4px', fontStyle: 'italic' }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', fontSize: '6px', color: '#5a4a3a', padding: '0 4px', fontStyle: 'italic' }}>
                 +{undefinedCount} unexplored
               </div>
             )}
