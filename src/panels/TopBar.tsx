@@ -11,7 +11,7 @@ export default function TopBar() {
         </span>
         <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '4px', letterSpacing: '1px', marginTop: '2px' }}>
           <span style={{ color: 'var(--text-dim)' }}>Built on </span>
-          <span style={{ color: '#00d4ff' }}>Nous Research</span>
+          <span style={{ color: '#5271FF' }}>Nous Research</span>
           <span style={{ color: 'var(--text-dim)' }}> Hermes Agent</span>
         </span>
       </div>
