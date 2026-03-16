@@ -53,24 +53,36 @@ type Site = {
   sprite?: string | null
 }
 
-function getSpriteForSite(site: Site): string {
+// Track which sprites are used to avoid duplicates
+function getSpriteForSite(site: Site, allSites: Site[]): string {
   // 1. Check sprite field directly
   if (site.sprite && SPRITE_MAP[site.sprite]) return SPRITE_MAP[site.sprite]
   // 2. Check workflow_id
-  if (site.workflow_id && SPRITE_MAP[site.workflow_id]) return SPRITE_MAP[site.workflow_id]
+  if (site.workflow_id) {
+    const wfKey = site.workflow_id.replace(/-flow$/, '')
+    if (SPRITE_MAP[wfKey]) return SPRITE_MAP[wfKey]
+  }
   // 3. Check site id
   if (SPRITE_MAP[site.id]) return SPRITE_MAP[site.id]
-  // 4. Fallback: pick from available sprites based on index
+  // 4. Pick an unused sprite (not assigned to any other site)
+  const usedSprites = new Set(allSites.filter(s => s.id !== site.id).map(s => getSpriteForSite(s, [])))
+  const unused = ALL_SPRITES.filter(sp => !usedSprites.has(sp))
+  if (unused.length > 0) {
+    const idx = parseInt(site.id.replace(/\D/g, '') || '0', 10) % unused.length
+    return unused[idx]
+  }
+  // 5. Final fallback
   const idx = parseInt(site.id.replace(/\D/g, '') || '0', 10) % ALL_SPRITES.length
   return ALL_SPRITES[idx]
 }
 
-function ContinentSprite({ site, onClick, isActive }: {
+function ContinentSprite({ site, allSites, onClick, isActive }: {
   site: Site
+  allSites: Site[]
   onClick: () => void
   isActive: boolean
 }) {
-  const sprite = getSpriteForSite(site)
+  const sprite = getSpriteForSite(site, allSites)
   const pos = SITE_POSITIONS[site.id] || { x: 0.5, y: 0.5 }
   const left = PARCHMENT.left + pos.x * PARCHMENT.width
   const top = PARCHMENT.top + pos.y * PARCHMENT.height
@@ -354,6 +366,7 @@ export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?
             <ContinentSprite
               key={site.id}
               site={site}
+              allSites={sites}
               onClick={() => handleSiteClick(site.id)}
               isActive={selectedSite === site.id}
             />
