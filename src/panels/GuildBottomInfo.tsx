@@ -12,7 +12,7 @@ import RpgButton from '../components/RpgButton'
 
 const TAB_CONFIG = [
   { key: 'active' as const, label: 'ACTIVE', color: '#66bb6a', dim: '#3a5a3a' },
-  { key: 'cancelled' as const, label: 'CANCELLED', color: '#fdd835', dim: '#5a5a3a' },
+  { key: 'cancelled' as const, label: 'CANCELED', color: '#fdd835', dim: '#5a5a3a' },
   { key: 'failed' as const, label: 'FAILED', color: '#ff6b6b', dim: '#5a3a3a' },
 ] as const
 
