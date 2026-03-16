@@ -237,11 +237,9 @@ export default function CenterTabs() {
             )
           }
 
-          const selected = workflowId && knowledgeMap
+          const displayWorkflow = workflowId && knowledgeMap
             ? (knowledgeMap.continents || knowledgeMap.workflows || []).find((c) => c.id === workflowId)
             : null
-          const displayWorkflow = selected
-            || (knowledgeMap ? (knowledgeMap.continents || knowledgeMap.workflows || [])[0] : null)
           if (displayWorkflow && knowledgeMap) {
             return (
               <PanelCard style={{ width: '100%', height: '100%', padding: 0, overflow: 'hidden' }}>

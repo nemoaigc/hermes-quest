@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { useStore } from '../store'
 import { formatEvent, formatTime } from '../utils/formatters'
 import { EVENT_ICONS } from '../utils/icons'
-import { API_URL } from '../api'
+import { API_URL, failQuest, fetchActiveQuests } from '../api'
 import { LS_KEYS } from '../constants/storage'
 
 const FEEDBACKABLE_TYPES = new Set(['skill_drop', 'cycle_end', 'quest_complete', 'train_start'])
@@ -45,14 +45,36 @@ export default function AdventureLog() {
   const [sentFeedback, setSentFeedback] = useState<Record<string, 'positive' | 'negative'>>(loadFeedback)
   const [clearedAt, setClearedAt] = useState(loadClearedAt)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [failPrompt, setFailPrompt] = useState<string | null>(null)
+  const [failingQuest, setFailingQuest] = useState(false)
 
-  const handleFeedback = useCallback((key: string, type: 'positive' | 'negative', event_type: string, detail: string) => {
+  const handleFeedback = useCallback((key: string, type: 'positive' | 'negative', event_type: string, detail: string, eventData?: Record<string, unknown>) => {
     setSentFeedback((prev) => {
       const next = { ...prev, [key]: type }
       saveFeedback(next)
       return next
     })
     sendFeedback(type, event_type, detail)
+    // If thumbs-down on quest-related event, prompt to fail the quest
+    if (type === 'negative' && (event_type === 'quest_complete' || event_type === 'train_start') && eventData) {
+      const questId = (eventData.quest_id as string) || (eventData.id as string)
+      if (questId) {
+        setFailPrompt(key)
+      }
+    }
+  }, [])
+
+  const handleFailFromChronicle = useCallback(async (questId: string) => {
+    setFailingQuest(true)
+    try {
+      await failQuest(questId)
+      const questData = await fetchActiveQuests()
+      useStore.getState().setQuests(questData.quests || [])
+    } catch (e) {
+      console.error('failQuest from chronicle failed', e)
+    }
+    setFailingQuest(false)
+    setFailPrompt(null)
   }, [])
 
   // Filter events older than cleared timestamp
@@ -98,7 +120,6 @@ export default function AdventureLog() {
                 onMouseEnter={() => setHoveredIdx(i)}
                 onMouseLeave={() => setHoveredIdx(null)}
                 style={{
-                  display: 'flex', gap: '6px', alignItems: 'flex-start',
                   padding: '4px 4px 4px 8px',
                   position: 'relative',
                   marginBottom: '2px',
@@ -112,51 +133,94 @@ export default function AdventureLog() {
                   border: '1px solid rgba(0,0,0,0.3)',
                 }} />
 
-                {/* Icon */}
-                <span style={{ width: 14, height: 14, display: 'inline-flex', flexShrink: 0, marginTop: '1px' }}>
-                  {EVENT_ICONS[type] || EVENT_ICONS['cycle_start']}
-                </span>
+                {/* Event row */}
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+                  {/* Icon */}
+                  <span style={{ width: 14, height: 14, display: 'inline-flex', flexShrink: 0, marginTop: '1px' }}>
+                    {EVENT_ICONS[type] || EVENT_ICONS['cycle_start']}
+                  </span>
 
-                {/* Content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '9px', color, lineHeight: '1.3' }}>{text}</div>
-                  <div style={{
-                    fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.6vw, 7px)',
-                    color: 'var(--text-dim)', marginTop: '1px',
-                  }}>
-                    {formatTime(event.ts)}
+                  {/* Content */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '9px', color, lineHeight: '1.3' }}>{text}</div>
+                    <div style={{
+                      fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.6vw, 7px)',
+                      color: 'var(--text-dim)', marginTop: '1px',
+                    }}>
+                      {formatTime(event.ts)}
+                    </div>
                   </div>
+
+                  {/* Feedback buttons — only for certain event types, visible on hover */}
+                  {canFeedback && (
+                    <div style={{
+                      display: 'flex', gap: '2px', alignItems: 'center',
+                      opacity: alreadySent ? 0.6 : (hoveredIdx === i ? 1 : 0.25),
+                      transition: 'opacity 0.15s',
+                      pointerEvents: alreadySent ? 'none' : 'auto',
+                      flexShrink: 0,
+                    }}>
+                      <button
+                        onClick={() => handleFeedback(eventKey, 'positive', type, text, event.data)}
+                        style={{
+                          background: alreadySent === 'positive' ? 'rgba(0,180,0,0.2)' : 'none',
+                          border: 'none', cursor: 'pointer', padding: '1px 2px',
+                          fontSize: '8px', lineHeight: 1,
+                          filter: alreadySent === 'negative' ? 'grayscale(1)' : 'none',
+                        }}
+                        title="Good outcome"
+                      >👍</button>
+                      <button
+                        onClick={() => handleFeedback(eventKey, 'negative', type, text, event.data)}
+                        style={{
+                          background: alreadySent === 'negative' ? 'rgba(180,0,0,0.2)' : 'none',
+                          border: 'none', cursor: 'pointer', padding: '1px 2px',
+                          fontSize: '8px', lineHeight: 1,
+                          filter: alreadySent === 'positive' ? 'grayscale(1)' : 'none',
+                        }}
+                        title="Bad outcome"
+                      >👎</button>
+                    </div>
+                  )}
                 </div>
 
-                {/* Feedback buttons — only for certain event types, visible on hover */}
-                {canFeedback && (
+                {/* Fail quest prompt — shown after thumbs-down on quest events */}
+                {failPrompt === eventKey && (
                   <div style={{
-                    display: 'flex', gap: '2px', alignItems: 'center',
-                    opacity: alreadySent ? 0.6 : (hoveredIdx === i ? 1 : 0.25),
-                    transition: 'opacity 0.15s',
-                    pointerEvents: alreadySent ? 'none' : 'auto',
-                    flexShrink: 0,
+                    display: 'flex', gap: '4px', alignItems: 'center',
+                    background: 'rgba(180,40,40,0.15)',
+                    border: '1px solid rgba(255,107,107,0.4)',
+                    borderRadius: '3px',
+                    padding: '2px 6px',
+                    marginTop: '3px',
+                    marginLeft: '20px',
                   }}>
+                    <span style={{
+                      fontFamily: 'Georgia, serif', fontStyle: 'italic',
+                      fontSize: '8px', color: '#ff6b6b',
+                    }}>Mark quest as failed?</span>
                     <button
-                      onClick={() => handleFeedback(eventKey, 'positive', type, text)}
-                      style={{
-                        background: alreadySent === 'positive' ? 'rgba(0,180,0,0.2)' : 'none',
-                        border: 'none', cursor: 'pointer', padding: '1px 2px',
-                        fontSize: '8px', lineHeight: 1,
-                        filter: alreadySent === 'negative' ? 'grayscale(1)' : 'none',
+                      disabled={failingQuest}
+                      onClick={() => {
+                        const qid = (event.data?.quest_id as string) || (event.data?.id as string)
+                        if (qid) handleFailFromChronicle(qid)
                       }}
-                      title="Good outcome"
-                    >👍</button>
+                      style={{
+                        fontFamily: 'var(--font-pixel)', fontSize: '5px',
+                        padding: '1px 6px', cursor: failingQuest ? 'wait' : 'pointer',
+                        background: 'rgba(180,40,40,0.3)', border: '1px solid #ff6b6b',
+                        color: '#ff6b6b',
+                      }}
+                    >{failingQuest ? '...' : 'AYE'}</button>
                     <button
-                      onClick={() => handleFeedback(eventKey, 'negative', type, text)}
+                      onClick={() => setFailPrompt(null)}
                       style={{
-                        background: alreadySent === 'negative' ? 'rgba(180,0,0,0.2)' : 'none',
-                        border: 'none', cursor: 'pointer', padding: '1px 2px',
-                        fontSize: '8px', lineHeight: 1,
-                        filter: alreadySent === 'positive' ? 'grayscale(1)' : 'none',
+                        fontFamily: 'var(--font-pixel)', fontSize: '5px',
+                        padding: '1px 6px', cursor: 'pointer',
+                        background: 'transparent', border: '1px solid rgba(139,94,60,0.5)',
+                        color: '#8b7355',
                       }}
-                      title="Bad outcome"
-                    >👎</button>
+                    >NAY</button>
                   </div>
                 )}
               </div>

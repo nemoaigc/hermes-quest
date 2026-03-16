@@ -414,22 +414,28 @@ export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?
 
       {/* Right-click context menu */}
       {contextMenu && (
-        <div onClick={() => setContextMenu(null)} style={{ position: 'fixed', inset: 0, zIndex: 40 }}>
-          <div style={{
-            position: 'fixed', left: contextMenu.x, top: contextMenu.y,
-            background: 'linear-gradient(180deg, #3a2a18, #2a1c0e)',
-            border: '2px solid #8b6a3c', borderRadius: '4px', padding: '4px 0', zIndex: 41, minWidth: '100px',
-          }}>
+        <div onClick={() => setContextMenu(null)} style={{ position: 'fixed', inset: 0, zIndex: 9990 }}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'fixed', left: contextMenu.x, top: contextMenu.y,
+              background: 'linear-gradient(180deg, #3a2a18, #2a1c0e)',
+              border: '2px solid #8b6a3c', borderRadius: '6px',
+              padding: '4px 0', zIndex: 9991, minWidth: '120px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+            }}
+          >
             <button onClick={() => {
               const site = sites.find(s => s.id === contextMenu.siteId)
               setRenameModal({ siteId: contextMenu.siteId, currentName: site?.name || '' })
               setRenameName(site?.name || '')
               setContextMenu(null)
-            }} style={{ display: 'block', width: '100%', padding: '6px 12px', textAlign: 'left', fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#e8d5b0', background: 'transparent', border: 'none', cursor: 'pointer' }}
+            }} style={{ display: 'block', width: '100%', padding: '8px 16px', textAlign: 'left', fontFamily: 'var(--font-pixel)', fontSize: '10px', color: '#e8d5b0', background: 'transparent', border: 'none', cursor: 'pointer' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(90,60,20,0.4)' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
             >RENAME</button>
-            <button onClick={() => handleDelete(contextMenu.siteId)} style={{ display: 'block', width: '100%', padding: '6px 12px', textAlign: 'left', fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#ff6b6b', background: 'transparent', border: 'none', cursor: 'pointer' }}
+            <div style={{ height: '1px', background: 'rgba(139,106,60,0.3)', margin: '2px 8px' }} />
+            <button onClick={() => handleDelete(contextMenu.siteId)} style={{ display: 'block', width: '100%', padding: '8px 16px', textAlign: 'left', fontFamily: 'var(--font-pixel)', fontSize: '10px', color: '#ff6b6b', background: 'transparent', border: 'none', cursor: 'pointer' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(90,30,20,0.4)' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
             >DELETE</button>
@@ -439,7 +445,7 @@ export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?
 
       {/* Rename modal */}
       {renameModal && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 30, background: 'rgba(10,8,4,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9990, background: 'rgba(10,8,4,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: 'linear-gradient(180deg, #3a2a18, #2a1c0e)', border: '2px solid #8b6a3c', borderRadius: '4px', padding: '16px 20px', textAlign: 'center' }}>
             <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '8px', color: '#f0e68c', marginBottom: '12px' }}>RENAME REGION</div>
             <input autoFocus value={renameName} onChange={(e) => setRenameName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleRename()} style={{ width: '200px', padding: '5px 8px', background: 'rgba(10,8,4,0.6)', border: '1px solid #5c3a1e', color: '#e8d5b0', fontFamily: 'var(--font-pixel)', fontSize: '8px', outline: 'none', marginBottom: '10px', display: 'block' }} />
