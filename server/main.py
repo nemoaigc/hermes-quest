@@ -577,6 +577,30 @@ async def get_knowledge_map(refresh: bool = Query(False)):
         wf["mastery"] = min(1.0, max(0.0, wf.get("mastery", 0)))
         for sn in wf.get("sub_nodes", []):
             sn["mastery"] = min(1.0, max(0.0, sn.get("mastery", 0)))
+    # Auto-reconcile: place orphaned DB skills into starter-town workflow
+    try:
+        import sqlite3
+        from config import DB_PATH
+        _db = sqlite3.connect(str(DB_PATH))
+        _db.row_factory = sqlite3.Row
+        _db_skills = {r["name"] for r in _db.execute("SELECT name FROM skills WHERE name IS NOT NULL AND TRIM(name) != ''").fetchall()}
+        _db.close()
+        _map_skills = set()
+        for _wf in data.get("workflows", []):
+            _map_skills.update(_wf.get("skills_involved", []))
+        _orphaned = _db_skills - _map_skills
+        if _orphaned:
+            _starter = next((_wf for _wf in data.get("workflows", []) if _wf["id"] == "starter-town"), None)
+            if _starter:
+                _starter["skills_involved"] = sorted(set(_starter.get("skills_involved", [])) | _orphaned)
+                # Persist the fix so it doesn't keep running
+                try:
+                    MAP_FILE.write_text(json.dumps(data, indent=2))
+                except Exception:
+                    pass
+                logger.info(f"Auto-placed {len(_orphaned)} orphaned skills into starter-town: {_orphaned}")
+    except Exception as _e:
+        logger.debug(f"Orphan skill check skipped: {_e}")
     # Generate recommended_quests dynamically
     if refresh or "recommended_quests" not in data or not data["recommended_quests"]:
         data["recommended_quests"] = _generate_recommended_quests(data)
@@ -940,13 +964,13 @@ async def quest_complete(body: dict):
     quests = _read_quests_v2()
     found = False
     for q in quests:
-        if q["id"] == quest_id and q.get("status") in ("active", "in_progress"):
+        if q["id"] == quest_id and q.get("status") in ("active", "in_progress", "pending"):
             q["status"] = "completed"
             from datetime import datetime, timezone
             q["completed_at"] = datetime.now(timezone.utc).isoformat()
             found = True
             break
-    
+
     if not found:
         return JSONResponse(status_code=404, content={"error": "quest not found or already completed"})
     
@@ -1153,7 +1177,7 @@ async def reflection_acknowledge():
             state = json.loads(state_path.read_text())
         except (FileNotFoundError, json.JSONDecodeError):
             return {"error": "no state"}
-        
+
         hp_max = state.get("hp_max", 100)
         state["hp"] = max(state.get("hp", 0), int(hp_max * GAME_BALANCE["reflection_hp_recovery_ratio"]))
         state["reflection_letter_pending"] = False
@@ -1161,7 +1185,14 @@ async def reflection_acknowledge():
         if state.get("hp", 0) <= 0:
             state["reflection_letter_pending"] = True
         state_path.write_text(json.dumps(state, indent=2))
-    
+
+    # Delete old reflection letter so next HP=0 generates a fresh one
+    letter_path = Path.home() / ".hermes" / "quest" / "reflection-letter.md"
+    try:
+        letter_path.unlink(missing_ok=True)
+    except OSError:
+        pass
+
     await manager.broadcast({"type": "state", "data": state})
     return {"ok": True, "hp": state["hp"]}
 
