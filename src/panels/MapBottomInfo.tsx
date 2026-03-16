@@ -11,7 +11,22 @@ export default function MapBottomInfo() {
   const km = useStore((s) => s.knowledgeMap)
   const sites = useStore((s) => s.sites)
   const classifying = useStore((s) => s.classifying)
+  const [classifyDone, setClassifyDone] = useState(false)
   const [cycleLoading, setCycleLoading] = useState(false)
+
+  // Track classify done state
+  useEffect(() => {
+    if (classifying) { setClassifyDone(false) }
+  }, [classifying])
+  // When classifying stops, briefly show DONE
+  useEffect(() => {
+    const prev = (window as any).__prevClassifying
+    if (prev && !classifying) {
+      setClassifyDone(true)
+      setTimeout(() => setClassifyDone(false), 3000)
+    }
+    ;(window as any).__prevClassifying = classifying
+  }, [classifying])
   const workflows = km?.workflows || km?.continents || []
   const avgMastery = workflows.length > 0
     ? workflows.reduce((a, w) => a + ((w as any).mastery || 0), 0) / workflows.length
@@ -80,7 +95,7 @@ export default function MapBottomInfo() {
 
       {/* Right: status + cycle button */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '90px', flexShrink: 0, justifyContent: 'center' }}>
-        {/* Status indicator */}
+        {/* Status progress bar — fills 0→100% */}
         <div style={{
           flex: 1, width: '100%',
           background: '#1a140c', border: '2px solid #3a2210',
@@ -89,22 +104,25 @@ export default function MapBottomInfo() {
         }}>
           <div style={{
             width: '100%',
-            height: classifying ? '100%' : cycleLoading ? '100%' : '0%',
+            height: classifying ? '95%' : classifyDone ? '100%' : cycleLoading ? '95%' : '0%',
             background: classifying
-              ? 'linear-gradient(0deg, #5c3a1e 0%, #f0e68c 50%, #5c3a1e 100%)'
-              : 'linear-gradient(0deg, #2a4a2a 0%, #66bb6a 50%, #2a4a2a 100%)',
-            transition: classifying || cycleLoading ? 'none' : 'height 0.3s',
-            animation: classifying || cycleLoading ? 'classifyPulse 2s ease-in-out infinite alternate' : 'none',
+              ? 'linear-gradient(0deg, #3a2210, #f0e68c)'
+              : classifyDone
+                ? '#66bb6a'
+                : cycleLoading
+                  ? 'linear-gradient(0deg, #1a3a1a, #66bb6a)'
+                  : 'transparent',
+            transition: classifying ? 'height 8s linear' : classifyDone ? 'height 0.3s' : cycleLoading ? 'height 10s linear' : 'height 0.5s',
           }} />
           <div style={{
             position: 'absolute', inset: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'var(--font-pixel)', fontSize: '6px',
-            color: classifying ? '#f0e68c' : cycleLoading ? '#66bb6a' : cycleStatus === 'success' ? '#66bb6a' : '#3a2a1a',
-            textShadow: (classifying || cycleLoading) ? '0 1px 3px rgba(0,0,0,0.8)' : 'none',
+            color: classifying ? '#f0e68c' : classifyDone ? '#fff' : cycleLoading ? '#66bb6a' : '#3a2a1a',
+            textShadow: (classifying || cycleLoading || classifyDone) ? '0 1px 3px rgba(0,0,0,0.8)' : 'none',
             letterSpacing: '1px',
           }}>
-            {classifying ? 'SORTING' : cycleLoading ? 'CYCLING' : cycleStatus === 'success' ? 'DONE' : 'IDLE'}
+            {classifying ? 'SORTING' : classifyDone ? 'DONE' : cycleLoading ? 'CYCLING' : 'IDLE'}
           </div>
         </div>
         <RpgButton onClick={handleStartCycle} disabled={cycleLoading || classifying}>
