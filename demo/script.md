@@ -1,153 +1,171 @@
-# Hermes Quest Demo 录制脚本
+# Hermes Quest Demo Script
 
-> 目标: 4-5 分钟 | 字幕 + 8-bit BGM | Playwright 自动录制
-> 核心叙事线: "你的 AI 不只是工具 — 它是一个会成长的冒险者，而你能亲眼看到"
+> Target: 4-5 min | Subtitles + 8-bit BGM | Playwright automated recording
+> Core narrative: "Your AI isn't just a tool — it's an adventurer that grows, and you can watch it happen."
 
 ---
 
-## 叙事节奏
+## Narrative Rhythm
 
-| 阶段 | 时间 | 作用 |
-|------|------|------|
-| Hook | 0:00-0:10 | 问题共鸣，10秒内抓住观众 |
-| 破题 | 0:10-0:15 | 一句话说清产品 |
-| 角色 | 0:15-0:30 | 建立 RPG 代入感 |
-| 世界 | 0:30-1:10 | 视觉冲击 — 地图+命名+星座 |
-| 社交 | 1:10-2:15 | 深度功能 — NPC 不是花瓶 |
-| 任务 | 2:15-3:00 | 交互核心 — 任务+商店+药水 |
-| 反馈 | 3:00-3:30 | 闭环 — 日志+反馈+标记失败 |
-| 高潮 | 3:30-3:55 | 进化周期 — 全系统联动 |
-| 收尾 | 3:55-4:30 | 价值主张 + Credits |
+| Phase | Time | Purpose |
+|-------|------|---------|
+| Hook | 0:00-0:10 | Emotional resonance in 10 seconds |
+| Reveal | 0:10-0:20 | One-line product pitch |
+| Character | 0:20-0:35 | RPG immersion — stats mean something |
+| World | 0:35-1:15 | Visual impact — map + name sites + star graph |
+| Social | 1:15-2:30 | Deep features — NPCs are real tools |
+| Quest | 2:30-3:20 | Core loop — quests + shop + skills |
+| Feedback | 3:20-3:50 | Closed loop — chronicle + feedback + fail |
+| Climax | 3:50-4:15 | Evolution cycle — the whole system in action |
+| Credits | 4:15-4:30 | Thank you + links |
 
 ---
 
 ## S01: Hook (0:00-0:05)
-**画面**: 纯黑屏，像素字逐字浮现
-**字幕**: "你的 AI 每天帮你干活...但你知道它在变强吗？"
-**音效**: 安静，轻微 chiptune 前奏渐入
+**Visual**: Pure black screen, pixel text fades in letter by letter
+**Subtitle**: "Your AI helps you every day... but did you know it's getting stronger?"
+**SFX**: Silence, faint chiptune intro fading in
 
-## S02: 破题 (0:05-0:15)
-**画面**: 黑屏渐明 → Dashboard 全景浮现
-**字幕**: "Hermes Quest — 把 Agent 的进化，变成一场看得见的 RPG 冒险。"
-**音效**: intro.wav 旋律起
+## S02: Reveal (0:05-0:20)
+**Visual**: Black fades to full Dashboard panorama
+**Subtitle**: "Hermes Quest — turn your Agent's evolution into a visible RPG adventure."
+**SFX**: intro.wav melody kicks in
 
-## S03: 角色面板 (0:15-0:30)
-**操作**: hover 左侧角色面板 HP → MP → XP bar
-**字幕**:
-- "HP = 可靠性。任务成功就涨，犯错就掉。"
-- "MP = 士气。你的反馈直接驱动。"
-- "XP = 经验。每次进化周期都在积累。"
-**音效**: ambient.wav
+## S03: Character Panel (0:20-0:35)
+**Action**: Hover left panel HP → MP → XP bars, hover gold, hover level/class
+**Subtitle**:
+- "HP = Stability. Succeeds → goes up. Fails → drops."
+- "MP = Morale. Driven by YOUR feedback."
+- "XP = Experience. Every evolution cycle adds up."
+- "Gold fuels potions, skills, and exploration."
+**SFX**: ambient.wav
 
-## S04: 世界地图 (0:30-0:45)
-**操作**: MAP tab，缓慢 hover 各大陆 sprite + 道路连线 + 迷雾
-**字幕**:
-- "世界地图 — 每个大陆是 Agent 的一个工作流领域"
-- "迷雾区域？尚未命名的新大陆。"
-**音效**: whoosh.wav
+## S04: World Map (0:35-0:50)
+**Action**: MAP tab, slowly hover each continent sprite + road lines + fog areas
+**Subtitle**:
+- "The World Map — each continent is a knowledge domain."
+- "Roads connect related domains. Fog hides the unexplored."
+**SFX**: whoosh.wav
 
-## S05: 命名大陆 (0:45-1:00)
-**操作**: 点击迷雾 "???" → "NAME THIS REGION" 对话框 → 输入 "Machine Learning" → 点 DEFINE → 大陆出现
-**字幕**:
-- "点击迷雾 → 为 Agent 的新领域命名"
-- "大陆由你定义 — 这是你的世界。"
-**音效**: click.wav → confirm.wav
-> 展示 Custom Site 系统。右键已有大陆可 RENAME/DELETE。
+## S05: Name a Continent (0:50-1:05)
+**Action**: Click fog "???" → "NAME THIS REGION" dialog → type "Machine Learning" → click DEFINE → continent appears with sprite
+**Subtitle**:
+- "Click the fog → name a new region for your Agent."
+- "Your world, your rules."
+**SFX**: click.wav → confirm.wav
+> Also show: right-click existing continent → RENAME / DELETE menu
 
-## S06: 星座技能图 (1:00-1:10)
-**操作**: 点击一个大陆 → 底部 SubRegion 星座图 → hover 技能节点
-**字幕**:
-- "点进大陆 → 技能星座图"
-- "每颗星 = 一个已学技能。git, docker, python..."
-**音效**: click.wav
+## S06: Star Graph (1:05-1:15)
+**Action**: Click a continent (e.g. Software) → bottom panel shows SubRegion star graph → hover skill nodes
+**Subtitle**:
+- "Click a continent → skill constellation."
+- "Every star is a learned skill. git, docker, python..."
+**SFX**: click.wav
 
-## S07: 酒馆群聊 (1:10-1:35)
-**操作**: TAVERN tab → 场景区域 CHATTER → 观看 NPC 自动聊天 → 输入参与
-**字幕**:
-- "酒馆 — 五个 NPC 在讨论你的近况"
-- [输入] "你们觉得我该学什么新技能"
-- "不是预设台词 — 每个 NPC 都接入真实数据 + LLM。"
-**音效**: typing.wav
+## S07: Tavern Group Chat (1:15-1:35)
+**Action**: TAVERN tab → scene area CHATTER → watch NPCs auto-chat → type a message to join
+**Subtitle**:
+- "The Tavern — five NPCs discuss your recent adventures."
+- [User types]: "What new skill should I learn next?"
+- "Not scripted — every NPC runs on real data + LLM."
+**SFX**: typing.wav
 
-## S08: NPC 私聊 — Gus 搜新闻 (1:35-2:00)
-**操作**: 底部 NPC 画廊点 Gus → CHAT → 输入 "AI 最近有什么新闻" → 等回复
-**字幕**:
-- "酒保 Gus 能搜索 X/Twitter 实时新闻"
-- [回复出现 — 酒馆八卦风转述]
-- "NPC 即工具。对话就是交互界面。"
-**音效**: typing.wav → confirm.wav
+## S08: Gus Searches X/Twitter (1:35-2:00)
+**Action**: Bottom NPC gallery → click Gus → CHAT → type "What's the latest AI news?" → wait for reply
+**Subtitle**:
+- "Gus the bartender can search X/Twitter for real-time news."
+- [Reply appears — tavern gossip style retelling]
+- "NPCs are tools. Conversation IS the interface."
+**SFX**: typing.wav → confirm.wav
 
-## S09: NPC 私聊 — Orin 深度分析 (2:00-2:15)
-**操作**: 返回 → 点 Orin → CHAT → "分析下我的成长" → 等回复
-**字幕**:
-- "贤者 Orin — 读的是 Agent 的真实游戏数据，不是幻觉"
-**音效**: typing.wav
+## S09: Orin Deep Analysis (2:00-2:15)
+**Action**: Back → click Orin → CHAT → "Analyze my growth" → wait for reply
+**Subtitle**:
+- "The Sage reads your REAL game data — not hallucinations."
+**SFX**: typing.wav
 
-## S10: 公会任务板 (2:15-2:35)
-**操作**: GUILD tab → 展示公告板推荐任务卡 → hover → 点 ACCEPT
-**字幕**:
-- "公会任务板 — Agent 分析弱项，自动推荐学习任务"
-- "点击 ACCEPT → Agent 在下次进化周期执行"
-**音效**: click.wav → confirm.wav
+## S10: Personal NPC Chat — Gus's Secret (2:15-2:30)
+**Action**: Back → click Gus → CHAT → "Do you have a crush on Lyra?" → wait for reply
+**Subtitle**:
+- "Every NPC has personality, secrets, and relationships."
+- [Gus nervously deflects]
+**SFX**: typing.wav
 
-## S11: 创建自定义任务 (2:35-2:50)
-**操作**: 底部输入 "学习 Docker 容器化" → POST → 任务出现在 ACTIVE 列表
-**字幕**:
-- [输入] "学习 Docker 容器化"
-- "你也可以给 Agent 布置自定义任务"
-**音效**: typing.wav → confirm.wav
-> 任务由 Cycle 自动执行。可 EDIT/CANCEL，无手动完成按钮。
+## S11: Guild Quest Board (2:30-2:50)
+**Action**: GUILD tab → show bulletin board recommended quests → hover → click ACCEPT on one
+**Subtitle**:
+- "The Guild Board — Agent analyzes weaknesses and recommends quests."
+- "Click ACCEPT → Agent executes in the next evolution cycle."
+**SFX**: click.wav → confirm.wav
 
-## S12: 技能商店 + 药水 (2:50-3:10)
-**操作**: SHOP tab → 货架展示 Hub 技能 → 点一个 → ACQUIRE SKILL → 底部 POTIONS 栏 → 点 HP POTION
-**字幕**:
-- "技能商店 — 从 Hermes Hub 浏览社区技能，一键安装"
-- "药水栏 — 花金币给 Agent 回血回蓝"
-**音效**: click.wav → level-up.wav
-> SHOP 展示可安装的 Hub 社区技能，不是已学技能。底部有 HP Potion (200G) / MP Potion (150G)。
+## S12: Create Custom Quest (2:50-3:00)
+**Action**: Bottom input → type "Learn Docker containerization" → POST → quest appears in ACTIVE list
+**Subtitle**:
+- [User types]: "Learn Docker containerization"
+- "You can also assign custom quests."
+**SFX**: typing.wav → confirm.wav
 
-## S13: 冒险日志 + 反馈 + 标记失败 (3:10-3:30)
-**操作**: 右侧 CHRONICLE → hover 事件 → 点 thumbs up → HP/MP 变化 → 对 quest 事件点 thumbs down → "Mark quest as failed?" → AYE
-**字幕**:
-- "冒险日志记录 Agent 的每个动作"
-- "竖个大拇指 — HP 恢复，士气提升"
-- "摇摇头 — 还能直接标记任务失败"
-- "人机协作的进化闭环。"
-**音效**: level-up.wav
-> thumbs down 在 quest 类事件上会触发 "Mark quest as failed?" 确认弹窗。
+## S13: Skill Shop + Install + Potions (3:00-3:20)
+**Action**: SHOP tab → browse shelf → click a skill → ACQUIRE SKILL → bottom POTIONS bar → click HP POTION
+**Subtitle**:
+- "The Skill Shop — browse community skills from Hermes Hub."
+- "One click to install. Gold to heal."
+- "HP Potion 200G. MP Potion 150G."
+**SFX**: click.wav → level-up.wav
 
-## S14: 触发进化周期 (3:30-3:55)
-**操作**: MAP tab → 底部栏 START CYCLE → 等待状态变化
-**字幕**:
-- "触发进化周期 —"
-- "Agent 自主分析对话 → 发现工作模式 → 训练新技能 → 升级"
-- "每两小时自动运行，也可手动触发。"
-**音效**: level-up.wav 渐强
+## S14: Skills Panel — Learn & Forget (3:20-3:35)
+**Action**: Right side SKILLS panel → hover skills → click one → FORGET → confirm
+**Subtitle**:
+- "44 learned skills, organized by domain."
+- "Don't need one? Forget it — make room for new growth."
+**SFX**: click.wav
 
-## S15: 收尾 (3:55-4:10)
-**画面**: Dashboard 全景 → 缓慢渐暗
-**字幕**:
+## S15: Chronicle + Feedback + Fail Quest (3:35-3:50)
+**Action**: Left CHRONICLE → hover events → click 👍 → HP/MP changes → click 👎 on quest event → "Mark quest as failed?" → AYE
+**Subtitle**:
+- "The Chronicle logs every action."
+- "Thumbs up → stability restored, morale boosted."
+- "Thumbs down → mark the quest as failed."
+- "The human-AI feedback loop."
+**SFX**: level-up.wav
+
+## S16: Skill Classification (3:50-4:00)
+**Action**: MAP tab → show bottom panel site list with skill counts → right-click a site → RENAME → new name → watch "SORTING" progress bar → skills redistribute
+**Subtitle**:
+- "Rename a region → AI reclassifies all skills automatically."
+- "LLM-powered skill sorting across your knowledge map."
+**SFX**: confirm.wav
+
+## S17: Evolution Cycle (4:00-4:15)
+**Action**: MAP tab → bottom panel → click START CYCLE → watch status change
+**Subtitle**:
+- "The Evolution Cycle —"
+- "Agent analyzes → discovers patterns → trains new skills → levels up."
+- "Runs every 2 hours. Or trigger it manually."
+**SFX**: level-up.wav crescendo
+
+## S18: Closing (4:15-4:25)
+**Visual**: Dashboard panorama → slow fade to black
+**Subtitle**:
 - "Hermes Quest"
-- "让 AI Agent 的进化，成为一场看得见的冒险。"
+- "Make your Agent's evolution an adventure you can see."
 
-## S16: Credits (4:10-4:30)
-**画面**: 黑屏 + 像素字居中
-**字幕**:
-- "Built for Nous Research x Hermes Hackathon"
-- "Powered by Claude Code + Gemini + Hermes Agent"
+## S19: Credits (4:25-4:35)
+**Visual**: Black screen + centered pixel text
+**Subtitle**:
+- "Built for the Nous Research x Hermes Hackathon"
+- "Thank you, Nous Research."
 - "github.com/nemoaigc/hermes-quest"
-**音效**: intro.wav 变奏收尾
+**SFX**: intro.wav outro variation
 
 ---
 
-## 总时长: ~4 分 30 秒
+## Total Duration: ~4 min 35 sec
 
-## 与旧版脚本的关键差异
-1. **Hook 重写** — 开场从陈述句改为反问句，10 秒内建立共鸣
-2. **删除 DONE 按钮** — 任务由 Agent 在 Cycle 中自动完成，无手动完成
-3. **SHOP = Hub 技能安装** — 货架展示可安装的社区技能 + ACQUIRE SKILL，不是已学技能浏览
-4. **新增 S05 命名大陆** — 展示 Custom Site 系统（迷雾→命名→大陆出现）
-5. **药水在 SHOP 底部栏** — HP Potion 200G / MP Potion 150G
-6. **FAIL 在 Chronicle** — thumbs down 对 quest 事件触发 "Mark quest as failed?" 弹窗
-7. **收尾强化** — 明确提及 Nous Research, Hermes Hackathon, Claude Code, Gemini
-8. **删除 Telegram 场景** — 需登录，不适合自动录制
+## Key Changes from Previous Script
+1. **All English** — subtitles and narration in English
+2. **Added S10** — Gus's secret crush on Lyra (NPC personality showcase)
+3. **Added S14** — Skills panel: learn & forget (skill lifecycle)
+4. **Added S16** — Skill classification with rename + SORTING progress
+5. **Credits** — Thank Nous Research only, no tool name-dropping
+6. **19 scenes** covering ALL major features
