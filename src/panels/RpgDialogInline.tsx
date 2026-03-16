@@ -27,6 +27,7 @@ export default function RpgDialogInline({ npc, onClose, chatHistoryRef, prefillM
   const activeTab = useStore((s) => s.activeTab)
   const selectedBagItems = useStore((s) => s.selectedBagItems)
   const selectedRegion = useStore((s) => s.selectedRegion)
+  const gameState = useStore((s) => s.state)
 
   // Persist messages back to ref + localStorage on every change
   useEffect(() => {
@@ -70,6 +71,18 @@ export default function RpgDialogInline({ npc, onClose, chatHistoryRef, prefillM
           message: text,
           history,
           context: { active_tab: activeTab, selected_bag_items: selectedBagItems, selected_region: selectedRegion },
+          game_state: gameState ? {
+            name: gameState.name,
+            level: gameState.level,
+            class: gameState.class,
+            title: gameState.title,
+            hp: gameState.hp,
+            hp_max: gameState.hp_max,
+            mp: gameState.mp,
+            mp_max: gameState.mp_max,
+            gold: gameState.gold,
+            skills_count: gameState.skills_count,
+          } : undefined,
         }),
       })
       if (!res.ok) {

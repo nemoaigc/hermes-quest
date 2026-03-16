@@ -6,7 +6,7 @@ import GuildPanel from './GuildPanel'
 import Shop from './Shop'
 import { API_URL } from '../api'
 import { LS_KEYS } from '../constants/storage'
-import type { TabId } from '../types'
+import type { TabId, KnowledgeMap as KnowledgeMapType } from '../types'
 
 import PanelCard from '../components/PanelCard'
 import RpgButton from '../components/RpgButton'
@@ -203,76 +203,97 @@ export default function CenterTabs() {
             npcPrefill={npcPrefill}
           />
         )}
-        {activeTab === 'map' && (() => {
-          // Handle undefined site / fog — show "unknown" state
-          const selectedSiteObj = useStore.getState().sites.find(s => s.id === mapSelectedContinent)
-          if (mapSelectedContinent?.startsWith('fog:') || (selectedSiteObj && !selectedSiteObj.defined)) {
-            return (
-              <PanelCard style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '14px', color: '#8a7a5a', marginBottom: '8px' }}>???</div>
-                <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '11px', color: '#6a5a3a', textAlign: 'center', maxWidth: '250px', lineHeight: '1.6' }}>
-                  This region remains shrouded in mystery. Complete quests to unveil its secrets.
-                </div>
-              </PanelCard>
-            )
-          }
-          // Resolve site ID to workflow_id for SubRegionGraph lookup
-          const sitesList = useStore.getState().sites
-          const clickedSite = sitesList.find(s => s.id === mapSelectedContinent)
-          const workflowId = clickedSite?.workflow_id
-
-          // Site has no workflow (Starter Town, new sites) → show empty site info
-          if (clickedSite && !workflowId) {
-            return (
-              <PanelCard style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: '#f0e68c', marginBottom: '6px' }}>
-                  {clickedSite.name || clickedSite.id}
-                </div>
-                <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '11px', color: '#6a5a3a', textAlign: 'center', maxWidth: '250px', lineHeight: '1.6' }}>
-                  {clickedSite.is_default
-                    ? 'The starting point of your journey. Uncategorized skills reside here.'
-                    : 'This region has been claimed but awaits its first cycle of exploration.'}
-                </div>
-              </PanelCard>
-            )
-          }
-
-          const displayWorkflow = workflowId && knowledgeMap
-            ? (knowledgeMap.continents || knowledgeMap.workflows || []).find((c) => c.id === workflowId)
-            : null
-          if (displayWorkflow && knowledgeMap) {
-            return (
-              <PanelCard style={{ width: '100%', height: '100%', padding: 0, overflow: 'hidden' }}>
-                <SubRegionGraph
-                  continent={displayWorkflow}
-                  connections={knowledgeMap.connections}
-                  onBack={() => setMapSelectedContinent(null)}
-                  extraAction={
-                    <RpgButton onClick={async () => {
-                      setCycleLoading(true)
-                      try {
-                        const res = await fetch(`${API_URL}/api/cycle/start`, { method: 'POST' })
-                        if (res.ok) {
-                          setTimeout(() => setCycleLoading(false), 2000)
-                        } else {
-                          setTimeout(() => setCycleLoading(false), 2000)
-                        }
-                      } catch {
-                        setTimeout(() => setCycleLoading(false), 2000)
-                      }
-                    }} disabled={cycleLoading} small>
-                      {cycleLoading ? '...' : '\u25B6 CYCLE'}
-                    </RpgButton>
-                  }
-                />
-              </PanelCard>
-            )
-          }
-          return <MapBottomInfo />
-        })()}
+        {activeTab === 'map' && (
+          <MapBottomContent
+            mapSelectedContinent={mapSelectedContinent}
+            setMapSelectedContinent={setMapSelectedContinent}
+            knowledgeMap={knowledgeMap}
+            cycleLoading={cycleLoading}
+            setCycleLoading={setCycleLoading}
+          />
+        )}
         {activeTab === 'guild' && <GuildBottomInfo />}
         {activeTab === 'shop' && <ShopBottomInfo />}
       </div>
     </div>
   )
+}
+
+/** Extracted to use useStore hook (reactive) instead of useStore.getState() in render path */
+function MapBottomContent({ mapSelectedContinent, setMapSelectedContinent, knowledgeMap, cycleLoading, setCycleLoading }: {
+  mapSelectedContinent: string | null
+  setMapSelectedContinent: (v: string | null) => void
+  knowledgeMap: KnowledgeMapType | null
+  cycleLoading: boolean
+  setCycleLoading: (v: boolean) => void
+}) {
+  const sites = useStore((s) => s.sites)
+
+  // Handle undefined site / fog — show "unknown" state
+  const selectedSiteObj = sites.find(s => s.id === mapSelectedContinent)
+  if (mapSelectedContinent?.startsWith('fog:') || (selectedSiteObj && !selectedSiteObj.defined)) {
+    return (
+      <PanelCard style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '14px', color: '#8a7a5a', marginBottom: '8px' }}>???</div>
+        <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '11px', color: '#6a5a3a', textAlign: 'center', maxWidth: '250px', lineHeight: '1.6' }}>
+          This region remains shrouded in mystery. Complete quests to unveil its secrets.
+        </div>
+      </PanelCard>
+    )
+  }
+
+  // Resolve site ID to workflow_id for SubRegionGraph lookup
+  const clickedSite = sites.find(s => s.id === mapSelectedContinent)
+  const workflowId = clickedSite?.workflow_id
+
+  // Site has no workflow (Starter Town, new sites) — show empty site info
+  if (clickedSite && !workflowId) {
+    return (
+      <PanelCard style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: '#f0e68c', marginBottom: '6px' }}>
+          {clickedSite.name || clickedSite.id}
+        </div>
+        <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '11px', color: '#6a5a3a', textAlign: 'center', maxWidth: '250px', lineHeight: '1.6' }}>
+          {clickedSite.is_default
+            ? 'The starting point of your journey. Uncategorized skills reside here.'
+            : 'This region has been claimed but awaits its first cycle of exploration.'}
+        </div>
+      </PanelCard>
+    )
+  }
+
+  const displayWorkflow = workflowId && knowledgeMap
+    ? (knowledgeMap.continents || knowledgeMap.workflows || []).find((c) => c.id === workflowId)
+    : null
+
+  if (displayWorkflow && knowledgeMap) {
+    return (
+      <PanelCard style={{ width: '100%', height: '100%', padding: 0, overflow: 'hidden' }}>
+        <SubRegionGraph
+          continent={displayWorkflow}
+          connections={knowledgeMap.connections}
+          onBack={() => setMapSelectedContinent(null)}
+          extraAction={
+            <RpgButton onClick={async () => {
+              setCycleLoading(true)
+              try {
+                const res = await fetch(`${API_URL}/api/cycle/start`, { method: 'POST' })
+                if (res.ok) {
+                  setTimeout(() => setCycleLoading(false), 2000)
+                } else {
+                  setTimeout(() => setCycleLoading(false), 2000)
+                }
+              } catch {
+                setTimeout(() => setCycleLoading(false), 2000)
+              }
+            }} disabled={cycleLoading} small>
+              {cycleLoading ? '...' : '\u25B6 CYCLE'}
+            </RpgButton>
+          }
+        />
+      </PanelCard>
+    )
+  }
+
+  return <MapBottomInfo />
 }

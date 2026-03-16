@@ -118,7 +118,12 @@ const EVENT_CONFIG: Record<string, { color: string; format: (data: Record<string
   },
   understanding_update: {
     color: 'var(--cyan)',
-    format: (d) => `Understanding updated: ${Math.round(((d.value as number) || 0) * 100)}%`,
+    format: (d) => {
+      const val = (d.value as number) || 0
+      // Backend sends 0-100 percentage; if < 1, treat as 0-1 fraction
+      const pct = val > 1 ? Math.round(val) : Math.round(val * 100)
+      return `Understanding updated: ${pct}%`
+    },
   },
   positive_signal: {
     color: 'var(--green)',
