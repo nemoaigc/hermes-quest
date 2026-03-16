@@ -41,6 +41,8 @@ function Bar({ label, current, max, color }: { label: string; current: number; m
 
 export default function CharacterPanel() {
   const state = useStore((s) => s.state)
+  const actualSkillsCount = useStore((s) => s.skills.length)
+  const actualWorkflows = useStore((s) => s.knowledgeMap?.workflows?.length ?? 0)
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
   const [nameSaving, setNameSaving] = useState(false)
@@ -154,7 +156,7 @@ export default function CharacterPanel() {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#8b7355' }}>Skills</span>
-          <span style={{ color: '#e8d5b0' }}>{state.skills_count}</span>
+          <span style={{ color: '#e8d5b0' }}>{actualSkillsCount || state.skills_count}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#8b7355' }}>Gold</span>
@@ -162,7 +164,7 @@ export default function CharacterPanel() {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#8b7355' }}>Workflows</span>
-          <span style={{ color: '#e8d5b0' }}>{state.workflows_discovered ?? 0}</span>
+          <span style={{ color: '#e8d5b0' }}>{actualWorkflows || state.workflows_discovered || 0}</span>
         </div>
       </div>
       </div>
