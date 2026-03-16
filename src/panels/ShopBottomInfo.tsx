@@ -152,6 +152,21 @@ export default function ShopBottomInfo() {
       {/* Left: source filter */}
       <PanelCard style={{ minWidth: '110px', overflow: 'auto' }}>
         <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355', marginBottom: '4px', letterSpacing: '1px' }}>SOURCES</div>
+        <div
+          onClick={() => setSourceFilter(null)}
+          style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '3px 4px', marginBottom: '2px', cursor: 'pointer',
+            background: !sourceFilter ? 'rgba(90,60,20,0.4)' : 'transparent',
+            borderLeft: `2px solid ${!sourceFilter ? '#f0e68c' : 'transparent'}`,
+            transition: 'all 0.1s',
+          }}
+          onMouseEnter={e => { if (sourceFilter) e.currentTarget.style.background = 'rgba(90,60,20,0.2)' }}
+          onMouseLeave={e => { if (sourceFilter) e.currentTarget.style.background = 'transparent' }}
+        >
+          <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: '#f0e68c' }}>ALL</span>
+          <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: '#8b7355' }}>{hubSkills.length}</span>
+        </div>
         {sourceCounts.map(([src, count]) => (
           <div
             key={src}
