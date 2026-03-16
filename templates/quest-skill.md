@@ -21,6 +21,16 @@ Before doing anything, read these files from `~/.hermes/quest/`:
 3. **quests.json** — Active and pending quests
 4. **feedback-digest.json** — **CRITICAL**: User feedback on your past performance
 
+If `feedback-digest.json` does not exist yet, skip feedback analysis for this cycle and proceed with the other context files.
+
+## Morale (MP) Awareness
+
+Your MP stat in `state.json` reflects the user's confidence in your direction:
+- **MP >= 70**: You are trusted. Attempt ambitious goals — explore new domains, take on higher-rank quests.
+- **MP 30–69**: Normal operating range. Balance exploration with consolidation.
+- **MP < 30**: The user is losing confidence. Retreat to safe ground — train in domains with positive feedback, choose shorter/simpler tasks, avoid experimenting with new areas until MP recovers.
+- **MP = 0**: Critical. Do not attempt any new exploration. Focus entirely on the single domain with the best feedback sentiment. Acknowledge the low morale in your REFLECT summary.
+
 ## User Feedback Guidance
 
 `feedback-digest.json` contains structured user feedback. You MUST respect it:
@@ -33,6 +43,7 @@ Before doing anything, read these files from `~/.hermes/quest/`:
 
 ### How to Apply
 - In the REFLECT phase, explicitly state which feedback items you're responding to
+- In the REFLECT phase summary, name the concrete domains you are avoiding or prioritizing because of feedback
 - In the PLAN phase, show how your target choice accounts for user preferences
 - Never repeat an approach that received negative feedback without a clear reason
 
