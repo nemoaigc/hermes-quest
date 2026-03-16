@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { useStore } from '../store'
-import { acceptFogQuest } from '../api'
+import { fetchSites, defineSite } from '../api'
 import AnimatedBg from '../components/AnimatedBg'
-import type { Continent, FogRegion } from '../types'
-import SubRegionGraph from './SubRegionGraph'
 
-// Sprite image mapping: continent id → sprite filename
-const CONTINENT_SPRITES: Record<string, string> = {
+// Sprite image mapping: site sprite/workflow_id → sprite filename
+const SPRITE_MAP: Record<string, string> = {
+  'starter-town': '/sprites/continent-software-engineering.png',
   'software-engineering': '/sprites/continent-software-engineering.png',
   'research-knowledge': '/sprites/continent-research-knowledge.png',
   'automation-tools': '/sprites/continent-automation-tools.png',
@@ -18,66 +17,64 @@ const CONTINENT_SPRITES: Record<string, string> = {
   'web-frontend': '/sprites/continent-web-frontend.png',
 }
 
+// All available continent sprites (for fallback assignment)
+const ALL_SPRITES = [
+  '/sprites/continent-software-engineering.png',
+  '/sprites/continent-research-knowledge.png',
+  '/sprites/continent-automation-tools.png',
+  '/sprites/continent-creative-arts.png',
+  '/sprites/continent-data-analytics.png',
+  '/sprites/continent-devops-infrastructure.png',
+  '/sprites/continent-security-defense.png',
+  '/sprites/continent-ai-machine-learning.png',
+  '/sprites/continent-web-frontend.png',
+]
+
 // The parchment area within map-bg.png (1024x572)
 const PARCHMENT = { left: 14, top: 8, width: 68, height: 82 }
 
-// Fixed positions — honeycomb layout centered on parchment
-// Row 1 (top):     1 site centered
-// Row 2 (middle):  3 sites — left, center, right (fills the middle!)
-// Row 3 (bottom):  2 sites — offset left & right
-const FIXED_POSITIONS: Record<string, { x: number; y: number }> = {
-  // Row 1 — top center
-  'creative-arts': { x: 0.52, y: 0.20 },
-  'creative-arts-flow': { x: 0.52, y: 0.20 },
-  // Row 2 — middle row (3 sites, fills center)
-  'software-engineering': { x: 0.25, y: 0.47 },
-  'software-engineering-flow': { x: 0.25, y: 0.47 },
-  'automation-tools': { x: 0.52, y: 0.50 },
-  'automation-tools-flow': { x: 0.52, y: 0.50 },
-  'research-knowledge': { x: 0.78, y: 0.47 },
-  'research-knowledge-flow': { x: 0.78, y: 0.47 },
-  // Row 3 — bottom (2 fog/sites, offset)
-  'data-analytics': { x: 0.36, y: 0.78 },
-  'data-analytics-flow': { x: 0.36, y: 0.78 },
-  'devops-infrastructure': { x: 0.68, y: 0.78 },
-  'devops-infrastructure-flow': { x: 0.68, y: 0.78 },
-  // Extra slots if more workflows are discovered
-  'security-defense': { x: 0.22, y: 0.75 },
-  'security-defense-flow': { x: 0.22, y: 0.75 },
-  'ai-machine-learning': { x: 0.78, y: 0.75 },
-  'ai-machine-learning-flow': { x: 0.78, y: 0.75 },
-  'web-frontend': { x: 0.50, y: 0.75 },
-  'web-frontend-flow': { x: 0.50, y: 0.75 },
+// Fixed positions for 6 slots (honeycomb layout)
+const SITE_POSITIONS: Record<string, { x: number; y: number }> = {
+  'starter-town': { x: 0.52, y: 0.50 },  // center
+  'site-1': { x: 0.25, y: 0.20 },        // top-left
+  'site-2': { x: 0.78, y: 0.20 },        // top-right
+  'site-3': { x: 0.25, y: 0.75 },        // bottom-left
+  'site-4': { x: 0.78, y: 0.75 },        // bottom-right
+  'site-5': { x: 0.52, y: 0.20 },        // top-center
 }
 
-// Fog positions — match the fixed positions layout
-const FOG_POSITIONS: Record<string, { x: number; y: number }> = {
-  'fog-data-science': { x: 0.36, y: 0.78 },
-  'fog-devops': { x: 0.68, y: 0.78 },
+type Site = {
+  id: string
+  name: string | null
+  is_default: boolean
+  defined: boolean
+  domain: string | null
+  workflow_id?: string | null
+  sprite?: string | null
 }
-// Hidden fog IDs — don't render these
-const HIDDEN_FOG = new Set<string>() // show all fog regions
 
-function ContinentSprite({ continent, onClick, isActive }: {
-  continent: Continent
+function getSpriteForSite(site: Site): string {
+  // 1. Check sprite field directly
+  if (site.sprite && SPRITE_MAP[site.sprite]) return SPRITE_MAP[site.sprite]
+  // 2. Check workflow_id
+  if (site.workflow_id && SPRITE_MAP[site.workflow_id]) return SPRITE_MAP[site.workflow_id]
+  // 3. Check site id
+  if (SPRITE_MAP[site.id]) return SPRITE_MAP[site.id]
+  // 4. Fallback: pick from available sprites based on index
+  const idx = parseInt(site.id.replace(/\D/g, '') || '0', 10) % ALL_SPRITES.length
+  return ALL_SPRITES[idx]
+}
+
+function ContinentSprite({ site, onClick, isActive }: {
+  site: Site
   onClick: () => void
   isActive: boolean
 }) {
-  // v2 compat: workflows use sub_nodes + mastery + skills_involved
-  const subNodes = (continent as any).sub_nodes || (continent as any).sub_regions || []
-  const avgMastery = (continent as any).mastery ?? (subNodes.length > 0
-    ? subNodes.reduce((a: number, s: any) => a + (s.mastery || 0), 0) / subNodes.length
-    : 0)
-  const skillCount = (continent as any).skills_involved?.length ?? subNodes.reduce((a: number, s: any) => a + (s.skills?.length || 0), 0)
-  // Match by id directly, or strip "-flow" suffix, or match by category
-  const sprite = CONTINENT_SPRITES[continent.id]
-    || CONTINENT_SPRITES[continent.id.replace(/-flow$/, '')]
-    || CONTINENT_SPRITES[continent.category || '']
-
-  // Use fixed position if available, fallback to server data
-  const pos = FIXED_POSITIONS[continent.id] || continent.position
+  const sprite = getSpriteForSite(site)
+  const pos = SITE_POSITIONS[site.id] || { x: 0.5, y: 0.5 }
   const left = PARCHMENT.left + pos.x * PARCHMENT.width
   const top = PARCHMENT.top + pos.y * PARCHMENT.height
+  const isStarter = site.id === 'starter-town'
 
   return (
     <div
@@ -92,49 +89,49 @@ function ContinentSprite({ continent, onClick, isActive }: {
         zIndex: isActive ? 10 : 1,
       }}
     >
-      {sprite ? (
-        <img
-          src={sprite}
-          alt={continent.name}
-          draggable={false}
-          style={{
-            width: '8vmin', height: '8vmin',
-            imageRendering: 'pixelated',
-            filter: isActive
-              ? 'brightness(1.2) drop-shadow(0 0 6px rgba(255,220,100,0.6))'
-              : 'drop-shadow(1px 2px 3px rgba(0,0,0,0.4))',
-            transition: 'transform 0.15s',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.15)' }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
-        />
-      ) : (
-        <div style={{
-          width: '8vmin', height: '8vmin',
-          background: continent.color, borderRadius: '50%', opacity: 0.5,
-        }} />
-      )}
+      <img
+        src={sprite}
+        alt={site.name || site.id}
+        draggable={false}
+        style={{
+          width: isStarter ? '9vmin' : '8vmin',
+          height: isStarter ? '9vmin' : '8vmin',
+          imageRendering: 'pixelated',
+          filter: isActive
+            ? 'brightness(1.2) drop-shadow(0 0 6px rgba(255,220,100,0.6))'
+            : 'drop-shadow(1px 2px 3px rgba(0,0,0,0.4))',
+          transition: 'transform 0.15s',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.15)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+      />
       <div style={{
         fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.8vmin, 8px)',
         color: '#3a1e0a', marginTop: '2px',
         textShadow: '0 0 3px rgba(228,216,192,0.9)',
         whiteSpace: 'nowrap',
       }}>
-        {continent.name}
+        {site.name || site.id}
       </div>
-      <div style={{
-        fontFamily: 'var(--font-pixel)', fontSize: 'clamp(4px, 0.6vmin, 6px)',
-        color: '#6a4a2a',
-        textShadow: '0 0 2px rgba(228,216,192,0.8)',
-      }}>
-        {Math.round(avgMastery * 100)}% · {skillCount} skills
-      </div>
+      {isStarter && (
+        <div style={{
+          fontFamily: 'var(--font-pixel)', fontSize: 'clamp(4px, 0.6vmin, 6px)',
+          color: '#6a4a2a',
+          textShadow: '0 0 2px rgba(228,216,192,0.8)',
+        }}>
+          HOME
+        </div>
+      )}
     </div>
   )
 }
 
-function FogSprite({ fog, onClick, isActive }: { fog: FogRegion; onClick: () => void; isActive: boolean }) {
-  const pos = FOG_POSITIONS[fog.id] || fog.position || { x: 0.9, y: 0.9 }
+function FogSiteSprite({ site, onClick, isActive }: {
+  site: Site
+  onClick: () => void
+  isActive: boolean
+}) {
+  const pos = SITE_POSITIONS[site.id] || { x: 0.5, y: 0.5 }
   const left = PARCHMENT.left + pos.x * PARCHMENT.width
   const top = PARCHMENT.top + pos.y * PARCHMENT.height
 
@@ -173,17 +170,40 @@ function FogSprite({ fog, onClick, isActive }: { fog: FogRegion; onClick: () => 
   )
 }
 
-/** SVG road lines between continents */
-function RoadLines({ connections, containerW, containerH }: {
-  connections: Array<{ from: Continent; to: Continent }>
+/** SVG road lines between defined sites */
+function RoadLines({ definedSites, containerW, containerH }: {
+  definedSites: Site[]
   containerW: number
   containerH: number
 }) {
-  function toPx(continent: Continent) {
-    const pos = FIXED_POSITIONS[continent.id] || continent.position
+  function toPx(site: Site) {
+    const pos = SITE_POSITIONS[site.id] || { x: 0.5, y: 0.5 }
     return {
       x: (PARCHMENT.left + pos.x * PARCHMENT.width) / 100 * containerW,
       y: (PARCHMENT.top + pos.y * PARCHMENT.height) / 100 * containerH,
+    }
+  }
+
+  // Connect each site to its 2 nearest neighbors
+  const connections: Array<{ from: Site; to: Site }> = []
+  for (let i = 0; i < definedSites.length; i++) {
+    const si = definedSites[i]
+    const pi = SITE_POSITIONS[si.id] || { x: 0.5, y: 0.5 }
+    const dists = definedSites
+      .map((sj, j) => {
+        if (i === j) return { j, d: Infinity }
+        const pj = SITE_POSITIONS[sj.id] || { x: 0.5, y: 0.5 }
+        return { j, d: Math.sqrt((pi.x - pj.x) ** 2 + (pi.y - pj.y) ** 2) }
+      })
+      .sort((a, b) => a.d - b.d)
+    for (let k = 0; k < Math.min(2, dists.length); k++) {
+      const sj = definedSites[dists[k].j]
+      if (!connections.some(cc =>
+        (cc.from.id === si.id && cc.to.id === sj.id) ||
+        (cc.from.id === sj.id && cc.to.id === si.id)
+      )) {
+        connections.push({ from: si, to: sj })
+      }
     }
   }
 
@@ -214,11 +234,27 @@ function RoadLines({ connections, containerW, containerH }: {
 }
 
 export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?: (id: string | null) => void } = {}) {
-  const knowledgeMap = useStore((s) => s.knowledgeMap)
-  const [selectedContinent, setSelectedContinent] = useState<string | null>(null)
+  const sites = useStore((s) => s.sites)
+  const setSites = useStore((s) => s.setSites)
+  const [selectedSite, setSelectedSite] = useState<string | null>(null)
   const setSelectedRegion = useStore((s) => s.setSelectedRegion)
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ w: 600, h: 400 })
+
+  // Define modal state
+  const [defineModal, setDefineModal] = useState<{ siteId: string } | null>(null)
+  const [defineName, setDefineName] = useState('')
+  const [defining, setDefining] = useState(false)
+
+  // Fetch sites on mount
+  useEffect(() => {
+    fetchSites()
+      .then((data) => {
+        const sitesArr = data.sites || data
+        setSites(Array.isArray(sitesArr) ? sitesArr : [])
+      })
+      .catch((err) => console.warn('Failed to fetch sites:', err))
+  }, [setSites])
 
   useEffect(() => {
     function updateSize() {
@@ -232,41 +268,34 @@ export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?
     return () => ro.disconnect()
   }, [])
 
-  function handleContinentClick(id: string) {
-    const newId = selectedContinent === id ? null : id
-    setSelectedContinent(newId)
+  function handleSiteClick(id: string) {
+    const newId = selectedSite === id ? null : id
+    setSelectedSite(newId)
     setSelectedRegion(newId)
     onContinentSelect?.(newId)
   }
 
-  // No longer switches to SubRegionGraph internally — bottom panel handles drill-down
-
-  // Build roads between nearby continents
-  const allContinents = knowledgeMap ? (knowledgeMap.continents || knowledgeMap.workflows || []) : []
-  const continentConnections: Array<{ from: Continent; to: Continent }> = []
-  // Connect each continent to its 2 nearest neighbors
-  for (let i = 0; i < allContinents.length; i++) {
-    const ci = allContinents[i]
-    const pi = FIXED_POSITIONS[ci.id] || ci.position
-    const dists = allContinents
-      .map((cj, j) => {
-        if (i === j) return { j, d: Infinity }
-        const pj = FIXED_POSITIONS[cj.id] || cj.position
-        return { j, d: Math.sqrt((pi.x - pj.x) ** 2 + (pi.y - pj.y) ** 2) }
-      })
-      .sort((a, b) => a.d - b.d)
-    for (let k = 0; k < Math.min(2, dists.length); k++) {
-      const cj = allContinents[dists[k].j]
-      if (!continentConnections.some(cc =>
-        (cc.from.id === ci.id && cc.to.id === cj.id) ||
-        (cc.from.id === cj.id && cc.to.id === ci.id)
-      )) {
-        continentConnections.push({ from: ci, to: cj })
-      }
+  async function handleDefine() {
+    if (!defineModal || !defineName.trim()) return
+    setDefining(true)
+    try {
+      await defineSite(defineModal.siteId, defineName.trim())
+      // Refresh sites
+      const data = await fetchSites()
+      const sitesArr = data.sites || data
+      setSites(Array.isArray(sitesArr) ? sitesArr : [])
+      setDefineModal(null)
+      setDefineName('')
+    } catch (err) {
+      console.error('Failed to define site:', err)
+    } finally {
+      setDefining(false)
     }
   }
 
-  const hasData = knowledgeMap && (knowledgeMap.continents || knowledgeMap.workflows || []).length > 0
+  const definedSites = sites.filter((s) => s.defined)
+  const undefinedSites = sites.filter((s) => !s.defined)
+  const hasData = sites.length > 0
 
   return (
     <div
@@ -276,8 +305,9 @@ export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?
         position: 'relative', overflow: 'hidden',
       }}
     >
-      {/* Background image — preserves aspect ratio, fills width */}
+      {/* Background image */}
       <AnimatedBg prefix="map" fallback="/bg/map-bg.png" style={{ position: 'absolute', inset: 0 }} />
+
       {/* Empty state */}
       {!hasData && (
         <div style={{
@@ -302,33 +332,97 @@ export default function KnowledgeMap({ onContinentSelect }: { onContinentSelect?
 
       {hasData && (
         <>
-          {/* Road lines */}
+          {/* Road lines between defined sites */}
           <RoadLines
-            connections={continentConnections}
+            definedSites={definedSites}
             containerW={size.w}
             containerH={size.h}
           />
 
-          {/* Fog regions */}
-          {knowledgeMap!.fog_regions.filter(f => !HIDDEN_FOG.has(f.id)).map((fog) => (
-            <FogSprite
-              key={fog.id}
-              fog={fog}
-              onClick={() => handleContinentClick(`fog:${fog.id}`)}
-              isActive={selectedContinent === `fog:${fog.id}`}
+          {/* Undefined sites (fog) */}
+          {undefinedSites.map((site) => (
+            <FogSiteSprite
+              key={site.id}
+              site={site}
+              onClick={() => setDefineModal({ siteId: site.id })}
+              isActive={selectedSite === site.id}
             />
           ))}
 
-          {/* Continent sprites */}
-          {(knowledgeMap!.continents || knowledgeMap!.workflows || []).map((c) => (
+          {/* Defined sites (continents) */}
+          {definedSites.map((site) => (
             <ContinentSprite
-              key={c.id}
-              continent={c}
-              onClick={() => handleContinentClick(c.id)}
-              isActive={selectedContinent === c.id}
+              key={site.id}
+              site={site}
+              onClick={() => handleSiteClick(site.id)}
+              isActive={selectedSite === site.id}
             />
           ))}
         </>
+      )}
+
+      {/* Define site modal */}
+      {defineModal && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 30,
+          background: 'rgba(10,8,4,0.9)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: 'linear-gradient(180deg, #3a2a18, #2a1c0e)',
+            border: '2px solid #8b6a3c', borderRadius: '4px',
+            padding: '16px 20px', textAlign: 'center',
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-pixel)', fontSize: '8px',
+              color: '#f0e68c', marginBottom: '12px',
+            }}>
+              NAME THIS REGION
+            </div>
+            <input
+              autoFocus
+              value={defineName}
+              onChange={(e) => setDefineName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleDefine()}
+              style={{
+                width: '200px', padding: '5px 8px',
+                background: 'rgba(10,8,4,0.6)',
+                border: '1px solid #5c3a1e',
+                color: '#e8d5b0',
+                fontFamily: 'var(--font-pixel)', fontSize: '8px',
+                outline: 'none', marginBottom: '10px', display: 'block',
+              }}
+              placeholder="e.g. Machine Learning"
+            />
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              <button
+                onClick={() => { setDefineModal(null); setDefineName('') }}
+                style={{
+                  fontFamily: 'var(--font-pixel)', fontSize: '6px',
+                  padding: '4px 12px', background: 'transparent',
+                  border: '1px solid rgba(139,94,60,0.5)',
+                  color: '#8b7355', cursor: 'pointer',
+                }}
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={handleDefine}
+                disabled={!defineName.trim() || defining}
+                style={{
+                  fontFamily: 'var(--font-pixel)', fontSize: '6px',
+                  padding: '4px 12px',
+                  background: 'linear-gradient(180deg, #6a4428, #3a2210)',
+                  border: '2px solid #6b4c2a',
+                  color: '#f0e68c', cursor: 'pointer',
+                  opacity: !defineName.trim() || defining ? 0.5 : 1,
+                }}
+              >
+                {defining ? 'DEFINING...' : 'DEFINE'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

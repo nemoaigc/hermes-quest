@@ -183,4 +183,38 @@ export async function updateState(updates: Record<string, unknown>) {
   return res.json()
 }
 
+// Sites
+export async function fetchSites() {
+  const res = await fetch(`${API_URL}/api/sites`)
+  if (!res.ok) throw new Error(`Sites fetch: ${res.status}`)
+  return res.json()
+}
+
+export async function defineSite(siteId: string, name: string) {
+  const res = await fetch(`${API_URL}/api/sites/define`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ site_id: siteId, name }),
+  })
+  if (!res.ok) throw new Error(`Define site: ${res.status}`)
+  return res.json()
+}
+
+export async function renameSite(siteId: string, name: string) {
+  const res = await fetch(`${API_URL}/api/sites/rename`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ site_id: siteId, name }),
+  })
+  if (!res.ok) throw new Error(`Rename site: ${res.status}`)
+  return res.json()
+}
+
+export async function deleteSite(siteId: string) {
+  const res = await fetch(`${API_URL}/api/sites/delete`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ site_id: siteId }),
+  })
+  if (!res.ok) throw new Error(`Delete site: ${res.status}`)
+  return res.json()
+}
+
 export { API_URL }

@@ -95,6 +95,10 @@ interface Store {
   selectedBagItems: string[]
   selectedRegion: string | null
 
+  // Sites
+  sites: Array<{id: string; name: string | null; is_default: boolean; defined: boolean; domain: string | null; workflow_id?: string | null; sprite?: string | null}>
+  setSites: (s: any[]) => void
+
   // Shop: shared hub skills + filter (shared between Shop scene + bottom bar)
   hubSkills: HubSkill[]
   setHubSkills: (s: HubSkill[]) => void
@@ -136,6 +140,8 @@ export const useStore = create<Store>((set) => ({
   activeTab: 'map',
   selectedBagItems: [],
   selectedRegion: null,
+  sites: [],
+  setSites: (s) => set({ sites: s }),
   hubSkills: [],
   setHubSkills: (s) => set({ hubSkills: s }),
   shopFilter: '',
