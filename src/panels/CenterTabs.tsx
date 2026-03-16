@@ -71,9 +71,12 @@ export default function CenterTabs() {
     if (!chatNpc) setNpcPrefill(null)
   }, [chatNpc])
 
+  const [rumorsQuery, setRumorsQuery] = useState('')
+
   async function fetchRumors() {
     setRumorsLoading(true)
     setRumorsError(null)
+    setRumorsQuery('')
     try {
       const res = await fetch(`${API_URL}/api/rumors/feed?max=15`)
       if (!res.ok) throw new Error(`Rumors fetch: ${res.status}`)
@@ -83,6 +86,25 @@ export default function CenterTabs() {
     } catch (e) {
       console.error('fetchRumors failed', e)
       setRumorsError('The rumor mill has gone silent...')
+      setTimeout(() => setRumorsError(null), 5000)
+    }
+    setRumorsLoading(false)
+  }
+
+  async function handleSearchRumors(query: string) {
+    if (!query.trim()) { fetchRumors(); return }
+    setRumorsLoading(true)
+    setRumorsError(null)
+    setRumorsQuery(query)
+    try {
+      const res = await fetch(`${API_URL}/api/rumors/search?q=${encodeURIComponent(query)}`)
+      if (!res.ok) throw new Error(`Rumors search: ${res.status}`)
+      const data = await res.json()
+      if (data.ok) setRumors(data.rumors)
+      else throw new Error('Rumors search data not ok')
+    } catch (e) {
+      console.error('searchRumors failed', e)
+      setRumorsError('The whispers elude you...')
       setTimeout(() => setRumorsError(null), 5000)
     }
     setRumorsLoading(false)
@@ -147,7 +169,9 @@ export default function CenterTabs() {
             rumors={rumors}
             rumorsLoading={rumorsLoading}
             rumorsError={rumorsError}
+            rumorsQuery={rumorsQuery}
             onFetchRumors={fetchRumors}
+            onSearchRumors={handleSearchRumors}
             gossipRefreshRef={gossipRefreshRef}
           />
         )}
@@ -180,8 +204,9 @@ export default function CenterTabs() {
           />
         )}
         {activeTab === 'map' && (() => {
-          // Handle fog region selection — show empty "unknown" state
-          if (mapSelectedContinent?.startsWith('fog:')) {
+          // Handle undefined site / fog — show "unknown" state
+          const selectedSiteObj = useStore.getState().sites.find(s => s.id === mapSelectedContinent)
+          if (mapSelectedContinent?.startsWith('fog:') || (selectedSiteObj && !selectedSiteObj.defined)) {
             return (
               <PanelCard style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '14px', color: '#8a7a5a', marginBottom: '8px' }}>???</div>
@@ -191,8 +216,12 @@ export default function CenterTabs() {
               </PanelCard>
             )
           }
-          const selected = mapSelectedContinent && knowledgeMap
-            ? (knowledgeMap.continents || knowledgeMap.workflows || []).find((c) => c.id === mapSelectedContinent)
+          // Resolve site ID to workflow_id for SubRegionGraph lookup
+          const sites = useStore.getState().sites
+          const clickedSite = sites.find(s => s.id === mapSelectedContinent)
+          const workflowId = clickedSite?.workflow_id || mapSelectedContinent
+          const selected = workflowId && knowledgeMap
+            ? (knowledgeMap.continents || knowledgeMap.workflows || []).find((c) => c.id === workflowId)
             : null
           const displayWorkflow = selected
             || (knowledgeMap ? (knowledgeMap.continents || knowledgeMap.workflows || [])[0] : null)

@@ -1,19 +1,25 @@
+import { useState, useEffect } from 'react'
 import BackButton from '../components/BackButton'
 import RpgButton from '../components/RpgButton'
 import TavernAmbientChat from '../components/TavernAmbientChat'
 import AnimatedBg from '../components/AnimatedBg'
 
 /** Tavern SCENE area — 3 modes: default / chatter / rumors */
-export default function TavernSceneArea({ sceneMode, onSceneMode, rumors, rumorsLoading, rumorsError, onFetchRumors, gossipRefreshRef }: {
+export default function TavernSceneArea({ sceneMode, onSceneMode, rumors, rumorsLoading, rumorsError, rumorsQuery, onFetchRumors, onSearchRumors, gossipRefreshRef }: {
   sceneMode: 'default' | 'chatter' | 'rumors'
   onSceneMode: (mode: 'default' | 'chatter' | 'rumors') => void
   rumors: Array<{ id: string; text: string; author: string; handle: string; likes: number; time: string }>
   rumorsLoading: boolean
   rumorsError?: string | null
+  rumorsQuery: string
   onFetchRumors: () => void
+  onSearchRumors: (query: string) => void
   gossipRefreshRef: React.MutableRefObject<(() => void) | null>
 }) {
   const dimmed = sceneMode !== 'default'
+  const [searchInput, setSearchInput] = useState('')
+  // Sync local input when parent query changes (e.g. cleared externally)
+  useEffect(() => { setSearchInput(rumorsQuery) }, [rumorsQuery])
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
       <AnimatedBg prefix="tavern" fallback="/bg/npc-bg.png" style={{
@@ -83,7 +89,7 @@ export default function TavernSceneArea({ sceneMode, onSceneMode, rumors, rumors
             <BackButton onClick={() => onSceneMode('default')} />
             <span style={{ flex: 1 }} />
             <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#f0e68c', letterSpacing: '1px' }}>
-              REALM RUMORS
+              {rumorsQuery ? `"${rumorsQuery}"` : 'REALM RUMORS'}
             </span>
             <span style={{ flex: 1 }} />
             <button
@@ -101,6 +107,47 @@ export default function TavernSceneArea({ sceneMode, onSceneMode, rumors, rumors
               {rumorsLoading ? '...' : 'REFRESH'}
             </button>
           </div>
+          {/* Search bar */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '4px',
+            padding: '2px 8px 4px', flexShrink: 0,
+          }}>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && searchInput.trim()) onSearchRumors(searchInput.trim()) }}
+              placeholder="Search the whispers..."
+              style={{
+                flex: 1,
+                fontFamily: 'var(--font-pixel)', fontSize: '7px',
+                padding: '4px 8px',
+                background: 'rgba(13,10,6,0.85)',
+                border: '1px solid #6b4c2a',
+                borderRadius: '2px',
+                color: '#e8d5b0',
+                outline: 'none',
+                caretColor: '#f0e68c',
+              }}
+            />
+            {rumorsQuery && (
+              <button
+                onClick={() => { setSearchInput(''); onFetchRumors() }}
+                style={{
+                  fontFamily: 'var(--font-pixel)', fontSize: '7px',
+                  padding: '3px 6px', cursor: 'pointer',
+                  background: 'rgba(13,10,6,0.85)',
+                  border: '1px solid #6b4c2a',
+                  color: '#ff6b6b',
+                  borderRadius: '2px',
+                  lineHeight: 1,
+                }}
+                title="Clear search"
+              >
+                X
+              </button>
+            )}
+          </div>
           <div style={{ flex: 1, overflow: 'auto', padding: '4px 10px' }}>
             {rumorsLoading ? (
               <div style={{
@@ -109,7 +156,7 @@ export default function TavernSceneArea({ sceneMode, onSceneMode, rumors, rumors
                 textShadow: '0 1px 3px rgba(0,0,0,0.8)',
                 marginTop: '20px',
               }}>
-                You lean in and listen...
+                {rumorsQuery ? 'Searching...' : 'You lean in and listen...'}
               </div>
             ) : rumorsError ? (
               <div style={{
@@ -126,7 +173,7 @@ export default function TavernSceneArea({ sceneMode, onSceneMode, rumors, rumors
                 fontSize: '6px', fontFamily: 'var(--font-pixel)',
                 marginTop: '20px', cursor: 'pointer',
               }} onClick={onFetchRumors}>
-                No whispers yet... Click to listen.
+                {rumorsQuery ? 'No whispers match your query...' : 'No whispers yet... Click to listen.'}
               </div>
             ) : rumors.map((r) => (
               <a

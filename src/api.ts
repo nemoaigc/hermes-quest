@@ -217,4 +217,11 @@ export async function deleteSite(siteId: string) {
   return res.json()
 }
 
+// Rumors
+export async function searchRumors(query: string) {
+  const res = await fetch(`${API_URL}/api/rumors/search?q=${encodeURIComponent(query)}`)
+  if (!res.ok) throw new Error(`Rumors search: ${res.status}`)
+  return res.json()
+}
+
 export { API_URL }
