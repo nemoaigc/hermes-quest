@@ -252,6 +252,7 @@ async def api_hub_install(body: dict):
             return JSONResponse(status_code=400, content={"status": "error", "message": f"Not enough gold (need {skill_cost}G)"})
         _st["gold"] = _st.get("gold", 0) - skill_cost
         state_path.write_text(json.dumps(_st, indent=2))
+        await upsert_state(_st)
     try:
         # Load hub module (needs httpx in agent venv, so we add it)
         agent_venv_site = str(Path.home() / ".hermes" / "hermes-agent" / "venv" / "lib")
@@ -310,6 +311,7 @@ async def api_hub_install(body: dict):
                 _st = {}
             _st["gold"] = _st.get("gold", 0) + skill_cost
             state_path.write_text(json.dumps(_st, indent=2))
+            await upsert_state(_st)
         return JSONResponse(status_code=404, content={"status": "error", "message": f"Skill not found: {identifier}"})
     except Exception as e:
         # Install failed -- refund gold
@@ -321,6 +323,7 @@ async def api_hub_install(body: dict):
                 _st = {}
             _st["gold"] = _st.get("gold", 0) + skill_cost
             state_path.write_text(json.dumps(_st, indent=2))
+            await upsert_state(_st)
         return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
 
 @app.get("/api/regions")
