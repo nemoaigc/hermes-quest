@@ -39,24 +39,11 @@ export default function MapBottomInfo() {
     setCycleStatus('loading')
     try {
       await apiStartCycle()
-      // Keep showing CYCLING for 30s, then check status
-      const poll = setInterval(async () => {
-        try {
-          const { API_URL } = await import('../api')
-          const res = await fetch(`${API_URL}/api/cycle/status`)
-          const d = await res.json()
-          if (d.status === 'idle') {
-            clearInterval(poll)
-            setCycleStatus('success')
-            setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 3000)
-          }
-        } catch {}
-      }, 5000)
-      // Safety timeout: stop polling after 5 min
-      setTimeout(() => { clearInterval(poll); setCycleLoading(false); setCycleStatus('idle') }, 300000)
+      setCycleStatus('success')
+      setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 2000)
     } catch {
       setCycleStatus('failed')
-      setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 3000)
+      setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 2000)
     }
   }
 

@@ -157,9 +157,11 @@ export function formatEvent(event: GameEvent) {
 
 export function formatTime(ts: string): string {
   try {
+    if (!ts) return ''
     const d = new Date(ts)
+    if (isNaN(d.getTime())) return ''
     return d.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })
   } catch {
-    return ts
+    return ''
   }
 }
