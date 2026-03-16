@@ -165,7 +165,7 @@ export default function ShopBottomInfo() {
           onMouseLeave={e => { if (sourceFilter) e.currentTarget.style.background = 'transparent' }}
         >
           <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: '#f0e68c' }}>ALL</span>
-          <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: '#8b7355' }}>{hubSkills.length}</span>
+          <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: '#8b7355' }}>{sourceCounts.reduce((a, [, c]) => a + c, 0)}</span>
         </div>
         {sourceCounts.map(([src, count]) => (
           <div
