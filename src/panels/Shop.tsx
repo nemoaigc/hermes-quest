@@ -245,7 +245,7 @@ export default function Shop() {
                 padding: '2px 8px', cursor: 'pointer',
                 background: 'rgba(90,60,20,0.6)', border: '1px solid #6b4c2a', color: '#f0e68c',
               }}
-            >{installing === selected.identifier ? 'LEARNING...' : 'ACQUIRE SKILL'}</button>
+            >{installing === selected.identifier ? 'LEARNING...' : 'ACQUIRE SKILL (300G)'}</button>
           </div>
           {installError && (
             <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '6px', color: '#ff6b6b', marginTop: '4px' }}>
