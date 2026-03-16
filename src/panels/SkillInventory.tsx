@@ -15,11 +15,13 @@ export default function SkillInventory() {
   const [selected, setSelected] = useState<string | null>(null)
   const [forgetting, setForgetting] = useState(false)
   const [confirmForget, setConfirmForget] = useState(false)
+  const [forgetError, setForgetError] = useState(false)
 
   const selectedSkill = skills.find((s) => s.name === selected)
 
   async function forgetSkill(name: string) {
     setForgetting(true)
+    setForgetError(false)
     try {
       const del = await fetch(`${API_URL}/api/skills/${encodeURIComponent(name)}`, { method: 'DELETE' })
       if (!del.ok) throw new Error(`Delete failed: ${del.status}`)
@@ -29,8 +31,11 @@ export default function SkillInventory() {
       setSelected(null)
     } catch (e) {
       console.error('Failed to forget skill', e)
+      setForgetError(true)
+      setTimeout(() => setForgetError(false), 3000)
     }
     setForgetting(false)
+    setConfirmForget(false)
   }
 
   if (selectedSkill) {
@@ -73,7 +78,7 @@ export default function SkillInventory() {
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', gap: '4px' }}>
+          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
             <button className="pixel-btn" onClick={() => setSelected(null)} style={{ fontSize: '6px', padding: '3px 8px' }}>◀ BACK</button>
             <button
               className="pixel-btn"
@@ -81,6 +86,11 @@ export default function SkillInventory() {
               disabled={forgetting}
               style={{ fontSize: '6px', padding: '3px 8px', color: 'var(--red)', borderColor: 'var(--red)' }}
             >FORGET</button>
+            {forgetError && (
+              <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: 'var(--red)' }}>
+                The skill resists being forgotten...
+              </span>
+            )}
           </div>
         )}
       </div>

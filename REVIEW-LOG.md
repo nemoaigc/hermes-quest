@@ -23,6 +23,22 @@ Also fixed: `skills_count` in server state updated from 3 to 4 (actual filesyste
 
 All 14 tests pass. TypeScript: 0 errors.
 
+### Round 4 (2 fixes)
+| Expert | Issue | Fix |
+|--------|-------|-----|
+| Agent Dev | WebSocket didn't handle `skills_reclassified` broadcast from backend | Added handler to refresh skills + sites on reclassification |
+| Agent Dev | Sites only fetched when MAP tab mounted — empty on other tabs | Added sites to `fetchInitialData()` for eager loading |
+
+### Round 5 (1 CRITICAL fix)
+| Expert | Issue | Fix |
+|--------|-------|-----|
+| Agent Dev | **CRITICAL**: ReflectionLetter `handleAcknowledge()` called `setState({reflection_letter_pending: false})` which REPLACED the entire agent state (HP/MP/gold/level all wiped to undefined) | Spread `currentState` before overriding the pending flag |
+
+### Round 6 (1 fix)
+| Expert | Issue | Fix |
+|--------|-------|-----|
+| Test Dev | 10 event types had no pixel art icons — silently fell back to cycle_start | Added unique SVG icons for user_feedback, positive/correction signals, understanding, reflection, workflow_discover, mp_change, fog events |
+
 ---
 
 # Session 4 Review Log (historical)
