@@ -80,10 +80,20 @@ RPG 层不是装饰 — 它**降低了指挥 AI 的认知门槛**。你不需要
 1. **You define the world** — name continents ("Machine Learning", "Music", "Rust") on the fog-of-war map
 2. **Agent trains autonomously** — each evolution cycle, it reflects, plans, executes, and reports (all 4 phases visible live)
 3. **You steer with feedback** — 👍 on good outcomes, 👎 on bad ones → aggregated into `feedback-digest.json`
-4. **Agent adjusts next cycle** — reads the digest, avoids negatively-rated domains, deepens positively-rated ones
+4. **Agent adjusts next cycle** — reads the digest at skill-level precision. Avoids specific skills you disliked, deepens skills you liked — without abandoning the entire domain
 5. **Repeat** — the agent gets better at what *you* care about, not what *it* randomly picks
 
-**你定义世界** → Agent 自主训练（4 阶段实时可见） → **你用 👍/👎 引导方向** → Agent 下个周期自动调整 → 循环。Agent 在你关心的方向上越来越强。
+### Validated: The Feedback Loop Works
+
+We ran three real cycles to prove the loop closes:
+
+| Cycle | Feedback State | Agent Decision | Result |
+|-------|---------------|----------------|--------|
+| #1 (baseline) | No feedback | Agent chose DevOps training | Autonomous default |
+| #2 | DevOps 👎×3, Creative Arts 👍×4 | **Pivoted to Creative Arts** | "Pivoting away from DevOps due to 100% negative feedback" |
+| #3 | DevOps/docker 👍×4, DevOps/ci-cd 👎×3, Creative 👍×4 | **Stayed in DevOps but switched to Docker** | "Positive feedback on docker-compose suggests deep-diving into container orchestration, despite negative signal on testing baseline" |
+
+Cycle #3 is the key result: the agent didn't abandon DevOps entirely — it read the skill-level sentiment and pivoted *within* the domain. This is the difference between a blunt "avoid this area" and precise "avoid this approach, try another."
 
 ---
 
