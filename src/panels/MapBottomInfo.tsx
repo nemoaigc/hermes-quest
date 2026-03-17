@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useStore } from '../store'
 import { startCycle as apiStartCycle, fetchFeedbackDigest } from '../api'
 import PanelCard from '../components/PanelCard'
 import RpgButton from '../components/RpgButton'
 import type { Workflow, CyclePhase } from '../types'
+import type { GameEvent } from '../store'
 
 const SITE_COLORS = ['#ff5555', '#ff9944', '#f0e68c', '#66bb6a', '#55aaff', '#b48eff']
 
@@ -14,12 +15,45 @@ const PHASE_LABELS: Record<CyclePhase, { icon: string; label: string }> = {
   execute: { icon: '\u2694\uFE0F', label: 'EXECUTE' },
   report: { icon: '\uD83D\uDCCA', label: 'REPORT' },
 }
+const PHASE_COLORS: Record<CyclePhase, string> = {
+  reflect: '#b48eff',
+  plan: '#f0e68c',
+  execute: '#55aaff',
+  report: '#66bb6a',
+}
+
+function getPhaseDetail(event: GameEvent): string {
+  const phase = event.data.phase
+  if (phase === 'reflect') {
+    return typeof event.data.summary === 'string' ? event.data.summary : ''
+  }
+  if (phase === 'plan') {
+    if (typeof event.data.reason === 'string') return event.data.reason
+    if (typeof event.data.target_quest === 'string') return event.data.target_quest
+    if (typeof event.data.target_workflow === 'string') return `Target ${event.data.target_workflow}`
+    return ''
+  }
+  if (phase === 'execute') {
+    if (typeof event.data.detail === 'string') return event.data.detail
+    if (typeof event.data.summary === 'string') return event.data.summary
+    return ''
+  }
+  if (phase === 'report') {
+    if (Array.isArray(event.data.outcomes)) {
+      return event.data.outcomes.filter((item): item is string => typeof item === 'string').join(' | ')
+    }
+    if (typeof event.data.quest_completed === 'string') return `Completed ${event.data.quest_completed}`
+    return ''
+  }
+  return ''
+}
 
 /** MAP bottom — site list + stats & cycle action */
 export default function MapBottomInfo() {
   const km = useStore((s) => s.knowledgeMap)
   const sites = useStore((s) => s.sites)
   const classifying = useStore((s) => s.classifying)
+  const events = useStore((s) => s.events)
   const cycleProgress = useStore((s) => s.cycleProgress)
   const setFeedbackDigest = useStore((s) => s.setFeedbackDigest)
   const [classifyDone, setClassifyDone] = useState(false)
@@ -67,13 +101,31 @@ export default function MapBottomInfo() {
       if (cycleProgress.phase === 'report') {
         const t = setTimeout(() => {
           setCycleStatus('success')
-          const t2 = setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 3000)
-          cycleTimersRef.current.push(t2)
+          setCycleLoading(false)
         }, 2000)
         cycleTimersRef.current.push(t)
       }
     }
   }, [cycleProgress])
+
+  const latestCycleTrace = useMemo(() => {
+    const latest = new Map<CyclePhase, GameEvent>()
+    for (const event of events) {
+      if (event.type !== 'cycle_phase') continue
+      const phase = event.data.phase
+      if (phase !== 'reflect' && phase !== 'plan' && phase !== 'execute' && phase !== 'report') continue
+      if (!latest.has(phase)) latest.set(phase, event)
+      if (phase === 'reflect') break
+    }
+    return PHASE_ORDER
+      .map((phase) => {
+        const event = latest.get(phase)
+        if (!event) return null
+        const detail = getPhaseDetail(event).trim()
+        return { phase, detail }
+      })
+      .filter((item): item is { phase: CyclePhase; detail: string } => item !== null)
+  }, [events])
 
   // Fetch feedback digest count on mount
   useEffect(() => {
@@ -119,6 +171,8 @@ export default function MapBottomInfo() {
 
   const definedSites = sites.filter(s => s.defined)
   const undefinedCount = sites.filter(s => !s.defined).length
+  const showCyclePhases = !!cycleProgress && (cycleLoading || cycleStatus === 'success')
+  const completedCycle = cycleStatus === 'success'
 
   return (
     <div style={{ display: 'flex', gap: '10px', width: '100%', fontFamily: 'var(--font-pixel)' }}>
@@ -166,7 +220,7 @@ export default function MapBottomInfo() {
       {/* Right: cycle phases + button */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '120px', flexShrink: 0, justifyContent: 'center' }}>
         {/* Phase progress indicator — shows when cycle is running with real phases */}
-        {cycleProgress && cycleLoading ? (
+        {showCyclePhases ? (
           <div style={{
             flex: 1, width: '100%',
             background: '#1a140c', border: '2px solid #3a2210',
@@ -177,9 +231,9 @@ export default function MapBottomInfo() {
             <div style={{ display: 'flex', gap: '2px', alignItems: 'center', justifyContent: 'center' }}>
               {PHASE_ORDER.map((phase) => {
                 const phaseIdx = PHASE_ORDER.indexOf(phase)
-                const currentIdx = PHASE_ORDER.indexOf(cycleProgress.phase)
-                const isDone = phaseIdx < currentIdx
-                const isCurrent = phaseIdx === currentIdx
+                const currentIdx = cycleProgress ? PHASE_ORDER.indexOf(cycleProgress.phase) : -1
+                const isDone = completedCycle || phaseIdx < currentIdx
+                const isCurrent = !completedCycle && phaseIdx === currentIdx
                 return (
                   <div key={phase} style={{ display: 'flex', alignItems: 'center', gap: '1px' }}>
                     <div style={{
@@ -206,21 +260,37 @@ export default function MapBottomInfo() {
             {/* Current phase label + summary */}
             <div style={{
               fontFamily: 'var(--font-pixel)', fontSize: '7px',
-              color: '#f0e68c', textAlign: 'center',
+              color: completedCycle ? '#66bb6a' : '#f0e68c', textAlign: 'center',
               letterSpacing: '0.5px',
             }}>
-              {PHASE_LABELS[cycleProgress.phase]?.label || cycleProgress.phase.toUpperCase()}
+              {completedCycle ? 'COMPLETE' : (cycleProgress ? (PHASE_LABELS[cycleProgress.phase]?.label || cycleProgress.phase.toUpperCase()) : 'CYCLE')}
             </div>
-            {cycleProgress.summary && (
-              <div style={{
-                fontSize: '6px', color: '#8b7355',
-                textAlign: 'center', lineHeight: '1.2',
-                overflow: 'hidden', textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap', width: '100%',
-              }}>
-                {cycleProgress.summary.slice(0, 40)}
-              </div>
-            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              {latestCycleTrace.map(({ phase, detail }) => (
+                <div key={phase} style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                  <div style={{
+                    minWidth: '22px',
+                    fontSize: '5px',
+                    color: PHASE_COLORS[phase],
+                    fontFamily: 'var(--font-pixel)',
+                    letterSpacing: '0.4px',
+                  }}>
+                    {PHASE_LABELS[phase].label.slice(0, 3)}
+                  </div>
+                  <div style={{
+                    flex: 1,
+                    fontSize: '6px',
+                    color: completedCycle && phase === 'report' ? '#e8d5b0' : '#8b7355',
+                    lineHeight: '1.2',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {detail || '...'}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
           /* Fallback: original progress bar when no phase data */
