@@ -65,6 +65,26 @@ from npc_chat import chat_with_npc, VALID_NPCS
 from skill_classify import reclassify_skills_after_site_change
 
 
+# --- Chronicle Event Helper ---
+
+async def chronicle_event(event_type: str, data: dict, region: str | None = None):
+    """Write an event to events.jsonl + broadcast to Chronicle. One-stop for all user actions."""
+    event = {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "type": event_type,
+        "region": region,
+        "data": data,
+    }
+    # Persist to events.jsonl (Agent reads this)
+    EVENTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(EVENTS_FILE, "a") as f:
+        f.write(json.dumps(event) + "\n")
+    # Persist to SQLite
+    await insert_event(event)
+    # Broadcast to frontend Chronicle
+    await manager.broadcast({"type": "event", "data": event})
+
+
 # --- Feedback Digest ---
 
 _digest_lock = asyncio.Lock()
@@ -653,13 +673,8 @@ async def api_hub_install(body: dict):
                         fpath.write_text(str(fcontent))
                 # Re-sync skills
                 await watcher._sync_filesystem_skills()
-                # Broadcast hub_acquire event so frontend refreshes SKILLS panel
-                _now = datetime.now(timezone.utc).isoformat()
-                await manager.broadcast({"type": "event", "data": {
-                    "ts": _now, "type": "hub_acquire",
-                    "region": None,
-                    "data": {"skill": skill_name, "source": bundle.source, "identifier": identifier},
-                }})
+                # Chronicle: skill acquired from hub (persists + broadcasts)
+                await chronicle_event("hub_acquire", {"skill": skill_name, "source": bundle.source, "identifier": identifier})
                 # Broadcast state update so gold change is reflected
                 try:
                     _updated_state = json.loads(STATE_FILE.read_text())
@@ -1024,6 +1039,7 @@ async def accept_quest_v2(body: dict):
                     # Broadcast quest update so UI refreshes
                     active = [q for q in quests if q.get("status") in ("active", "in_progress", "pending")]
                     await manager.broadcast({"type": "quest", "data": {"quests": active}})
+                    await chronicle_event("quest_accept", {"quest_id": new_quest["id"], "title": rec.get("title", ""), "source": "bulletin_board"})
                     return {"quest_id": new_quest["id"], "status": "active"}
             except (json.JSONDecodeError, OSError):
                 pass
@@ -1107,6 +1123,10 @@ async def npc_chat(body: dict):
     game_state = await get_state()
     history = body.get("history", [])
     result = await chat_with_npc(npc, message, context, game_state, history=history)
+    # Chronicle: NPC conversation summary (only on first message, not every exchange)
+    if len(history) <= 1:
+        npc_names = {"guild_master": "Lyra", "cartographer": "Aldric", "quartermaster": "Kael", "bartender": "Gus", "sage": "Orin"}
+        await chronicle_event("npc_chat", {"npc": npc, "npc_name": npc_names.get(npc, npc), "topic": message[:80]})
     return result
 
 @app.websocket("/ws")
@@ -1191,13 +1211,8 @@ async def cycle_start():
             CYCLE_LOCK_FILE.unlink(missing_ok=True)
             logger.error("Failed to start cycle: %s", exc)
             return JSONResponse(status_code=500, content={"status": "error", "message": str(exc)})
-    # Broadcast event so UI knows a cycle was triggered
-    await manager.broadcast({"type": "event", "data": {
-        "ts": datetime.now(timezone.utc).isoformat(),
-        "type": "cycle_start",
-        "region": None,
-        "data": {},
-    }})
+    # Chronicle: cycle started (persists + broadcasts)
+    await chronicle_event("cycle_start", {})
     return {"status": "started", "quest_skill_path": str(synced_skill)}
 
 
@@ -1270,6 +1285,8 @@ async def quest_create(body: dict):
     _write_quests_v2(quests)
     # Broadcast quest update via WebSocket
     await manager.broadcast({"type": "quest", "data": {"quests": [q for q in quests if q.get("status") in ("active", "in_progress")]}})
+    # Chronicle: user created a quest
+    await chronicle_event("quest_create", {"quest_id": task["id"], "title": title, "source": "user"})
     return {"status": "created", "task": task}
 
 
@@ -1319,6 +1336,7 @@ async def quest_cancel(body: dict):
     # Broadcast quest update so UI refreshes
     active = [q for q in quests if q.get("status") in ("active", "in_progress", "pending")]
     await manager.broadcast({"type": "quest", "data": {"quests": active}})
+    await chronicle_event("quest_cancel", {"quest_id": quest_id, "title": next((q["title"] for q in quests if q["id"] == quest_id), "")})
     return {"status": "cancelled", "quest_id": quest_id}
 
 @app.post("/api/quest/fail")
@@ -1360,6 +1378,7 @@ async def quest_fail(body: dict):
     active = [q for q in quests if q.get("status") in ("active", "in_progress", "pending")]
     await manager.broadcast({"type": "quest", "data": {"quests": active}})
 
+    await chronicle_event("quest_fail", {"quest_id": quest_id, "title": found.get("title", ""), "hp_penalty": hp_penalty, "mp_penalty": mp_penalty})
     return {"ok": True, "quest_id": quest_id, "hp_penalty": hp_penalty, "mp_penalty": mp_penalty}
 
 
