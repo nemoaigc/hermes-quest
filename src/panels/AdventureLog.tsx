@@ -46,9 +46,16 @@ function CyclePhaseGroup({ phases }: { phases: GameEvent[] }) {
     reflectSummary.toLowerCase().includes('rejection') ||
     reflectSummary.toLowerCase().includes('approval')
 
-  // Build one-line summary
+  // Build one-line summary — prioritize REFLECT when feedback-influenced
   let summary = ''
-  if (reportOutcomes.length > 0) {
+  if (feedbackInfluenced && reflectSummary) {
+    // Extract the most relevant sentence from REFLECT
+    const sentences = reflectSummary.split(/[.!]\s+/)
+    const feedbackSentence = sentences.find(s =>
+      /feedback|avoid|pivot|reject|approv/i.test(s)
+    )
+    summary = (feedbackSentence || sentences[0] || '').slice(0, 100)
+  } else if (reportOutcomes.length > 0) {
     summary = reportOutcomes[0]
   } else if (planData?.reason) {
     summary = (planData.reason as string).slice(0, 80)
@@ -104,7 +111,7 @@ function CyclePhaseGroup({ phases }: { phases: GameEvent[] }) {
             fontFamily: feedbackInfluenced ? 'Georgia, serif' : 'var(--font-pixel)',
             fontStyle: feedbackInfluenced ? 'italic' : 'normal',
           }}>
-            {feedbackInfluenced && <span style={{ color: '#b48eff' }}>Your feedback shaped this: </span>}
+            {feedbackInfluenced && <span style={{ color: '#b48eff' }}>You shaped this: </span>}
             {summary}
           </div>
         </div>
@@ -116,7 +123,7 @@ function CyclePhaseGroup({ phases }: { phases: GameEvent[] }) {
         }}>
           {formatTime(latestTs)}
         </div>
-        <span style={{ fontSize: '7px', color: '#8b7355', flexShrink: 0 }}>
+        <span style={{ fontSize: '9px', color: '#a08060', flexShrink: 0 }}>
           {expanded ? '▾' : '▸'}
         </span>
       </div>
@@ -265,9 +272,12 @@ export default function AdventureLog() {
     setFailPrompt(null)
   }, [])
 
-  const visibleEvents = clearedAt
-    ? events.filter((e) => { const t = new Date(e.ts).getTime(); return !isNaN(t) && t > clearedAt })
-    : events
+  const visibleEvents = useMemo(() =>
+    clearedAt
+      ? events.filter((e) => { const t = new Date(e.ts).getTime(); return !isNaN(t) && t > clearedAt })
+      : events,
+    [events, clearedAt]
+  )
 
   // Group consecutive cycle_phase events into cycle groups
   const displayItems = useMemo<DisplayItem[]>(() => {
