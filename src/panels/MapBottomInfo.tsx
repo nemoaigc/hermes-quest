@@ -31,57 +31,53 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 
-function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath()
-  ctx.moveTo(x + r, y)
-  ctx.lineTo(x + w - r, y)
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r)
-  ctx.lineTo(x + w, y + h - r)
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
-  ctx.lineTo(x + r, y + h)
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r)
-  ctx.lineTo(x, y + r)
-  ctx.quadraticCurveTo(x, y, x + r, y)
-  ctx.closePath()
-}
-
 function paintPanel(ctx: CanvasRenderingContext2D, width: number, height: number, accent: string) {
   ctx.clearRect(0, 0, width, height)
+  ctx.fillStyle = '#1a110a'
+  ctx.fillRect(0, 0, width, height)
 
-  const bg = ctx.createLinearGradient(0, 0, 0, height)
-  bg.addColorStop(0, '#25190f')
-  bg.addColorStop(0.5, '#161009')
-  bg.addColorStop(1, '#100b06')
-  ctx.fillStyle = bg
-  drawRoundedRect(ctx, 0.5, 0.5, width - 1, height - 1, 6)
-  ctx.fill()
-
-  const glow = ctx.createRadialGradient(width * 0.2, height * 0.12, 4, width * 0.2, height * 0.12, width * 0.75)
-  glow.addColorStop(0, hexToRgba(accent, 0.1))
-  glow.addColorStop(1, hexToRgba(accent, 0))
-  ctx.fillStyle = glow
-  drawRoundedRect(ctx, 0.5, 0.5, width - 1, height - 1, 6)
-  ctx.fill()
-
-  for (let y = 8; y < height; y += 8) {
-    ctx.strokeStyle = 'rgba(255,255,255,0.016)'
-    ctx.beginPath()
-    ctx.moveTo(10, y + 0.5)
-    ctx.lineTo(width - 10, y + 0.5)
-    ctx.stroke()
+  for (let y = 0; y < height; y += 10) {
+    ctx.fillStyle = y % 20 === 0 ? '#24170e' : '#1e140c'
+    ctx.fillRect(0, y, width, 10)
+    ctx.fillStyle = 'rgba(255,255,255,0.018)'
+    ctx.fillRect(0, y, width, 1)
   }
 
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)'
-  drawRoundedRect(ctx, 0.5, 0.5, width - 1, height - 1, 6)
-  ctx.stroke()
+  for (let y = 6; y < height; y += 14) {
+    const grainOffset = (y * 17) % 23
+    ctx.fillStyle = 'rgba(255,255,255,0.018)'
+    ctx.fillRect(10 + grainOffset, y, Math.max(16, width * 0.24), 1)
+    ctx.fillStyle = 'rgba(0,0,0,0.12)'
+    ctx.fillRect(width * 0.36, y + 2, Math.max(12, width * 0.18), 1)
+  }
 
-  ctx.strokeStyle = hexToRgba(accent, 0.2)
-  ctx.lineWidth = 1
-  drawRoundedRect(ctx, 2, 2, width - 4, height - 4, 5)
-  ctx.stroke()
-
+  ctx.fillStyle = 'rgba(0,0,0,0.16)'
+  ctx.fillRect(2, 2, width - 4, 18)
   ctx.fillStyle = hexToRgba(accent, 0.22)
-  ctx.fillRect(12, 10, Math.max(28, width * 0.34), 1.5)
+  ctx.fillRect(8, 18, width - 16, 1)
+
+  ctx.fillStyle = '#0d0805'
+  ctx.fillRect(0, 0, width, 2)
+  ctx.fillRect(0, height - 2, width, 2)
+  ctx.fillRect(0, 0, 2, height)
+  ctx.fillRect(width - 2, 0, 2, height)
+
+  ctx.strokeStyle = '#6b4c2a'
+  ctx.lineWidth = 1
+  ctx.strokeRect(2.5, 2.5, width - 5, height - 5)
+
+  ctx.strokeStyle = hexToRgba(accent, 0.18)
+  ctx.strokeRect(4.5, 4.5, width - 9, height - 9)
+
+  const rivets = [
+    [6, 6], [width - 8, 6], [6, height - 8], [width - 8, height - 8],
+  ] as const
+  rivets.forEach(([x, y]) => {
+    ctx.fillStyle = '#a47a42'
+    ctx.fillRect(x, y, 2, 2)
+    ctx.fillStyle = '#e0be7d'
+    ctx.fillRect(x, y, 1, 1)
+  })
 }
 
 function getPhaseDetail(event: GameEvent): string {
@@ -158,7 +154,7 @@ function CanvasPanel({
         position: 'relative',
         minHeight: '82px',
         overflow: 'hidden',
-        borderRadius: '5px',
+        borderRadius: '2px',
         ...style,
       }}
     >
