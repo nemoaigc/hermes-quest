@@ -52,7 +52,9 @@ public/items/raw/
 public/skills/raw/
 *.jiuguan.png
 
-# Internal docs
+# Internal / tooling (not part of the product)
+demo/
+scripts/
 REVIEW-LOG.md
-demo/checklist.md
+PROJECT-CONTEXT.md
 docs/
