@@ -49,61 +49,39 @@ function paintPanel(ctx: CanvasRenderingContext2D, width: number, height: number
   ctx.clearRect(0, 0, width, height)
 
   const bg = ctx.createLinearGradient(0, 0, 0, height)
-  bg.addColorStop(0, '#2a1c10')
-  bg.addColorStop(0.45, '#181009')
-  bg.addColorStop(1, '#120c07')
+  bg.addColorStop(0, '#25190f')
+  bg.addColorStop(0.5, '#161009')
+  bg.addColorStop(1, '#100b06')
   ctx.fillStyle = bg
   drawRoundedRect(ctx, 0.5, 0.5, width - 1, height - 1, 6)
   ctx.fill()
 
-  const glow = ctx.createRadialGradient(width * 0.2, height * 0.1, 4, width * 0.2, height * 0.1, width * 0.7)
-  glow.addColorStop(0, hexToRgba(accent, 0.16))
+  const glow = ctx.createRadialGradient(width * 0.2, height * 0.12, 4, width * 0.2, height * 0.12, width * 0.75)
+  glow.addColorStop(0, hexToRgba(accent, 0.1))
   glow.addColorStop(1, hexToRgba(accent, 0))
   ctx.fillStyle = glow
   drawRoundedRect(ctx, 0.5, 0.5, width - 1, height - 1, 6)
   ctx.fill()
 
-  for (let y = 7; y < height; y += 7) {
-    ctx.strokeStyle = 'rgba(255,255,255,0.025)'
+  for (let y = 8; y < height; y += 8) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.016)'
     ctx.beginPath()
-    ctx.moveTo(6, y + 0.5)
-    ctx.lineTo(width - 6, y + 0.5)
+    ctx.moveTo(10, y + 0.5)
+    ctx.lineTo(width - 10, y + 0.5)
     ctx.stroke()
   }
 
-  for (let x = 10; x < width; x += 18) {
-    for (let y = 12; y < height; y += 18) {
-      ctx.fillStyle = hexToRgba(accent, 0.06)
-      ctx.fillRect(x, y, 1, 1)
-    }
-  }
-
-  ctx.strokeStyle = 'rgba(255,255,255,0.05)'
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)'
   drawRoundedRect(ctx, 0.5, 0.5, width - 1, height - 1, 6)
   ctx.stroke()
 
-  ctx.strokeStyle = hexToRgba(accent, 0.34)
+  ctx.strokeStyle = hexToRgba(accent, 0.2)
   ctx.lineWidth = 1
   drawRoundedRect(ctx, 2, 2, width - 4, height - 4, 5)
   ctx.stroke()
 
-  ctx.fillStyle = hexToRgba(accent, 0.3)
-  ctx.fillRect(8, 8, width - 16, 1)
-
-  const corners: Array<[number, number, number, number]> = [
-    [7, 7, 10, 1],
-    [7, 7, 1, 10],
-    [width - 17, 7, 10, 1],
-    [width - 8, 7, 1, 10],
-    [7, height - 8, 10, 1],
-    [7, height - 17, 1, 10],
-    [width - 17, height - 8, 10, 1],
-    [width - 8, height - 17, 1, 10],
-  ]
-  corners.forEach(([x, y, w, h]) => {
-    ctx.fillStyle = hexToRgba(accent, 0.55)
-    ctx.fillRect(x, y, w, h)
-  })
+  ctx.fillStyle = hexToRgba(accent, 0.22)
+  ctx.fillRect(12, 10, Math.max(28, width * 0.34), 1.5)
 }
 
 function getPhaseDetail(event: GameEvent): string {
@@ -180,7 +158,7 @@ function CanvasPanel({
         position: 'relative',
         minHeight: '82px',
         overflow: 'hidden',
-        borderRadius: '6px',
+        borderRadius: '5px',
         ...style,
       }}
     >
@@ -193,11 +171,11 @@ function CanvasPanel({
           display: 'flex',
           flexDirection: 'column',
           gap: '6px',
-          padding: '8px 9px',
+          padding: '9px 10px',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          <div style={{ fontSize: '6px', color: '#d0b080', letterSpacing: '0.8px' }}>{title}</div>
+          <div style={{ fontSize: '6px', color: '#d6bb92', letterSpacing: '0.8px' }}>{title}</div>
           {status ? (
             <div style={{ fontSize: '6px', color: statusColor || accent, letterSpacing: '0.5px' }}>{status}</div>
           ) : null}
