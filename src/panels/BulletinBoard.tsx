@@ -214,6 +214,7 @@ export default function BulletinBoard() {
   const knowledgeMap = useStore((s) => s.knowledgeMap)
   const setKnowledgeMap = useStore((s) => s.setKnowledgeMap)
   const setQuests = useStore((s) => s.setQuests)
+  const feedbackDigest = useStore((s) => s.feedbackDigest)
   const [accepting, setAccepting] = useState<string | null>(null)
   const [page, setPage] = useState(0)
   const [selectedQuest, setSelectedQuest] = useState<string | null>(null)
@@ -222,6 +223,9 @@ export default function BulletinBoard() {
   const [acceptError, setAcceptError] = useState<string | null>(null)
 
   const recommendations = (knowledgeMap?.recommended_quests || []) as Array<RecommendedQuest | null>
+  const feedbackCount = feedbackDigest
+    ? feedbackDigest.summary.total_positive + feedbackDigest.summary.total_negative
+    : 0
   const pageSize = 6
   const totalPages = Math.max(1, Math.ceil(recommendations.length / pageSize))
   const displayed = recommendations.slice(page * pageSize, (page + 1) * pageSize)
@@ -324,6 +328,20 @@ export default function BulletinBoard() {
       )}
 
       {/* Refresh button */}
+      {feedbackCount > 0 && (
+        <div style={{
+          position: 'absolute', top: '3%', left: '3%', zIndex: 10,
+          fontFamily: 'var(--font-pixel)',
+          fontSize: 'clamp(5px, 0.5vw, 6px)',
+          color: '#a8c8a8',
+          background: 'rgba(30,40,20,0.75)',
+          border: '1px solid rgba(100,140,80,0.4)',
+          borderRadius: '2px',
+          padding: '2px 6px',
+        }}>
+          Shaped by {feedbackCount} signal{feedbackCount !== 1 ? 's' : ''}
+        </div>
+      )}
       <button
         onClick={refreshMap}
         disabled={refreshing}

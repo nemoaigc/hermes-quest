@@ -4,7 +4,7 @@ import { formatEvent, formatTime } from '../utils/formatters'
 import { EventIcon } from '../utils/icons'
 import { API_URL, failQuest, fetchActiveQuests } from '../api'
 import { LS_KEYS } from '../constants/storage'
-import type { GameEvent } from '../types'
+import type { GameEvent } from '../store'
 
 const FEEDBACKABLE_TYPES = new Set(['skill_drop', 'cycle_end', 'quest_complete', 'train_start'])
 
@@ -139,8 +139,14 @@ function CyclePhaseGroup({ phases }: { phases: GameEvent[] }) {
             const phaseName = (data?.phase as string) || ''
             const meta = PHASE_META[phaseName]
             const isReflect = phaseName === 'reflect'
-            const content = (data?.summary as string) || (data?.detail as string) ||
-              (data?.reason as string) || (data?.outcomes as string[])?.join(', ') || ''
+            const targetWorkflow = typeof data?.target_workflow === 'string' ? data.target_workflow : ''
+            const content: string = String(
+              (data?.summary as string) ||
+              (data?.detail as string) ||
+              (data?.reason as string) ||
+              (Array.isArray(data?.outcomes) ? data.outcomes.join(', ') : '') ||
+              ''
+            )
 
             return (
               <div key={idx} style={{
@@ -162,7 +168,7 @@ function CyclePhaseGroup({ phases }: { phases: GameEvent[] }) {
                   {meta?.label || phaseName.toUpperCase()}
                 </div>
                 {/* Content */}
-                {content && (
+                {content !== '' ? (
                   <div style={{
                     fontSize: isReflect ? '9px' : '8px',
                     color: isReflect ? '#c8a87a' : '#8b7355',
@@ -172,13 +178,13 @@ function CyclePhaseGroup({ phases }: { phases: GameEvent[] }) {
                   }}>
                     {content}
                   </div>
-                )}
+                ) : null}
                 {/* Target workflow for PLAN */}
-                {phaseName === 'plan' && data?.target_workflow && (
+                {phaseName === 'plan' && targetWorkflow !== '' ? (
                   <div style={{ fontSize: '7px', color: '#5a4a3a', marginTop: '1px' }}>
-                    Target: {data.target_workflow as string}
+                    Target: {targetWorkflow}
                   </div>
-                )}
+                ) : null}
               </div>
             )
           })}

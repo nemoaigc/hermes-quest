@@ -18,6 +18,7 @@ from config import (
     ACCEPTED_REC_IDS_FILE,
     BAG_FILE,
     COMPLETIONS_DIR,
+    CYCLE_LOG_FILE,
     CYCLE_LOCK_FILE,
     EVENTS_FILE,
     FEEDBACK_DIGEST_FILE,
@@ -831,6 +832,19 @@ def _write_quests_v2(quests):
     QUESTS_V2_FILE.write_text(json.dumps(quests, indent=2))
 
 
+def _build_neg_workflow_ids(map_data, digest):
+    """Return workflow IDs that have sustained strongly negative feedback."""
+    wf_sent = digest.get("workflow_sentiment", {})
+    neg_names = {
+        name
+        for name, sentiment in wf_sent.items()
+        if sentiment.get("down", 0) > sentiment.get("up", 0) * 2 and sentiment.get("down", 0) >= 3
+    }
+    if not neg_names:
+        return set()
+    return {wf["id"] for wf in map_data.get("workflows", []) if wf.get("name") in neg_names}
+
+
 def _generate_recommended_quests(map_data):
     """Generate 3-5 recommended quests. Randomized + deduped against active quests."""
     import random
@@ -847,10 +861,19 @@ def _generate_recommended_quests(map_data):
                 active_titles.add(q.get("title", "").lower())
     except Exception:
         pass
+    neg_wf_ids = _build_neg_workflow_ids(map_data, _read_feedback_digest())
     candidates = []
     qid = 0
     workflows = map_data.get("workflows", [])
-    weak_pool = [w for w in workflows if w.get("mastery", 0) < GAME_BALANCE["weak_mastery_threshold"]]
+    weak_pool = [
+        w for w in workflows
+        if w.get("mastery", 0) < GAME_BALANCE["weak_mastery_threshold"]
+        and w.get("id") not in neg_wf_ids
+    ]
+    if not weak_pool and neg_wf_ids:
+        all_weak = [w for w in workflows if w.get("mastery", 0) < GAME_BALANCE["weak_mastery_threshold"]]
+        if all_weak:
+            weak_pool = [all_weak[0]]
     random.shuffle(weak_pool)
     for wf in weak_pool[:3]:
         subs = list(wf.get("sub_nodes", []))
@@ -906,7 +929,11 @@ def _generate_recommended_quests(map_data):
             "source": "mastery_push",
             "related_workflow": b_id,
         })
-    filtered = [q for q in candidates if q["title"].lower() not in active_titles]
+    filtered = [
+        q for q in candidates
+        if q["title"].lower() not in active_titles
+        and q.get("related_workflow") not in neg_wf_ids
+    ]
     accepted_ids = _read_accepted_rec_ids()
     filtered = [q for q in filtered if q["id"] not in accepted_ids]
     random.shuffle(filtered)
@@ -1188,7 +1215,10 @@ async def cycle_start():
 
         # Trigger the quest skill directly so a manual cycle always runs immediately.
         env = os.environ.copy()
+        cycle_log = None
         try:
+            CYCLE_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+            cycle_log = open(CYCLE_LOG_FILE, "a", encoding="utf-8")
             subprocess.Popen(
                 [
                     str(HERMES_AGENT_PYTHON),
@@ -1203,14 +1233,17 @@ async def cycle_start():
                 ],
                 cwd=str(HERMES_AGENT_DIR),
                 env=env,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stdout=cycle_log,
+                stderr=cycle_log,
             )
         except OSError as exc:
             # Clean up lock on failure
             CYCLE_LOCK_FILE.unlink(missing_ok=True)
             logger.error("Failed to start cycle: %s", exc)
             return JSONResponse(status_code=500, content={"status": "error", "message": str(exc)})
+        finally:
+            if cycle_log:
+                cycle_log.close()
     # Chronicle: cycle started (persists + broadcasts)
     await chronicle_event("cycle_start", {})
     return {"status": "started", "quest_skill_path": str(synced_skill)}

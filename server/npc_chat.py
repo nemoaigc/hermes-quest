@@ -216,7 +216,7 @@ async def chat_with_npc(npc_id, message, context, game_state=None, history=None)
         conv_lines = []
         for m in (history or [])[-6:]:
             role = "冒险者" if m.get("role") == "user" else npc_id
-            conv_lines.append(f"{role}: {m.get("content", "")[:100]}")
+            conv_lines.append(f"{role}: {m.get('content', '')[:100]}")
         conv_str = chr(10).join(conv_lines) if conv_lines else "(new conversation)"
 
         instructions = _render_prompt(prompt_template, game_state, context, conversation_history=conv_str,
