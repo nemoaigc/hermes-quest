@@ -56,30 +56,8 @@ export default function MapBottomInfo() {
   const events = useStore((s) => s.events)
   const cycleProgress = useStore((s) => s.cycleProgress)
   const setFeedbackDigest = useStore((s) => s.setFeedbackDigest)
-  const [classifyDone, setClassifyDone] = useState(false)
   const [cycleLoading, setCycleLoading] = useState(false)
   const [feedbackCount, setFeedbackCount] = useState(0)
-  const prevClassifyingRef = useRef(false)
-  const classifyTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
-
-  // Track classify done state
-  useEffect(() => {
-    classifyTimersRef.current.forEach(clearTimeout)
-    classifyTimersRef.current = []
-    if (classifying) {
-      const resetTimer = setTimeout(() => setClassifyDone(false), 0)
-      classifyTimersRef.current.push(resetTimer)
-    } else if (prevClassifyingRef.current) {
-      const showTimer = setTimeout(() => setClassifyDone(true), 0)
-      const hideTimer = setTimeout(() => setClassifyDone(false), 3000)
-      classifyTimersRef.current.push(showTimer, hideTimer)
-    }
-    prevClassifyingRef.current = classifying
-    return () => {
-      classifyTimersRef.current.forEach(clearTimeout)
-      classifyTimersRef.current = []
-    }
-  }, [classifying])
   const workflows: Workflow[] = km?.workflows || km?.continents || []
 
   const [cycleStatus, setCycleStatus] = useState<'idle' | 'loading' | 'success' | 'failed'>('idle')
@@ -88,7 +66,6 @@ export default function MapBottomInfo() {
   // Cleanup cycle timers on unmount
   useEffect(() => {
     return () => {
-      classifyTimersRef.current.forEach(clearTimeout)
       cycleTimersRef.current.forEach(clearTimeout)
     }
   }, [])
@@ -117,14 +94,14 @@ export default function MapBottomInfo() {
       if (!latest.has(phase)) latest.set(phase, event)
       if (phase === 'reflect') break
     }
-    return PHASE_ORDER
-      .map((phase) => {
-        const event = latest.get(phase)
-        if (!event) return null
-        const detail = getPhaseDetail(event).trim()
-        return { phase, detail }
-      })
-      .filter((item): item is { phase: CyclePhase; detail: string } => item !== null)
+    return PHASE_ORDER.map((phase) => {
+      const event = latest.get(phase)
+      return {
+        phase,
+        detail: event ? getPhaseDetail(event).trim() : '',
+        hasEvent: !!event,
+      }
+    })
   }, [events])
 
   // Fetch feedback digest count on mount
@@ -137,31 +114,14 @@ export default function MapBottomInfo() {
       .catch(() => {})
   }, [setFeedbackDigest])
 
-  // Track whether real cycle_progress events have arrived (avoids stale closure)
-  const gotCycleProgressRef = useRef(false)
-
-  useEffect(() => {
-    if (cycleProgress) gotCycleProgressRef.current = true
-  }, [cycleProgress])
-
   async function handleStartCycle() {
     // Clear any pending timers from previous cycle
     cycleTimersRef.current.forEach(clearTimeout)
     cycleTimersRef.current = []
-    gotCycleProgressRef.current = false
     setCycleLoading(true)
     setCycleStatus('loading')
     try {
       await apiStartCycle()
-      // If no cycle_progress events come within 15s, fall back to old behavior
-      const fallback = setTimeout(() => {
-        if (!gotCycleProgressRef.current) {
-          setCycleStatus('success')
-          const t2 = setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 3000)
-          cycleTimersRef.current.push(t2)
-        }
-      }, 15000)
-      cycleTimersRef.current.push(fallback)
     } catch {
       setCycleStatus('failed')
       const t = setTimeout(() => { setCycleLoading(false); setCycleStatus('idle') }, 3000)
@@ -171,7 +131,22 @@ export default function MapBottomInfo() {
 
   const definedSites = sites.filter(s => s.defined)
   const undefinedCount = sites.filter(s => !s.defined).length
-  const showCyclePhases = !!cycleProgress && (cycleLoading || cycleStatus === 'success')
+  const hasCycleTrace = latestCycleTrace.some((item) => item.hasEvent)
+  const activePhase = cycleStatus === 'success'
+    ? null
+    : cycleProgress?.phase || (cycleLoading ? 'reflect' : null)
+  const activePhaseIndex = activePhase ? PHASE_ORDER.indexOf(activePhase) : -1
+  const statusLabel = classifying
+    ? 'SORTING'
+    : cycleStatus === 'failed'
+      ? 'FAILED'
+      : cycleStatus === 'success'
+        ? 'COMPLETE'
+        : cycleLoading
+          ? 'RUNNING'
+          : hasCycleTrace
+            ? 'LAST RUN'
+            : 'READY'
   const completedCycle = cycleStatus === 'success'
 
   return (
@@ -218,147 +193,123 @@ export default function MapBottomInfo() {
       </PanelCard>
 
       {/* Right: cycle phases + button */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '156px', flexShrink: 0, justifyContent: 'center' }}>
-        {/* Phase progress indicator — shows when cycle is running with real phases */}
-        {showCyclePhases ? (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '170px', flexShrink: 0, justifyContent: 'center' }}>
+        <div style={{
+          flex: 1,
+          width: '100%',
+          background: 'linear-gradient(180deg, #24160c 0%, #171009 100%)',
+          border: '2px solid #4a321b',
+          borderRadius: '3px',
+          padding: '5px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px',
+          boxShadow: 'inset 0 0 0 1px rgba(240,230,140,0.06)',
+        }}>
           <div style={{
-            flex: 1, width: '100%',
-            background: 'linear-gradient(180deg, rgba(45, 31, 18, 0.98), rgba(20, 14, 9, 0.98)), repeating-linear-gradient(180deg, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 7px)',
-            border: '2px solid #5a3d20',
-            borderRadius: '3px', padding: '4px',
-            display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px',
-            boxShadow: 'inset 0 0 0 1px rgba(240,230,140,0.08), 0 1px 4px rgba(0,0,0,0.35)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottom: '1px solid rgba(107, 76, 42, 0.35)',
+            paddingBottom: '3px',
           }}>
             <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              borderBottom: '1px solid rgba(240, 230, 140, 0.12)',
-              paddingBottom: '3px',
+              fontFamily: 'var(--font-pixel)',
+              fontSize: '6px',
+              color: '#c8a87a',
+              letterSpacing: '0.8px',
             }}>
-              <div style={{
-                fontFamily: 'var(--font-pixel)',
-                fontSize: '6px',
-                color: '#c8a87a',
-                letterSpacing: '0.8px',
-              }}>
-                CYCLE CANVAS
-              </div>
-              <div style={{
-                fontFamily: 'var(--font-pixel)',
-                fontSize: '6px',
-                color: completedCycle ? '#66bb6a' : '#f0e68c',
-                letterSpacing: '0.5px',
-              }}>
-                {completedCycle ? 'COMPLETE' : (cycleProgress ? PHASE_LABELS[cycleProgress.phase].label : 'ACTIVE')}
-              </div>
+              CYCLE FLOW
             </div>
-            {/* Phase steps */}
-            <div style={{ display: 'flex', gap: '2px', alignItems: 'center', justifyContent: 'center' }}>
-              {PHASE_ORDER.map((phase) => {
-                const phaseIdx = PHASE_ORDER.indexOf(phase)
-                const currentIdx = cycleProgress ? PHASE_ORDER.indexOf(cycleProgress.phase) : -1
-                const isDone = completedCycle || phaseIdx < currentIdx
-                const isCurrent = !completedCycle && phaseIdx === currentIdx
-                return (
-                  <div key={phase} style={{ display: 'flex', alignItems: 'center', gap: '1px' }}>
-                    <div style={{
-                      width: '15px', height: '15px',
-                      borderRadius: '2px',
-                      background: isDone ? '#66bb6a' : isCurrent ? '#f0e68c' : '#24170c',
-                      border: `1px solid ${isDone ? '#4a9a4a' : isCurrent ? '#c8a040' : '#4a321b'}`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '7px',
-                      transition: 'all 0.3s',
-                      boxShadow: isCurrent ? '0 0 6px rgba(240,230,140,0.25)' : 'none',
-                    }}>
-                      {isDone ? '\u2713' : PHASE_LABELS[phase].icon}
-                    </div>
-                    {phaseIdx < PHASE_ORDER.length - 1 && (
-                      <div style={{
-                        width: '4px', height: '1px',
-                        background: isDone ? '#66bb6a' : '#3a2210',
-                      }} />
-                    )}
-                  </div>
-                )
-              })}
+            <div style={{
+              fontFamily: 'var(--font-pixel)',
+              fontSize: '6px',
+              color: cycleStatus === 'failed' ? '#ff6b6b' : completedCycle ? '#66bb6a' : cycleLoading ? '#f0e68c' : '#8b7355',
+              letterSpacing: '0.5px',
+            }}>
+              {statusLabel}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              {latestCycleTrace.map(({ phase, detail }) => (
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            {latestCycleTrace.map(({ phase, detail, hasEvent }) => {
+              const phaseIdx = PHASE_ORDER.indexOf(phase)
+              const isDone = completedCycle ? hasEvent : phaseIdx < activePhaseIndex
+              const isCurrent = !completedCycle && phaseIdx === activePhaseIndex
+              const text = detail || (isCurrent ? 'Waiting for step output...' : hasEvent ? 'Recorded.' : 'Pending...')
+              return (
                 <div key={phase} style={{
                   display: 'flex',
-                  gap: '4px',
+                  gap: '5px',
                   alignItems: 'flex-start',
-                  padding: '3px 4px',
+                  padding: '4px',
                   borderRadius: '2px',
-                  background: completedCycle && phase === 'report'
-                    ? 'rgba(102, 187, 106, 0.12)'
-                    : cycleProgress?.phase === phase
-                      ? 'rgba(240, 230, 140, 0.1)'
-                      : 'rgba(0, 0, 0, 0.16)',
-                  border: `1px solid ${completedCycle && phase === 'report'
-                    ? 'rgba(102, 187, 106, 0.28)'
-                    : cycleProgress?.phase === phase
-                      ? 'rgba(240, 230, 140, 0.24)'
-                      : 'rgba(107, 76, 42, 0.24)'}`,
+                  background: isCurrent
+                    ? 'rgba(240, 230, 140, 0.08)'
+                    : isDone
+                      ? 'rgba(102, 187, 106, 0.08)'
+                      : 'rgba(0, 0, 0, 0.14)',
+                  border: `1px solid ${isCurrent
+                    ? 'rgba(240, 230, 140, 0.24)'
+                    : isDone
+                      ? 'rgba(102, 187, 106, 0.2)'
+                      : 'rgba(107, 76, 42, 0.22)'}`,
                 }}>
                   <div style={{
-                    minWidth: '42px',
-                    fontSize: '5px',
-                    color: PHASE_COLORS[phase],
+                    width: '18px',
+                    height: '18px',
+                    flexShrink: 0,
+                    borderRadius: '2px',
+                    background: isDone ? '#66bb6a' : isCurrent ? '#f0e68c' : '#2a1c0f',
+                    border: `1px solid ${isDone ? '#4a9a4a' : isCurrent ? '#c8a040' : '#4a321b'}`,
+                    color: isDone ? '#11210f' : isCurrent ? '#3b2c12' : '#7b674a',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     fontFamily: 'var(--font-pixel)',
-                    letterSpacing: '0.4px',
-                  }}>
-                    {PHASE_LABELS[phase].label}
-                  </div>
-                  <div style={{
-                    flex: 1,
                     fontSize: '6px',
-                    color: completedCycle && phase === 'report' ? '#f2e4bb' : '#b89b73',
-                    lineHeight: '1.25',
-                    overflow: 'hidden',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    fontFamily: 'Georgia, serif',
                   }}>
-                    {detail || '...'}
+                    {phaseIdx + 1}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontFamily: 'var(--font-pixel)',
+                      fontSize: '5px',
+                      color: PHASE_COLORS[phase],
+                      letterSpacing: '0.5px',
+                      marginBottom: '2px',
+                    }}>
+                      {PHASE_LABELS[phase].label}
+                    </div>
+                    <div style={{
+                      fontSize: '6px',
+                      color: isCurrent ? '#d8bf93' : isDone ? '#e8d5b0' : '#8b7355',
+                      lineHeight: '1.25',
+                      overflow: 'hidden',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                    }}>
+                      {text}
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              )
+            })}
           </div>
-        ) : (
-          /* Fallback: original progress bar when no phase data */
-          <div style={{
-            flex: 1, width: '100%',
-            background: '#1a140c', border: '2px solid #3a2210',
-            position: 'relative', overflow: 'hidden', borderRadius: '2px',
-            display: 'flex', flexDirection: 'column-reverse',
-          }}>
+
+          {!hasCycleTrace && !cycleLoading && !classifying && (
             <div style={{
-              width: '100%',
-              height: classifying ? '95%' : classifyDone ? '100%' : cycleStatus === 'success' ? '100%' : cycleLoading ? '95%' : '0%',
-              background: classifying
-                ? 'linear-gradient(0deg, #3a2210, #f0e68c)'
-                : classifyDone || cycleStatus === 'success'
-                  ? '#66bb6a'
-                  : cycleLoading
-                    ? 'linear-gradient(0deg, #1a3a1a, #66bb6a)'
-                    : 'transparent',
-              transition: classifying ? 'height 8s linear' : (classifyDone || cycleStatus === 'success') ? 'height 0.3s' : cycleLoading ? 'height 5s linear' : 'height 0.5s',
-            }} />
-            <div style={{
-              position: 'absolute', inset: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: 'var(--font-pixel)', fontSize: '6px',
-              color: classifying ? '#f0e68c' : classifyDone ? '#fff' : cycleStatus === 'success' ? '#fff' : cycleLoading ? '#66bb6a' : '#3a2a1a',
-              textShadow: (classifying || cycleLoading || classifyDone) ? '0 1px 3px rgba(0,0,0,0.8)' : 'none',
-              letterSpacing: '1px',
+              fontSize: '6px',
+              color: '#7b674a',
+              lineHeight: '1.25',
+              textAlign: 'center',
+              paddingTop: '2px',
             }}>
-              {classifying ? 'SORTING' : classifyDone ? 'DONE' : cycleStatus === 'success' ? 'DONE' : cycleLoading ? 'CYCLING' : 'IDLE'}
+              Launch a cycle to record its flow here.
             </div>
-          </div>
-        )}
+          )}
+        </div>
         {/* Feedback digest badge + cycle button */}
         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
           {feedbackCount > 0 && !cycleLoading && (
