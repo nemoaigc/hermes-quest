@@ -16,23 +16,37 @@ const COLORS = [
   '#2dd4bf', '#f87171',
 ]
 
-interface Node {
+interface StarNode {
   id: string
   x: number
   y: number
   vx: number
   vy: number
   color: string
+  baseAlpha: number  // mastery-driven brightness 0.3–1.0
+  baseSize: number   // mastery-driven size multiplier 0.6–1.4
+  entryDelay: number // staggered entry animation (ms)
+}
+
+interface Particle {
+  x: number
+  y: number
+  fromIdx: number
+  toIdx: number
+  progress: number // 0→1 along connection
+  speed: number
+  color: string
 }
 
 export default function SubRegionGraph({ continent, connections, onBack, extraAction }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const nodesRef = useRef<Node[]>([])
+  const nodesRef = useRef<StarNode[]>([])
+  const particlesRef = useRef<Particle[]>([])
   const sizeRef = useRef({ w: 400, h: 200 })
   const hoveredRef = useRef<string | null>(null)
-  const mouseRef = useRef({ x: -100, y: -100 })
   const animRef = useRef<number>(0)
+  const startTimeRef = useRef(Date.now())
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
 
   const subRegions: SubNode[] = continent.sub_nodes || continent.sub_regions || []
@@ -42,6 +56,9 @@ export default function SubRegionGraph({ continent, connections, onBack, extraAc
 
   const connectionsRef = useRef(connections)
   connectionsRef.current = connections
+
+  // Workflow mastery drives overall brightness
+  const mastery = continent.mastery || 0
 
   // Resize observer
   useEffect(() => {
@@ -73,17 +90,25 @@ export default function SubRegionGraph({ continent, connections, onBack, extraAc
   useEffect(() => {
     const { w, h } = sizeRef.current
     if (w <= 10 || allSkills.length === 0) return
-    const nodes: Node[] = allSkills.map((skill, idx) => {
+    startTimeRef.current = Date.now()
+
+    const nodes: StarNode[] = allSkills.map((skill, idx) => {
       const hash = skill.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
       const srIdx = hash
       const angle = (idx / allSkills.length) * Math.PI * 2 + (hash % 10) * 0.05
       const radius = Math.min(w, h) * 0.3 + (hash % 15)
+      // Mastery drives brightness and size
+      const brightness = 0.3 + mastery * 0.7  // 0.3 at 0%, 1.0 at 100%
+      const size = 0.6 + mastery * 0.8         // 0.6 at 0%, 1.4 at 100%
       return {
         id: skill,
         x: w / 2 + Math.cos(angle) * radius,
         y: h / 2 + Math.sin(angle) * radius * 0.5,
         vx: 0, vy: 0,
         color: COLORS[srIdx % COLORS.length],
+        baseAlpha: brightness,
+        baseSize: size,
+        entryDelay: idx * 40, // staggered: 40ms per star
       }
     })
     nodes.forEach(n => {
@@ -91,9 +116,9 @@ export default function SubRegionGraph({ continent, connections, onBack, extraAc
       n.y = Math.max(20, Math.min(h - 20, n.y))
     })
     nodesRef.current = nodes
-  }, [continent.id, allSkills.length])
+  }, [continent.id, allSkills.length, mastery])
 
-  // Animation loop — no deps, uses refs only
+  // Animation loop
   useEffect(() => {
     function render() {
       const canvas = canvasRef.current
@@ -107,10 +132,11 @@ export default function SubRegionGraph({ continent, connections, onBack, extraAc
       const skills = allSkillsRef.current
       const conns = connectionsRef.current
       const t = Date.now() * 0.001
+      const elapsed = Date.now() - startTimeRef.current
 
       if (W === 0 || H === 0) { animRef.current = requestAnimationFrame(render); return }
 
-      // Physics — symmetric forces
+      // Physics
       for (const node of nodes) {
         node.vx += (W / 2 - node.x) * 0.001
         node.vy += (H / 2 - node.y) * 0.001
@@ -144,20 +170,19 @@ export default function SubRegionGraph({ continent, connections, onBack, extraAc
         node.y = Math.max(15, Math.min(H - 15, node.y))
       }
 
-      // Background — use full canvas size for clearing, then logical size for drawing
+      // Background
       ctx.save()
       ctx.setTransform(1, 0, 0, 1, 0, 0)
       ctx.fillStyle = '#0a0814'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
       ctx.restore()
 
-      // Stars — subtle twinkling
+      // Background stars
       for (let i = 0; i < 80; i++) {
         const sx = (i * 7919 + 13) % W
         const sy = (i * 6271 + 37) % H
         const twinkle = 0.15 + Math.sin(t * 0.6 + i * 2.1) * 0.15
         const size = i % 5 === 0 ? 2.5 : i % 3 === 0 ? 1.5 : 0.8
-
         ctx.fillStyle = `rgba(200,195,240,${twinkle})`
         if (size > 2) {
           ctx.fillRect(sx - 0.5, sy - size, 1, size * 2)
@@ -176,84 +201,140 @@ export default function SubRegionGraph({ continent, connections, onBack, extraAc
         }
       }
 
-      // Connections — constellation style: connect nodes sharing same color (same sub_region)
+      // Build connection list
       const localConns = conns.filter(c => skills.includes(c.from) && skills.includes(c.to))
-      let drawConns = localConns
+      let drawConns: { from: string; to: string; strength: number; type?: string }[] = localConns
       if (localConns.length === 0 && nodes.length > 1) {
-        // Group by color (= sub_region), connect within groups as constellation lines
-        const groups = new Map<string, Node[]>()
+        const groups = new Map<string, StarNode[]>()
         nodes.forEach(n => {
           const g = groups.get(n.color) || []
           g.push(n)
           groups.set(n.color, g)
         })
-        const autoConns: { from: string; to: string; strength: number }[] = []
+        const autoConns: { from: string; to: string; strength: number; type?: string }[] = []
         groups.forEach((group) => {
           for (let i = 0; i < group.length - 1; i++) {
-            autoConns.push({ from: group[i].id, to: group[i + 1].id, strength: 0.5 })
+            autoConns.push({ from: group[i].id, to: group[i + 1].id, strength: 0.5, type: 'workflow' })
           }
         })
-        // Also connect the groups to each other (one bridge per group pair)
         const groupKeys = Array.from(groups.keys())
         for (let i = 0; i < groupKeys.length - 1; i++) {
           const g1 = groups.get(groupKeys[i])!
           const g2 = groups.get(groupKeys[i + 1])!
-          autoConns.push({ from: g1[g1.length - 1].id, to: g2[0].id, strength: 0.2 })
+          autoConns.push({ from: g1[g1.length - 1].id, to: g2[0].id, strength: 0.2, type: 'complementary' })
         }
         drawConns = autoConns
       }
 
+      // Draw connections with type-based coloring
       for (const c of drawConns) {
         const from = nodes.find(n => n.id === c.from)
         const to = nodes.find(n => n.id === c.to)
         if (!from || !to) continue
         const hl = hovered === c.from || hovered === c.to
+        const connType = c.type || 'workflow'
+
+        // Type-based colors: silver=workflow, amber=complementary, cyan=prerequisite
+        let lineColor: string
+        if (hl) {
+          lineColor = connType === 'complementary' ? 'rgba(255,180,60,0.6)' :
+                      connType === 'prerequisite' ? 'rgba(56,189,248,0.6)' :
+                      'rgba(240,230,140,0.5)'
+        } else {
+          lineColor = connType === 'complementary' ? 'rgba(180,120,30,0.15)' :
+                      connType === 'prerequisite' ? 'rgba(40,140,180,0.15)' :
+                      'rgba(100,80,60,0.2)'
+        }
+
         ctx.beginPath()
         ctx.moveTo(from.x, from.y)
         const mx = (from.x + to.x) / 2, my = (from.y + to.y) / 2 - 6
         ctx.quadraticCurveTo(mx, my, to.x, to.y)
-        if (hl) {
-          ctx.strokeStyle = 'rgba(240,230,140,0.5)'
-          ctx.lineWidth = 2
-          ctx.stroke()
-        } else {
-          ctx.strokeStyle = 'rgba(100,80,60,0.2)'
-          ctx.lineWidth = 1
-          ctx.setLineDash([3, 3])
-          ctx.stroke()
-          ctx.setLineDash([])
-        }
+        ctx.strokeStyle = lineColor
+        ctx.lineWidth = hl ? 2 : 1
+        if (!hl) ctx.setLineDash([3, 3])
+        ctx.stroke()
+        ctx.setLineDash([])
       }
 
-      // Skill nodes — varied star shapes
+      // Particles flowing along connections (fireflies/mana)
+      const particles = particlesRef.current
+      // Spawn new particles occasionally
+      if (drawConns.length > 0 && particles.length < drawConns.length * 2 && Math.random() < 0.08) {
+        const c = drawConns[Math.floor(Math.random() * drawConns.length)]
+        const fromIdx = nodes.findIndex(n => n.id === c.from)
+        const toIdx = nodes.findIndex(n => n.id === c.to)
+        if (fromIdx >= 0 && toIdx >= 0) {
+          const connType = c.type || 'workflow'
+          const pColor = connType === 'complementary' ? '#ff9944' :
+                         connType === 'prerequisite' ? '#38bdf8' : '#f0e68c'
+          particles.push({
+            x: 0, y: 0,
+            fromIdx, toIdx,
+            progress: 0,
+            speed: 0.005 + Math.random() * 0.008,
+            color: pColor,
+          })
+        }
+      }
+      // Update and draw particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i]
+        p.progress += p.speed
+        if (p.progress >= 1) { particles.splice(i, 1); continue }
+        const from = nodes[p.fromIdx]
+        const to = nodes[p.toIdx]
+        if (!from || !to) { particles.splice(i, 1); continue }
+        // Quadratic bezier position
+        const tt = p.progress
+        const mx = (from.x + to.x) / 2, my = (from.y + to.y) / 2 - 6
+        p.x = (1 - tt) * (1 - tt) * from.x + 2 * (1 - tt) * tt * mx + tt * tt * to.x
+        p.y = (1 - tt) * (1 - tt) * from.y + 2 * (1 - tt) * tt * my + tt * tt * to.y
+        // Draw particle glow
+        const alpha = Math.sin(tt * Math.PI) * 0.8  // fade in/out
+        ctx.fillStyle = p.color
+        ctx.globalAlpha = alpha
+        ctx.fillRect(p.x - 1, p.y - 1, 2, 2)
+        // Tiny glow
+        ctx.globalAlpha = alpha * 0.3
+        ctx.fillRect(p.x - 2, p.y - 2, 4, 4)
+        ctx.globalAlpha = 1
+      }
+
+      // Skill star nodes with entry animation + mastery brightness
       for (const node of nodes) {
+        // Entry animation: fade in with stagger
+        const entryProgress = Math.min(1, Math.max(0, (elapsed - node.entryDelay) / 600))
+        if (entryProgress <= 0) continue  // not yet visible
+        const entryAlpha = entryProgress * entryProgress // ease-in
+
         const isH = hovered === node.id
         const pulse = Math.sin(t * 1.5 + node.x * 0.08) * 0.1 + 1
-        const r = (isH ? 7 : 4) * pulse
+        const r = (isH ? 7 : 4) * pulse * node.baseSize
         const x = node.x, y = node.y
         const hash = node.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
         const shape = hash % 5
 
-        // Soft glow
-        const g = ctx.createRadialGradient(x, y, 0, x, y, r * 2.5)
-        g.addColorStop(0, node.color + (isH ? '30' : '0c'))
+        // Mastery-driven glow radius
+        const glowR = r * (2 + node.baseAlpha * 1.5)
+        const g = ctx.createRadialGradient(x, y, 0, x, y, glowR)
+        g.addColorStop(0, node.color + (isH ? '40' : Math.round(node.baseAlpha * 20).toString(16).padStart(2, '0')))
         g.addColorStop(1, 'transparent')
         ctx.fillStyle = g
+        ctx.globalAlpha = entryAlpha
         ctx.beginPath()
-        ctx.arc(x, y, r * 2.5, 0, Math.PI * 2)
+        ctx.arc(x, y, glowR, 0, Math.PI * 2)
         ctx.fill()
 
         ctx.fillStyle = node.color
-        ctx.globalAlpha = isH ? 1 : 0.85
+        ctx.globalAlpha = (isH ? 1 : node.baseAlpha * 0.85) * entryAlpha
 
         if (shape === 0) {
-          // ✦ 4-pointed star — cross with center dot
           ctx.fillRect(x - 0.7, y - r, 1.4, r * 2)
           ctx.fillRect(x - r, y - 0.7, r * 2, 1.4)
           ctx.fillStyle = '#fff'
           ctx.fillRect(x - 1, y - 1, 2, 2)
         } else if (shape === 1) {
-          // ✶ 6-pointed — two overlapping triangles
           ctx.beginPath()
           for (let i = 0; i < 6; i++) {
             const a = (i / 6) * Math.PI * 2 - Math.PI / 2
@@ -267,7 +348,6 @@ export default function SubRegionGraph({ continent, connections, onBack, extraAc
           ctx.fillStyle = '#fff'
           ctx.fillRect(x - 0.8, y - 0.8, 1.6, 1.6)
         } else if (shape === 2) {
-          // ◆ Diamond
           ctx.beginPath()
           ctx.moveTo(x, y - r)
           ctx.lineTo(x + r * 0.6, y)
@@ -278,7 +358,6 @@ export default function SubRegionGraph({ continent, connections, onBack, extraAc
           ctx.fillStyle = '#fff'
           ctx.fillRect(x - 0.7, y - 0.7, 1.4, 1.4)
         } else if (shape === 3) {
-          // ✴ 8-pointed — cross + diagonal
           ctx.fillRect(x - 0.6, y - r, 1.2, r * 2)
           ctx.fillRect(x - r, y - 0.6, r * 2, 1.2)
           const d = r * 0.65
@@ -286,18 +365,18 @@ export default function SubRegionGraph({ continent, connections, onBack, extraAc
           ctx.fillRect(x + d - 1, y - d, 1.2, 1.2)
           ctx.fillRect(x - d, y + d - 1, 1.2, 1.2)
           ctx.fillRect(x + d - 1, y + d - 1, 1.2, 1.2)
-          // Connect diagonals
           ctx.save()
           ctx.translate(x, y)
           ctx.rotate(Math.PI / 4)
           ctx.fillStyle = node.color
+          ctx.globalAlpha = (isH ? 1 : node.baseAlpha * 0.85) * entryAlpha
           ctx.fillRect(-0.5, -r * 0.7, 1, r * 1.4)
           ctx.fillRect(-r * 0.7, -0.5, r * 1.4, 1)
           ctx.restore()
           ctx.fillStyle = '#fff'
+          ctx.globalAlpha = entryAlpha
           ctx.fillRect(x - 1, y - 1, 2, 2)
         } else {
-          // ★ 5-pointed star
           ctx.beginPath()
           for (let i = 0; i < 10; i++) {
             const a = (i / 10) * Math.PI * 2 - Math.PI / 2
@@ -314,7 +393,7 @@ export default function SubRegionGraph({ continent, connections, onBack, extraAc
 
         ctx.globalAlpha = 1
 
-        // Hover ring
+        // Hover ring — mastery-colored
         if (isH) {
           ctx.beginPath()
           ctx.arc(x, y, r + 4, 0, Math.PI * 2)
@@ -323,15 +402,25 @@ export default function SubRegionGraph({ continent, connections, onBack, extraAc
           ctx.stroke()
         }
 
-        // Label
+        // Label with mastery percentage
         if (isH) {
           ctx.font = '8px "Press Start 2P", monospace'
           ctx.fillStyle = '#f0e68c'
           ctx.textAlign = 'center'
           ctx.shadowColor = 'rgba(0,0,0,0.9)'
           ctx.shadowBlur = 4
-          ctx.fillText(node.id.replace(/-/g, ' '), node.x, node.y + r + 12)
+          const label = node.id.replace(/-/g, ' ')
+          ctx.fillText(label, node.x, node.y + r + 12)
+          // Show mastery bar under label
+          const barW = Math.max(label.length * 5, 30)
+          const barH = 3
+          const barX = node.x - barW / 2
+          const barY = node.y + r + 16
           ctx.shadowBlur = 0
+          ctx.fillStyle = 'rgba(30,25,15,0.8)'
+          ctx.fillRect(barX, barY, barW, barH)
+          ctx.fillStyle = node.color
+          ctx.fillRect(barX, barY, barW * node.baseAlpha, barH)
         }
       }
 
@@ -347,7 +436,6 @@ export default function SubRegionGraph({ continent, connections, onBack, extraAc
     if (!rect) return
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
-    mouseRef.current = { x, y }
     let closest: string | null = null
     let minDist = 25
     for (const n of nodesRef.current) {
@@ -363,7 +451,7 @@ export default function SubRegionGraph({ continent, connections, onBack, extraAc
       width: '100%', height: '100%', minHeight: '80px',
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
     }}>
-      {/* Title bar — fixed, same font size as other panels */}
+      {/* Title bar */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: '8px',
         padding: '4px 8px',
@@ -378,12 +466,15 @@ export default function SubRegionGraph({ continent, connections, onBack, extraAc
         <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: '#f0e68c' }}>
           {continent.name}
         </span>
+        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355' }}>
+          mastery {Math.round((continent.mastery || 0) * 100)}%
+        </span>
         <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '5px', color: '#8b7355', flex: 1 }}>
           {continent.description}
         </span>
         {extraAction}
       </div>
-      {/* Canvas — fills remaining space */}
+      {/* Canvas */}
       <div ref={containerRef} style={{
         flex: 1, position: 'relative', overflow: 'hidden',
         cursor: hoveredNode ? 'pointer' : 'default',
