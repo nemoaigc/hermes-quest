@@ -218,15 +218,39 @@ export default function MapBottomInfo() {
       </PanelCard>
 
       {/* Right: cycle phases + button */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '120px', flexShrink: 0, justifyContent: 'center' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '156px', flexShrink: 0, justifyContent: 'center' }}>
         {/* Phase progress indicator — shows when cycle is running with real phases */}
         {showCyclePhases ? (
           <div style={{
             flex: 1, width: '100%',
-            background: '#1a140c', border: '2px solid #3a2210',
-            borderRadius: '2px', padding: '3px 4px',
-            display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px',
+            background: 'linear-gradient(180deg, rgba(45, 31, 18, 0.98), rgba(20, 14, 9, 0.98)), repeating-linear-gradient(180deg, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 7px)',
+            border: '2px solid #5a3d20',
+            borderRadius: '3px', padding: '4px',
+            display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px',
+            boxShadow: 'inset 0 0 0 1px rgba(240,230,140,0.08), 0 1px 4px rgba(0,0,0,0.35)',
           }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              borderBottom: '1px solid rgba(240, 230, 140, 0.12)',
+              paddingBottom: '3px',
+            }}>
+              <div style={{
+                fontFamily: 'var(--font-pixel)',
+                fontSize: '6px',
+                color: '#c8a87a',
+                letterSpacing: '0.8px',
+              }}>
+                CYCLE CANVAS
+              </div>
+              <div style={{
+                fontFamily: 'var(--font-pixel)',
+                fontSize: '6px',
+                color: completedCycle ? '#66bb6a' : '#f0e68c',
+                letterSpacing: '0.5px',
+              }}>
+                {completedCycle ? 'COMPLETE' : (cycleProgress ? PHASE_LABELS[cycleProgress.phase].label : 'ACTIVE')}
+              </div>
+            </div>
             {/* Phase steps */}
             <div style={{ display: 'flex', gap: '2px', alignItems: 'center', justifyContent: 'center' }}>
               {PHASE_ORDER.map((phase) => {
@@ -237,13 +261,14 @@ export default function MapBottomInfo() {
                 return (
                   <div key={phase} style={{ display: 'flex', alignItems: 'center', gap: '1px' }}>
                     <div style={{
-                      width: '14px', height: '14px',
+                      width: '15px', height: '15px',
                       borderRadius: '2px',
-                      background: isDone ? '#66bb6a' : isCurrent ? '#f0e68c' : '#2a1c0e',
-                      border: `1px solid ${isDone ? '#4a9a4a' : isCurrent ? '#c8a040' : '#3a2210'}`,
+                      background: isDone ? '#66bb6a' : isCurrent ? '#f0e68c' : '#24170c',
+                      border: `1px solid ${isDone ? '#4a9a4a' : isCurrent ? '#c8a040' : '#4a321b'}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '7px',
                       transition: 'all 0.3s',
+                      boxShadow: isCurrent ? '0 0 6px rgba(240,230,140,0.25)' : 'none',
                     }}>
                       {isDone ? '\u2713' : PHASE_LABELS[phase].icon}
                     </div>
@@ -257,34 +282,44 @@ export default function MapBottomInfo() {
                 )
               })}
             </div>
-            {/* Current phase label + summary */}
-            <div style={{
-              fontFamily: 'var(--font-pixel)', fontSize: '7px',
-              color: completedCycle ? '#66bb6a' : '#f0e68c', textAlign: 'center',
-              letterSpacing: '0.5px',
-            }}>
-              {completedCycle ? 'COMPLETE' : (cycleProgress ? (PHASE_LABELS[cycleProgress.phase]?.label || cycleProgress.phase.toUpperCase()) : 'CYCLE')}
-            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
               {latestCycleTrace.map(({ phase, detail }) => (
-                <div key={phase} style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                <div key={phase} style={{
+                  display: 'flex',
+                  gap: '4px',
+                  alignItems: 'flex-start',
+                  padding: '3px 4px',
+                  borderRadius: '2px',
+                  background: completedCycle && phase === 'report'
+                    ? 'rgba(102, 187, 106, 0.12)'
+                    : cycleProgress?.phase === phase
+                      ? 'rgba(240, 230, 140, 0.1)'
+                      : 'rgba(0, 0, 0, 0.16)',
+                  border: `1px solid ${completedCycle && phase === 'report'
+                    ? 'rgba(102, 187, 106, 0.28)'
+                    : cycleProgress?.phase === phase
+                      ? 'rgba(240, 230, 140, 0.24)'
+                      : 'rgba(107, 76, 42, 0.24)'}`,
+                }}>
                   <div style={{
-                    minWidth: '22px',
+                    minWidth: '42px',
                     fontSize: '5px',
                     color: PHASE_COLORS[phase],
                     fontFamily: 'var(--font-pixel)',
                     letterSpacing: '0.4px',
                   }}>
-                    {PHASE_LABELS[phase].label.slice(0, 3)}
+                    {PHASE_LABELS[phase].label}
                   </div>
                   <div style={{
                     flex: 1,
                     fontSize: '6px',
-                    color: completedCycle && phase === 'report' ? '#e8d5b0' : '#8b7355',
-                    lineHeight: '1.2',
+                    color: completedCycle && phase === 'report' ? '#f2e4bb' : '#b89b73',
+                    lineHeight: '1.25',
                     overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    fontFamily: 'Georgia, serif',
                   }}>
                     {detail || '...'}
                   </div>
