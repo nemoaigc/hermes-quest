@@ -289,7 +289,12 @@ export default function AdventureLog() {
 
       if (ev.type === 'cycle_phase') {
         const group: GameEvent[] = []
+        const seenPhases = new Set<string>()
         while (i < visibleEvents.length && visibleEvents[i].type === 'cycle_phase') {
+          const phase = (visibleEvents[i].data as Record<string, unknown>)?.phase as string || ''
+          // Start a new group if we see a phase we've already seen (= new cycle)
+          if (seenPhases.has(phase)) break
+          seenPhases.add(phase)
           group.push(visibleEvents[i])
           i++
         }
