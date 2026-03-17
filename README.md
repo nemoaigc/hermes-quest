@@ -46,22 +46,35 @@ RPG 层不是装饰 — 它**降低了指挥 AI 的认知门槛**。你不需要
 <table>
 <tr>
 <td width="50%" align="center">
-<strong>Modified Map / 最新地图界面</strong><br/>
-<img src="assets/screenshots/map-overview.png" alt="Modified Map" width="100%"/>
+<strong>Map / 地图</strong><br/>
+<img src="assets/screenshots/map.png" alt="Map" width="100%"/>
 </td>
 <td width="50%" align="center">
-<strong>Constellation Hover / 星图悬停</strong><br/>
-<img src="assets/screenshots/map-constellation-hover.png" alt="Constellation Hover" width="100%"/>
+<strong>Guild / 公会</strong><br/>
+<img src="assets/screenshots/guild.png" alt="Guild" width="100%"/>
 </td>
 </tr>
 <tr>
 <td align="center">
-<strong>Skill Shop / 技能商店</strong><br/>
+<strong>Shop / 商店</strong><br/>
 <img src="assets/screenshots/shop.png" alt="Shop" width="100%"/>
 </td>
 <td align="center">
-<strong>NPC Tavern / NPC 酒馆</strong><br/>
+<strong>Tavern / 酒馆</strong><br/>
 <img src="assets/screenshots/tavern.png" alt="Tavern" width="100%"/>
+</td>
+</tr>
+</table>
+
+<table>
+<tr>
+<td width="50%" align="center">
+<strong>Star Graph / 星图</strong><br/>
+<img src="assets/screenshots/star-graph.png" alt="Star Graph" width="100%"/>
+</td>
+<td width="50%" align="center">
+<strong>Chronicle / 编年史</strong><br/>
+<img src="assets/screenshots/chronicle.png" alt="Chronicle" width="100%"/>
 </td>
 </tr>
 </table>
