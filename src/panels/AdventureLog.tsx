@@ -1,19 +1,187 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useStore } from '../store'
 import { formatEvent, formatTime } from '../utils/formatters'
 import { EventIcon } from '../utils/icons'
 import { API_URL, failQuest, fetchActiveQuests } from '../api'
 import { LS_KEYS } from '../constants/storage'
+import type { GameEvent } from '../types'
 
 const FEEDBACKABLE_TYPES = new Set(['skill_drop', 'cycle_end', 'quest_complete', 'train_start'])
 
-const CYCLE_PHASE_STYLE: Record<string, { icon: string; color: string; label: string }> = {
-  reflect: { icon: '\uD83D\uDD2E', color: '#b48eff', label: 'REFLECTING' },
-  plan: { icon: '\uD83D\uDCDC', color: '#f0e68c', label: 'PLANNING' },
-  execute: { icon: '\u2694\uFE0F', color: '#55aaff', label: 'EXECUTING' },
-  report: { icon: '\uD83D\uDCCA', color: '#66bb6a', label: 'REPORTING' },
+const PHASE_ORDER = ['reflect', 'plan', 'execute', 'report'] as const
+const PHASE_META: Record<string, { color: string; label: string }> = {
+  reflect: { color: '#b48eff', label: 'REFLECT' },
+  plan: { color: '#f0e68c', label: 'PLAN' },
+  execute: { color: '#55aaff', label: 'EXECUTE' },
+  report: { color: '#66bb6a', label: 'REPORT' },
 }
 
+// --- Display item types ---
+type DisplayItem =
+  | { kind: 'event'; event: GameEvent; originalIndex: number }
+  | { kind: 'cycle_group'; phases: GameEvent[]; id: string }
+
+// --- Cycle Phase Group (collapsed by default) ---
+function CyclePhaseGroup({ phases }: { phases: GameEvent[] }) {
+  const [expanded, setExpanded] = useState(false)
+
+  // Extract key info from phases
+  const reflectPhase = phases.find(p => (p.data as Record<string, unknown>)?.phase === 'reflect')
+  const planPhase = phases.find(p => (p.data as Record<string, unknown>)?.phase === 'plan')
+  const reportPhase = phases.find(p => (p.data as Record<string, unknown>)?.phase === 'report')
+
+  const reflectData = reflectPhase?.data as Record<string, unknown> | undefined
+  const planData = planPhase?.data as Record<string, unknown> | undefined
+  const reportData = reportPhase?.data as Record<string, unknown> | undefined
+
+  // Build collapsed summary: what changed + why
+  const target = (planData?.target_workflow as string) || ''
+  const reflectSummary = (reflectData?.summary as string) || ''
+  const reportOutcomes = (reportData?.outcomes as string[]) || []
+
+  // Detect if feedback influenced this cycle
+  const feedbackInfluenced = reflectSummary.toLowerCase().includes('feedback') ||
+    reflectSummary.toLowerCase().includes('avoid') ||
+    reflectSummary.toLowerCase().includes('pivot') ||
+    reflectSummary.toLowerCase().includes('rejection') ||
+    reflectSummary.toLowerCase().includes('approval')
+
+  // Build one-line summary
+  let summary = ''
+  if (reportOutcomes.length > 0) {
+    summary = reportOutcomes[0]
+  } else if (planData?.reason) {
+    summary = (planData.reason as string).slice(0, 80)
+  } else if (target) {
+    summary = `Training in ${target}`
+  } else {
+    summary = 'Evolution cycle completed'
+  }
+
+  // Timestamp from the latest phase
+  const latestTs = phases[phases.length - 1]?.ts || phases[0]?.ts
+
+  return (
+    <div style={{
+      background: 'rgba(20, 16, 10, 0.7)',
+      border: '1px solid rgba(107, 76, 42, 0.4)',
+      borderRadius: '3px',
+      marginBottom: '4px',
+      marginLeft: '-2px',
+      overflow: 'hidden',
+    }}>
+      {/* Collapsed header — always visible */}
+      <div
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '6px',
+          padding: '5px 6px',
+          cursor: 'pointer',
+          borderLeft: feedbackInfluenced ? '3px solid #b48eff' : '3px solid #8b7355',
+        }}
+      >
+        {/* Phase dots */}
+        <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
+          {PHASE_ORDER.map(phase => {
+            const exists = phases.some(p => (p.data as Record<string, unknown>)?.phase === phase)
+            return (
+              <div key={phase} style={{
+                width: '6px', height: '6px', borderRadius: '1px',
+                background: exists ? PHASE_META[phase].color : '#2a1c0e',
+                border: `1px solid ${exists ? PHASE_META[phase].color : '#3a2210'}`,
+                opacity: exists ? 1 : 0.3,
+              }} />
+            )
+          })}
+        </div>
+
+        {/* Summary text */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontSize: '8px', color: feedbackInfluenced ? '#c8a87a' : '#8b7355',
+            lineHeight: '1.3',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            fontFamily: feedbackInfluenced ? 'Georgia, serif' : 'var(--font-pixel)',
+            fontStyle: feedbackInfluenced ? 'italic' : 'normal',
+          }}>
+            {feedbackInfluenced && <span style={{ color: '#b48eff' }}>Your feedback shaped this: </span>}
+            {summary}
+          </div>
+        </div>
+
+        {/* Time + chevron */}
+        <div style={{
+          fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.6vw, 6px)',
+          color: 'var(--text-dim)', flexShrink: 0,
+        }}>
+          {formatTime(latestTs)}
+        </div>
+        <span style={{ fontSize: '7px', color: '#8b7355', flexShrink: 0 }}>
+          {expanded ? '▾' : '▸'}
+        </span>
+      </div>
+
+      {/* Expanded: show all phases in narrative order */}
+      {expanded && (
+        <div style={{
+          borderTop: '1px solid rgba(107, 76, 42, 0.2)',
+          padding: '2px 0',
+        }}>
+          {phases.map((phase, idx) => {
+            const data = phase.data as Record<string, unknown>
+            const phaseName = (data?.phase as string) || ''
+            const meta = PHASE_META[phaseName]
+            const isReflect = phaseName === 'reflect'
+            const content = (data?.summary as string) || (data?.detail as string) ||
+              (data?.reason as string) || (data?.outcomes as string[])?.join(', ') || ''
+
+            return (
+              <div key={idx} style={{
+                padding: isReflect ? '5px 8px' : '3px 8px',
+                borderLeft: `${isReflect ? 4 : 2}px solid ${meta?.color || '#8b7355'}`,
+                marginLeft: '8px',
+                ...(isReflect ? {
+                  background: 'rgba(180, 142, 255, 0.06)',
+                } : {}),
+              }}>
+                {/* Phase label */}
+                <div style={{
+                  fontFamily: 'var(--font-pixel)',
+                  fontSize: isReflect ? '8px' : '7px',
+                  color: meta?.color || '#8b7355',
+                  letterSpacing: '0.5px',
+                  marginBottom: '1px',
+                }}>
+                  {meta?.label || phaseName.toUpperCase()}
+                </div>
+                {/* Content */}
+                {content && (
+                  <div style={{
+                    fontSize: isReflect ? '9px' : '8px',
+                    color: isReflect ? '#c8a87a' : '#8b7355',
+                    lineHeight: '1.35',
+                    fontFamily: isReflect ? 'Georgia, serif' : 'inherit',
+                    fontStyle: isReflect ? 'italic' : 'normal',
+                  }}>
+                    {content}
+                  </div>
+                )}
+                {/* Target workflow for PLAN */}
+                {phaseName === 'plan' && data?.target_workflow && (
+                  <div style={{ fontSize: '7px', color: '#5a4a3a', marginTop: '1px' }}>
+                    Target: {data.target_workflow as string}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// --- Helper functions ---
 function loadFeedback(): Record<string, 'positive' | 'negative'> {
   try {
     const raw = localStorage.getItem(LS_KEYS.feedback)
@@ -24,9 +192,7 @@ function loadFeedback(): Record<string, 'positive' | 'negative'> {
 function saveFeedback(state: Record<string, 'positive' | 'negative'>) {
   try {
     localStorage.setItem(LS_KEYS.feedback, JSON.stringify(state))
-  } catch {
-    // Ignore localStorage failures; feedback still applies for this session.
-  }
+  } catch { /* ignore */ }
 }
 
 function loadClearedAt(): number {
@@ -50,6 +216,7 @@ async function sendFeedback(type: 'positive' | 'negative', event_type: string, d
   }
 }
 
+// --- Main component ---
 export default function AdventureLog() {
   const events = useStore((s) => s.events)
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
@@ -61,7 +228,6 @@ export default function AdventureLog() {
   const [digestToast, setDigestToast] = useState<string | null>(null)
   const digestToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Cleanup toast timer on unmount
   useEffect(() => {
     return () => { if (digestToastTimerRef.current) clearTimeout(digestToastTimerRef.current) }
   }, [])
@@ -73,7 +239,6 @@ export default function AdventureLog() {
       return next
     })
     sendFeedback(type, event_type, detail, key)
-    // Show digest confirmation toast (with proper cleanup)
     if (digestToastTimerRef.current) clearTimeout(digestToastTimerRef.current)
     if (type === 'negative') {
       setDigestToast('Recorded. Next cycle will avoid this direction.')
@@ -81,12 +246,9 @@ export default function AdventureLog() {
       setDigestToast('Recorded. Next cycle will prioritize this direction.')
     }
     digestToastTimerRef.current = setTimeout(() => setDigestToast(null), 3000)
-    // If thumbs-down on quest-related event, prompt to fail the quest
     if (type === 'negative' && (event_type === 'quest_complete' || event_type === 'train_start') && eventData) {
       const questId = (eventData.quest_id as string) || (eventData.id as string)
-      if (questId) {
-        setFailPrompt(key)
-      }
+      if (questId) setFailPrompt(key)
     }
   }, [])
 
@@ -103,10 +265,41 @@ export default function AdventureLog() {
     setFailPrompt(null)
   }, [])
 
-  // Filter events older than cleared timestamp
   const visibleEvents = clearedAt
     ? events.filter((e) => { const t = new Date(e.ts).getTime(); return !isNaN(t) && t > clearedAt })
     : events
+
+  // Group consecutive cycle_phase events into cycle groups
+  const displayItems = useMemo<DisplayItem[]>(() => {
+    const items: DisplayItem[] = []
+    let i = 0
+
+    while (i < visibleEvents.length) {
+      const ev = visibleEvents[i]
+
+      if (ev.type === 'cycle_phase') {
+        const group: GameEvent[] = []
+        while (i < visibleEvents.length && visibleEvents[i].type === 'cycle_phase') {
+          group.push(visibleEvents[i])
+          i++
+        }
+        // Reverse to chronological (newest-first list → oldest-first within group)
+        group.reverse()
+        // Sort by phase order for consistent narrative
+        group.sort((a, b) => {
+          const ap = (a.data as Record<string, unknown>)?.phase as string || ''
+          const bp = (b.data as Record<string, unknown>)?.phase as string || ''
+          return PHASE_ORDER.indexOf(ap as typeof PHASE_ORDER[number]) - PHASE_ORDER.indexOf(bp as typeof PHASE_ORDER[number])
+        })
+        items.push({ kind: 'cycle_group', phases: group, id: `cycle-${group[0].ts}` })
+      } else {
+        items.push({ kind: 'event', event: ev, originalIndex: i })
+        i++
+      }
+    }
+
+    return items
+  }, [visibleEvents])
 
   const handleClear = useCallback(() => {
     const now = Date.now()
@@ -120,7 +313,7 @@ export default function AdventureLog() {
     <div className="pixel-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div className="pixel-panel-title" style={{ textAlign: 'center' }}>CHRONICLE</div>
       <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
-      {visibleEvents.length === 0 ? (
+      {displayItems.length === 0 ? (
         <div style={{
           color: 'var(--text-dim)', fontSize: '10px', padding: '12px', textAlign: 'center',
           fontFamily: 'Georgia, serif', fontStyle: 'italic',
@@ -135,29 +328,27 @@ export default function AdventureLog() {
             width: '1px', background: 'rgba(107,76,42,0.4)',
           }} />
 
-          {visibleEvents.map((event, i) => {
+          {displayItems.map((item, displayIdx) => {
+            if (item.kind === 'cycle_group') {
+              return <CyclePhaseGroup key={item.id} phases={item.phases} />
+            }
+
+            // Regular event rendering
+            const event = item.event
             const { type, color, text } = formatEvent(event)
-            const eventKey = `${event.ts}-${event.type}-${i}`
+            const eventKey = `${event.ts}-${event.type}-${item.originalIndex}`
             const canFeedback = FEEDBACKABLE_TYPES.has(type)
             const alreadySent = sentFeedback[eventKey]
-            const isCyclePhase = type === 'cycle_phase'
-            const phaseData = isCyclePhase ? (event.data as Record<string, unknown>) : null
-            const phaseStyle = phaseData ? CYCLE_PHASE_STYLE[(phaseData.phase as string) || ''] : null
+
             return (
               <div
                 key={eventKey}
-                onMouseEnter={() => setHoveredIdx(i)}
+                onMouseEnter={() => setHoveredIdx(displayIdx)}
                 onMouseLeave={() => setHoveredIdx(null)}
                 style={{
                   padding: '4px 4px 4px 8px',
                   position: 'relative',
                   marginBottom: '2px',
-                  ...(isCyclePhase ? {
-                    background: 'rgba(30, 25, 15, 0.6)',
-                    borderLeft: `2px solid ${phaseStyle?.color || '#8b7355'}`,
-                    borderRadius: '2px',
-                    marginLeft: '-2px',
-                  } : {}),
                 }}
               >
                 {/* Timeline dot */}
@@ -170,30 +361,12 @@ export default function AdventureLog() {
 
                 {/* Event row */}
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
-                  {/* Icon */}
                   <span style={{ width: 14, height: 14, display: 'inline-flex', flexShrink: 0, marginTop: '1px' }}>
                     <EventIcon type={type} />
                   </span>
 
-                  {/* Content */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    {isCyclePhase && phaseStyle ? (
-                      <>
-                        <div style={{ fontSize: '8px', color: phaseStyle.color, lineHeight: '1.3', fontFamily: 'var(--font-pixel)' }}>
-                          {phaseStyle.icon} {phaseStyle.label}
-                        </div>
-                        <div style={{ fontSize: '8px', color: '#c8a87a', lineHeight: '1.3', marginTop: '1px' }}>
-                          {(phaseData?.summary as string) || (phaseData?.detail as string) || (phaseData?.reason as string) || ''}
-                        </div>
-                        {phaseData?.target_workflow && (
-                          <div style={{ fontSize: '7px', color: '#8b7355', marginTop: '1px' }}>
-                            Target: {phaseData.target_workflow as string}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div style={{ fontSize: '9px', color, lineHeight: '1.3' }}>{text}</div>
-                    )}
+                    <div style={{ fontSize: '9px', color, lineHeight: '1.3' }}>{text}</div>
                     <div style={{
                       fontFamily: 'var(--font-pixel)', fontSize: 'clamp(5px, 0.6vw, 7px)',
                       color: 'var(--text-dim)', marginTop: '1px',
@@ -202,11 +375,11 @@ export default function AdventureLog() {
                     </div>
                   </div>
 
-                  {/* Feedback buttons — only for certain event types, visible on hover */}
+                  {/* Feedback buttons */}
                   {canFeedback && (
                     <div style={{
                       display: 'flex', gap: '2px', alignItems: 'center',
-                      opacity: alreadySent ? 0.6 : (hoveredIdx === i ? 1 : 0.25),
+                      opacity: alreadySent ? 0.6 : (hoveredIdx === displayIdx ? 1 : 0.25),
                       transition: 'opacity 0.15s',
                       pointerEvents: alreadySent ? 'none' : 'auto',
                       flexShrink: 0,
@@ -235,16 +408,14 @@ export default function AdventureLog() {
                   )}
                 </div>
 
-                {/* Fail quest prompt — shown after thumbs-down on quest events */}
+                {/* Fail quest prompt */}
                 {failPrompt === eventKey && (
                   <div style={{
                     display: 'flex', gap: '4px', alignItems: 'center',
                     background: 'rgba(180,40,40,0.15)',
                     border: '1px solid rgba(255,107,107,0.4)',
                     borderRadius: '3px',
-                    padding: '2px 6px',
-                    marginTop: '3px',
-                    marginLeft: '20px',
+                    padding: '2px 6px', marginTop: '3px', marginLeft: '20px',
                   }}>
                     <span style={{
                       fontFamily: 'Georgia, serif', fontStyle: 'italic',
@@ -308,7 +479,6 @@ export default function AdventureLog() {
           onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(139,94,60,0.4)'; e.currentTarget.style.color = '#8b7355' }}
           >CLEAR LOG</button>
 
-          {/* Custom RPG-styled confirmation overlay */}
           {showConfirm && (
             <div style={{
               position: 'absolute', bottom: '100%', left: '50%',
