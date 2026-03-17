@@ -41,9 +41,17 @@ const EVENT_CONFIG: Record<string, { color: string; format: (data: Record<string
     color: 'var(--text)',
     format: (d) => `Domain shift: ${(d.from as string) || '?'} → ${(d.to as string) || '?'}`,
   },
+  quest_create: {
+    color: 'var(--gold)',
+    format: (d) => `Posted quest: ${(d.title as string) || 'New Quest'}`,
+  },
   quest_accept: {
     color: 'var(--gold)',
     format: (d) => `Quest accepted: ${(d.title as string) || (d.quest_id as string) || 'Unknown Quest'}`,
+  },
+  quest_cancel: {
+    color: 'var(--text-dim)',
+    format: (d) => `Quest abandoned: ${(d.title as string) || (d.quest_id as string) || 'Unknown Quest'}`,
   },
   quest_complete: {
     color: 'var(--green)',
@@ -56,7 +64,11 @@ const EVENT_CONFIG: Record<string, { color: string; format: (data: Record<string
   },
   quest_fail: {
     color: 'var(--red)',
-    format: (d) => `Quest failed.${d.hp_lost ? ` -${d.hp_lost}HP` : ''}`,
+    format: (d) => `Quest failed: ${(d.title as string) || 'Unknown'}${d.hp_penalty ? ` (-${d.hp_penalty}HP -${d.mp_penalty || 0}MP)` : d.hp_lost ? ` -${d.hp_lost}HP` : ''}`,
+  },
+  npc_chat: {
+    color: 'var(--cyan)',
+    format: (d) => `Spoke with ${(d.npc_name as string) || (d.npc as string) || 'an NPC'} at the tavern`,
   },
   class_shift: {
     color: 'var(--purple)',
