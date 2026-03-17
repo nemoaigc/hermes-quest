@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 import yaml
 
-from config import EVENTS_FILE, MAP_FILE, QUESTS_V2_FILE, SKILLS_DIR, STATE_FILE
+from config import CYCLE_LOCK_FILE, EVENTS_FILE, MAP_FILE, QUESTS_V2_FILE, SKILLS_DIR, STATE_FILE
 
 from models import insert_event, upsert_state, upsert_skill, upsert_quest
 from ws_manager import manager
@@ -214,6 +214,11 @@ class QuestWatcher:
 
         # Broadcast cycle phase events as a dedicated message type for progress tracking
         if etype == "cycle_phase":
+            if data.get("phase") == "report":
+                try:
+                    CYCLE_LOCK_FILE.unlink(missing_ok=True)
+                except OSError:
+                    logger.warning("Failed to clear cycle lock after report phase", exc_info=True)
             await manager.broadcast({
                 "type": "cycle_progress",
                 "data": {

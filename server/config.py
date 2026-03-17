@@ -30,6 +30,7 @@ HERMES_AGENT_PYTHON = Path(
 ).expanduser()
 HERMES_AGENT_SITE_PACKAGES_GLOB = str(HERMES_AGENT_DIR / "venv" / "lib" / "python*" / "site-packages")
 TWITTER_CLI = os.environ.get("QUEST_TWITTER_CLI") or shutil.which("twitter") or ""
+QUEST_CYCLE_PROMPT = os.environ.get("QUEST_CYCLE_PROMPT", "Run quest evolution cycle")
 
 PORT = int(os.environ.get("QUEST_PORT", "8420"))
 HOST = os.environ.get("QUEST_HOST", "0.0.0.0")

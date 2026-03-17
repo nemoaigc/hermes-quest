@@ -32,6 +32,7 @@ from config import (
     MODEL,
     PORT,
     PROXY_URL,
+    QUEST_CYCLE_PROMPT,
     QUEST_SKILL_DIR,
     QUESTS_PENDING_FILE,
     QUESTS_V2_FILE,
@@ -43,7 +44,18 @@ from config import (
     TAVERN_CACHE_FILE,
     TWITTER_CLI,
 )
-from models import init_db, get_state, get_events, get_skills, get_quests, delete_skill, upsert_state, insert_event, upsert_quest
+from models import (
+    init_db,
+    get_state,
+    get_events,
+    get_skills,
+    get_quests,
+    delete_skill,
+    upsert_state,
+    insert_event,
+    upsert_quest,
+    has_feedback_for_event,
+)
 from watcher import QuestWatcher
 from ws_manager import manager
 _state_lock = asyncio.Lock()
@@ -82,6 +94,34 @@ def _read_feedback_digest() -> dict:
             "workflow_sentiment": {},
             "user_corrections": [],
         }
+
+
+def _get_quest_skill_template_path() -> Path:
+    candidates = [
+        Path(__file__).parent.parent / "templates" / "quest-skill.md",  # repo/server/main.py
+        Path(__file__).parent / "templates" / "quest-skill.md",  # flat deploy /opt/hermes-quest/main.py
+    ]
+    for path in candidates:
+        if path.exists():
+            return path
+    return candidates[0]
+
+
+def _sync_quest_skill_template() -> Path:
+    """Ensure Hermes loads the project-managed quest skill template."""
+    template_path = _get_quest_skill_template_path()
+    if not template_path.exists():
+        raise FileNotFoundError(f"Quest skill template not found: {template_path}")
+
+    target_dir = QUEST_SKILL_DIR
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target_file = target_dir / "SKILL.md"
+
+    template_text = template_path.read_text(encoding="utf-8")
+    current_text = target_file.read_text(encoding="utf-8") if target_file.exists() else None
+    if current_text != template_text:
+        target_file.write_text(template_text, encoding="utf-8")
+    return target_file
 
 
 def _resolve_event_data(event_id: str, event_type: str) -> dict:
@@ -137,19 +177,45 @@ def _resolve_event_data(event_id: str, event_type: str) -> dict:
     return {}
 
 
-def _resolve_workflow_for_event(event_id: str, event_type: str, detail: str) -> str | None:
+def _merge_event_context(event_id: str, event_type: str, event_data: dict | None = None) -> dict:
+    """Prefer frontend-provided event data, then backfill from the event log."""
+    resolved = _resolve_event_data(event_id, event_type)
+    merged = dict(resolved)
+    if isinstance(event_data, dict):
+        for key, value in event_data.items():
+            if value not in (None, "", [], {}):
+                merged[key] = value
+    return merged
+
+
+def _resolve_workflow_for_event(event_id: str, event_type: str, detail: str, event_data: dict | None = None) -> str | None:
     """Resolve which workflow an event belongs to, using original event data + knowledge-map."""
-    # Get the original event data (with skill/quest_id fields)
-    event_data = _resolve_event_data(event_id, event_type)
+    resolved_data = _merge_event_context(event_id, event_type, event_data)
 
     try:
         km = json.loads(MAP_FILE.read_text()) if MAP_FILE.exists() else {}
     except (json.JSONDecodeError, OSError):
         km = {}
 
-    skill_name = event_data.get("skill") or ""
-    quest_id = event_data.get("quest_id") or ""
+    skill_name = (
+        resolved_data.get("skill")
+        or resolved_data.get("skill_name")
+        or resolved_data.get("target")
+        or ""
+    )
+    quest_id = resolved_data.get("quest_id") or resolved_data.get("id") or ""
+    workflow_hint = (
+        resolved_data.get("workflow_id")
+        or resolved_data.get("workflow")
+        or resolved_data.get("workflow_name")
+        or resolved_data.get("target_workflow")
+        or ""
+    )
     workflows = km.get("workflows", [])
+
+    for wf in workflows:
+        if workflow_hint and workflow_hint in (wf.get("id"), wf.get("name")):
+            return wf.get("name", wf.get("id"))
 
     # Match by skill name in workflow's skills_involved
     for wf in workflows:
@@ -171,7 +237,55 @@ def _resolve_workflow_for_event(event_id: str, event_type: str, detail: str) -> 
     return None
 
 
-def update_feedback_digest(event_id: str, feedback_type: str, event_type: str, detail: str):
+def _read_latest_cycle_progress(started_at: int | None = None) -> dict | None:
+    """Return the most recent cycle_phase event for the current cycle."""
+    if not EVENTS_FILE.exists():
+        return None
+
+    started_at_dt = datetime.fromtimestamp(started_at, tz=timezone.utc) if started_at else None
+
+    try:
+        from collections import deque
+
+        with open(EVENTS_FILE, "r", encoding="utf-8") as f:
+            recent_lines = deque(f, maxlen=500)
+
+        for line in reversed(recent_lines):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if event.get("type") != "cycle_phase":
+                continue
+
+            event_ts = event.get("ts")
+            if started_at_dt and event_ts:
+                try:
+                    parsed_ts = datetime.fromisoformat(str(event_ts).replace("Z", "+00:00"))
+                    if parsed_ts < started_at_dt:
+                        continue
+                except ValueError:
+                    continue
+
+            data = event.get("data", {})
+            return {
+                "phase": data.get("phase", "reflect"),
+                "summary": data.get("summary") or data.get("detail") or data.get("reason") or "",
+                "target_workflow": data.get("target_workflow"),
+                "reason": data.get("reason"),
+                "progress": data.get("progress"),
+                "outcomes": data.get("outcomes"),
+                "ts": event_ts,
+            }
+    except OSError:
+        return None
+    return None
+
+
+def update_feedback_digest(event_id: str, feedback_type: str, event_type: str, detail: str, event_data: dict | None = None):
     """Update the feedback digest file with a new feedback entry. Must be called under _digest_lock."""
     digest = _read_feedback_digest()
     now = datetime.now(timezone.utc).isoformat()
@@ -189,9 +303,9 @@ def update_feedback_digest(event_id: str, feedback_type: str, event_type: str, d
     )
 
     # Resolve original event data for skill/quest context
-    original_data = _resolve_event_data(event_id, event_type)
-    skill_name = original_data.get("skill", "")
-    quest_id = original_data.get("quest_id", "")
+    original_data = _merge_event_context(event_id, event_type, event_data)
+    skill_name = original_data.get("skill") or original_data.get("skill_name") or original_data.get("target") or ""
+    quest_id = original_data.get("quest_id") or original_data.get("id") or ""
     quest_context = ""
     if quest_id:
         quest_context = f"Quest: {original_data.get('title', quest_id)}"
@@ -217,7 +331,7 @@ def update_feedback_digest(event_id: str, feedback_type: str, event_type: str, d
         digest["skill_sentiment"] = sk_sent
 
     # Update workflow_sentiment
-    workflow_name = _resolve_workflow_for_event(event_id, event_type, detail)
+    workflow_name = _resolve_workflow_for_event(event_id, event_type, detail, original_data)
     if workflow_name:
         wf_sent = digest.get("workflow_sentiment", {})
         if workflow_name not in wf_sent:
@@ -924,7 +1038,7 @@ async def accept_quest_v2(body: dict):
                 if fog:
                     new_quest = {
                         "id": f"quest-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:8]}",
-                        "title": f"Explore: {fog[chr(104) + chr(105) + chr(110) + chr(116)]}",
+                        "title": f"Explore: {fog['hint']}",
                         "description": fog.get("discovery_condition", "Explore this unknown region"),
                         "region": "unknown",
                         "rank": "B",
@@ -1036,23 +1150,41 @@ async def cycle_start():
                 FEEDBACK_DIGEST_FILE.parent.mkdir(parents=True, exist_ok=True)
                 FEEDBACK_DIGEST_FILE.write_text(json.dumps(_read_feedback_digest(), indent=2))
 
-        # Write lock file BEFORE launching subprocess to prevent concurrent launches
-        CYCLE_LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
-        CYCLE_LOCK_FILE.write_text(str(int(time.time())))
-
-        # Trigger via cron tick (non-blocking)
-        env = os.environ.copy()
         if not HERMES_AGENT_PYTHON.exists():
-            # Clean up lock since we're not actually starting
-            CYCLE_LOCK_FILE.unlink(missing_ok=True)
             return JSONResponse(
                 status_code=503,
                 content={"status": "error", "message": f"Hermes runtime not found at {HERMES_AGENT_PYTHON}"},
             )
+
+        try:
+            synced_skill = _sync_quest_skill_template()
+        except (OSError, FileNotFoundError) as exc:
+            logger.error("Failed to sync quest skill template before cycle: %s", exc)
+            return JSONResponse(status_code=500, content={"status": "error", "message": str(exc)})
+
+        # Write lock file BEFORE launching subprocess to prevent concurrent launches
+        CYCLE_LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
+        CYCLE_LOCK_FILE.write_text(str(int(time.time())))
+
+        # Trigger the quest skill directly so a manual cycle always runs immediately.
+        env = os.environ.copy()
         try:
             subprocess.Popen(
-                [str(HERMES_AGENT_PYTHON), "-m", "hermes_cli.main", "cron", "tick"],
-                env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                [
+                    str(HERMES_AGENT_PYTHON),
+                    "-m",
+                    "hermes_cli.main",
+                    "chat",
+                    "-s",
+                    "quest",
+                    "--yolo",
+                    "-q",
+                    QUEST_CYCLE_PROMPT,
+                ],
+                cwd=str(HERMES_AGENT_DIR),
+                env=env,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
             )
         except OSError as exc:
             # Clean up lock on failure
@@ -1066,7 +1198,7 @@ async def cycle_start():
         "region": None,
         "data": {},
     }})
-    return {"status": "started"}
+    return {"status": "started", "quest_skill_path": str(synced_skill)}
 
 
 @app.get("/api/cycle/status")
@@ -1077,10 +1209,21 @@ async def cycle_status():
         try:
             ts = int(CYCLE_LOCK_FILE.read_text().strip())
             if time.time() - ts < GAME_BALANCE["cycle_lock_timeout"]:
-                return {"status": "running", "started_at": ts}
+                progress = _read_latest_cycle_progress(ts)
+                if progress is None:
+                    progress = {
+                        "phase": "reflect",
+                        "summary": "Cycle started. Waiting for Hermes phase events...",
+                        "target_workflow": None,
+                        "reason": None,
+                        "progress": None,
+                        "outcomes": None,
+                        "ts": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
+                    }
+                return {"status": "running", "started_at": ts, "progress": progress}
         except (ValueError, OSError):
             pass
-    return {"status": "idle"}
+    return {"status": "idle", "progress": None}
 
 
 @app.post("/api/quest/create")
@@ -1301,9 +1444,10 @@ async def user_feedback(body: dict):
     feedback_type = body.get("type", "")  # "positive" or "negative" (also accepts "up"/"down")
     detail = body.get("detail", "")
     event_type = body.get("event_type", "")
+    event_data = body.get("event_data") if isinstance(body.get("event_data"), dict) else None
 
     # Dedup: reject if this event_id was already feedback'd
-    if event_id and event_id in _feedbacked_event_ids:
+    if event_id and (event_id in _feedbacked_event_ids or await has_feedback_for_event(event_id)):
         return JSONResponse(status_code=409, content={"error": "already_feedbacked"})
 
     if feedback_type not in ("up", "down", "positive", "negative"):
@@ -1340,6 +1484,7 @@ async def user_feedback(body: dict):
             "feedback_type": feedback_type,
             "reason": detail,
             "event_type": event_type,
+            "event_data": event_data,
         }
     }
     with open(EVENTS_FILE, "a") as f:
@@ -1355,6 +1500,7 @@ async def user_feedback(body: dict):
             feedback_type=feedback_type,
             event_type=event_type,
             detail=detail,
+            event_data=event_data,
         )
 
     # Broadcast state and event via WebSocket
@@ -1373,13 +1519,12 @@ async def feedback_digest():
 @app.post("/api/skill/quest/sync")
 async def sync_quest_skill():
     """Sync the quest SKILL.md template to ~/.hermes/skills/quest/SKILL.md."""
-    template_path = Path(__file__).parent.parent / "templates" / "quest-skill.md"
-    if not template_path.exists():
-        return JSONResponse(status_code=404, content={"error": "Template not found"})
-    target_dir = QUEST_SKILL_DIR
-    target_dir.mkdir(parents=True, exist_ok=True)
-    target_file = target_dir / "SKILL.md"
-    target_file.write_text(template_path.read_text(encoding="utf-8"), encoding="utf-8")
+    try:
+        target_file = _sync_quest_skill_template()
+    except FileNotFoundError as exc:
+        return JSONResponse(status_code=404, content={"error": str(exc)})
+    except OSError as exc:
+        return JSONResponse(status_code=500, content={"error": str(exc)})
     return {"status": "synced", "path": str(target_file)}
 
 

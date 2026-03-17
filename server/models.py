@@ -47,6 +47,7 @@ CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts);
 
 async def init_db():
     """Initialize DB. Drops events table to avoid duplicates on restart."""
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("DROP TABLE IF EXISTS events")
         await db.executescript(SCHEMA)
@@ -127,6 +128,20 @@ async def get_events(limit: int = 50, offset: int = 0) -> list[dict]:
             (limit, offset),
         )
         return [{"ts": r[0], "type": r[1], "region": r[2], "data": json.loads(r[3]) if r[3] else {}} for r in rows]
+
+
+async def has_feedback_for_event(event_id: str) -> bool:
+    """Return True if a feedback event for this event_id already exists in the persisted event log."""
+    if not event_id:
+        return False
+
+    pattern = f'%\\"event_id\\": "{event_id}"%'
+    async with aiosqlite.connect(DB_PATH) as db:
+        rows = await db.execute_fetchall(
+            "SELECT 1 FROM events WHERE type = ? AND data LIKE ? LIMIT 1",
+            ("user_feedback", pattern),
+        )
+        return bool(rows)
 
 
 async def get_skills() -> list[dict]:
