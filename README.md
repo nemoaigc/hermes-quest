@@ -46,12 +46,12 @@ RPG 层不是装饰 — 它**降低了指挥 AI 的认知门槛**。你不需要
 <table>
 <tr>
 <td width="50%" align="center">
-<strong>Knowledge Map / 知识地图</strong><br/>
-<img src="assets/screenshots/map.png" alt="Knowledge Map" width="100%"/>
+<strong>Modified Map / 最新地图界面</strong><br/>
+<img src="assets/screenshots/map-overview.png" alt="Modified Map" width="100%"/>
 </td>
 <td width="50%" align="center">
-<strong>Guild / 公会</strong><br/>
-<img src="assets/screenshots/guild.png" alt="Guild" width="100%"/>
+<strong>Constellation Hover / 星图悬停</strong><br/>
+<img src="assets/screenshots/map-constellation-hover.png" alt="Constellation Hover" width="100%"/>
 </td>
 </tr>
 <tr>
