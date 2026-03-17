@@ -153,7 +153,7 @@ export default function CenterTabs() {
       </div>
       {/* Scene — fixed ratio, pinned to top under tabs, wood frame border */}
       <div style={{
-        width: '100%', aspectRatio: '1024 / 572',
+        width: '100%', aspectRatio: '1024 / 572', maxHeight: '62vh',
         flexShrink: 0, position: 'relative', overflow: 'hidden',
         border: '2px solid #6b4c2a',
         boxShadow: 'inset 0 0 8px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(160,120,60,0.15)',

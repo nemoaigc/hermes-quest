@@ -336,3 +336,11 @@ export const EVENT_ICONS: Record<string, ReactElement> = {
   fog_appear: px([[3,3,10,10,'#9E9E9E'],[4,4,8,8,'#BDBDBD'],[6,6,4,4,'#E0E0E0'],[7,7,2,2,'#9E9E9E']]), // fog cloud
   fog_clear: px([[3,3,10,10,'#90CAF9'],[4,4,8,8,'#BBDEFB'],[6,2,4,2,'#FFC107'],[6,5,4,4,'#FFD54F']]), // sun through fog
 }
+
+/** Wrapper component for event icons — renders the matching icon or a default dot */
+export function EventIcon({ type }: { type: string }) {
+  const icon = EVENT_ICONS[type]
+  if (icon) return icon
+  // Default: small gray diamond for unknown event types
+  return px([[6,4,4,4,'#78909C'],[5,6,2,2,'#78909C'],[9,6,2,2,'#78909C'],[6,8,4,4,'#78909C']])
+}

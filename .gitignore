@@ -21,6 +21,9 @@ __pycache__
 .venv*/
 output/
 
+# Credentials
+*.pem
+
 # Internal docs & superpowers
 docs/superpowers/
 .superpowers/
@@ -45,6 +48,8 @@ public/bg/backup-v1/
 public/bg/originals/
 public/sprites/originals/
 public/npc/sprites/
+public/items/raw/
+public/skills/raw/
 *.jiuguan.png
 
 # Internal docs
