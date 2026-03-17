@@ -289,12 +289,12 @@ export default function AdventureLog() {
 
       if (ev.type === 'cycle_phase') {
         const group: GameEvent[] = []
-        const seenPhases = new Set<string>()
+        let hasReflect = false
         while (i < visibleEvents.length && visibleEvents[i].type === 'cycle_phase') {
           const phase = (visibleEvents[i].data as Record<string, unknown>)?.phase as string || ''
-          // Start a new group if we see a phase we've already seen (= new cycle)
-          if (seenPhases.has(phase)) break
-          seenPhases.add(phase)
+          // Only REFLECT signals a new cycle boundary — EXECUTE can repeat (progress updates)
+          if (phase === 'reflect' && hasReflect) break
+          if (phase === 'reflect') hasReflect = true
           group.push(visibleEvents[i])
           i++
         }
