@@ -274,23 +274,23 @@ hermes-quest-dashboard/
 - [x] Cycle progress recovery on reconnect (`_read_latest_cycle_progress`)
 - [x] Auto-sync SKILL.md before each cycle (`_sync_quest_skill_template`)
 - [x] Cycle lock auto-cleanup on report phase
-- [ ] Subprocess log capture — replace DEVNULL with rotating log file (Swyx: "without this, all contracts are unverifiable")
-- [ ] LLM compliance monitoring — post-cycle audit verifying agent followed SKILL.md rules (Karpathy)
+- [ ] Subprocess log capture — replace DEVNULL with rotating log file for cycle debugging
+- [ ] LLM compliance monitoring — post-cycle audit verifying agent followed SKILL.md rules
 
 ### P1 — Make Steering Reliable / 让引导可靠
 - [x] MP morale awareness in SKILL.md prompt (low MP → safer quest choices)
 - [x] Workflow resolution improved — `_merge_event_context` merges frontend data + event log lookup
-- [ ] Feedback-driven quest recommendations — filter by skill_sentiment, boost positives (Antirez + Ng "80% fix")
-- [ ] Feedback visibility — REFLECT reasoning shown in Chronicle, not just 40-char truncation (Kojima)
-- [ ] Exploration mode — epsilon-greedy skill sampling to prevent filter bubbles (Fei-Fei Li)
-- [ ] Multi-dimensional feedback — 👎 followed by "wrong direction / poor quality / not relevant" (Fei-Fei Li)
+- [ ] Feedback-driven quest recommendations — filter by skill_sentiment, boost positives
+- [ ] Feedback visibility — REFLECT reasoning shown in Chronicle, not just 40-char truncation
+- [ ] Exploration mode — epsilon-greedy skill sampling to prevent filter bubbles
+- [ ] Multi-dimensional feedback — 👎 followed by "wrong direction / poor quality / not relevant"
 
 ### P2 — Deepen the Experience / 深化体验
-- [ ] Level-up celebration animation (Kojima: "the data flows, just needs a moment")
-- [ ] NPC awareness of recent feedback events (Kojima: prompt engineering, zero frontend)
-- [ ] Feedback time decay — old feedback loses weight via exponential decay (Fei-Fei Li)
-- [ ] Agent-to-human clarification channel — agent asks one question per cycle when uncertain (Fei-Fei Li)
-- [ ] Cycle lock staleness recovery — auto-clear if no phase events for 5+ minutes (Swyx)
+- [ ] Level-up celebration animation
+- [ ] NPC awareness of recent feedback events
+- [ ] Feedback time decay — old feedback loses weight via exponential decay
+- [ ] Agent-to-human clarification channel — agent asks one question per cycle when uncertain
+- [ ] Cycle lock staleness recovery — auto-clear if no phase events for 5+ minutes
 - [ ] Achievement system — milestones, collections, hidden achievements with rewards
 - [ ] MP-at-zero "burnout" event — triggers recovery quest
 
