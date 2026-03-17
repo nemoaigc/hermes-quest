@@ -265,32 +265,43 @@ hermes-quest-dashboard/
 
 ## Roadmap / 路线图
 
-### P0 — Close the Loop / 闭环验证
+### P0 — Trust the Loop / 信任闭环
 - [x] Feedback digest pipeline (👍/👎 → `feedback-digest.json` → agent behavior)
 - [x] Cycle observability (4-phase progress: REFLECT → PLAN → EXECUTE → REPORT)
-- [ ] End-to-end validation: deploy SKILL.md, run real cycle, verify agent reads digest
-- [ ] MP influences agent via SKILL.md prompt (low MP → safer quest choices)
+- [x] End-to-end validation — 3 real cycles proving skill-level steering works
+- [x] SKILL.md v3.0 in NML with skill-level feedback precision
+- [x] Persistent feedback dedup via SQLite (`has_feedback_for_event`)
+- [x] Cycle progress recovery on reconnect (`_read_latest_cycle_progress`)
+- [x] Auto-sync SKILL.md before each cycle (`_sync_quest_skill_template`)
+- [x] Cycle lock auto-cleanup on report phase
+- [ ] Subprocess log capture — replace DEVNULL with rotating log file (Swyx: "without this, all contracts are unverifiable")
+- [ ] LLM compliance monitoring — post-cycle audit verifying agent followed SKILL.md rules (Karpathy)
 
-### P1 — Deepen the Game / 深化游戏
+### P1 — Make Steering Reliable / 让引导可靠
+- [x] MP morale awareness in SKILL.md prompt (low MP → safer quest choices)
+- [x] Workflow resolution improved — `_merge_event_context` merges frontend data + event log lookup
+- [ ] Feedback-driven quest recommendations — filter by skill_sentiment, boost positives (Antirez + Ng "80% fix")
+- [ ] Feedback visibility — REFLECT reasoning shown in Chronicle, not just 40-char truncation (Kojima)
+- [ ] Exploration mode — epsilon-greedy skill sampling to prevent filter bubbles (Fei-Fei Li)
+- [ ] Multi-dimensional feedback — 👎 followed by "wrong direction / poor quality / not relevant" (Fei-Fei Li)
+
+### P2 — Deepen the Experience / 深化体验
+- [ ] Level-up celebration animation (Kojima: "the data flows, just needs a moment")
+- [ ] NPC awareness of recent feedback events (Kojima: prompt engineering, zero frontend)
+- [ ] Feedback time decay — old feedback loses weight via exponential decay (Fei-Fei Li)
+- [ ] Agent-to-human clarification channel — agent asks one question per cycle when uncertain (Fei-Fei Li)
+- [ ] Cycle lock staleness recovery — auto-clear if no phase events for 5+ minutes (Swyx)
 - [ ] Achievement system — milestones, collections, hidden achievements with rewards
-- [ ] Gold sinks — skill rarity upgrade (common → uncommon → rare → epic → legendary)
-- [ ] NPC affinity — daily chat rewards, relationship unlocks exclusive quests
 - [ ] MP-at-zero "burnout" event — triggers recovery quest
-- [ ] Feedback sentiment drives quest recommendations
 
-### P2 — Polish the Experience / 体验打磨
-- [ ] Manual skill classification override
+### P3 — Polish & Expand / 打磨与扩展
+- [ ] `pip install hermes-quest-dashboard` — ship as Python package with bundled frontend
+- [ ] New player tutorial — first-run guided setup
 - [ ] Skill search/filter (by category, rarity, source)
-- [ ] NPC quest chains (multi-step narrative quests)
-- [ ] New player tutorial
-- [ ] Understanding stat transparency
-
-### P3 — Expand the World / 扩展世界
-- [ ] Skill synergy/fusion ("Frontend + Data" → "Data Visualization")
-- [ ] Seasonal events (limited-time regions, special NPCs)
 - [ ] Agent hypothesis generation (analyze *why* failures happen)
 - [ ] Forgetting curves + confidence intervals for mastery
-- [ ] Multi-agent / leaderboard support
+- [ ] YAML/CLI config export — lightweight alternative for power users (Butterfield)
+- [ ] Tauri desktop app (DMG) with PyInstaller sidecar
 
 ---
 
