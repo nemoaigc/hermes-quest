@@ -101,6 +101,86 @@ function getPhaseDetail(event: GameEvent): string {
   return ''
 }
 
+function summarizeText(text: string, max = 96): string {
+  const normalized = text.replace(/\s+/g, ' ').trim()
+  if (!normalized) return 'No signal captured yet.'
+  if (normalized.length <= max) return normalized
+  return `${normalized.slice(0, max - 3).trimEnd()}...`
+}
+
+function InsetBox({
+  title,
+  accent,
+  children,
+  style,
+}: {
+  title?: string
+  accent?: string
+  children: React.ReactNode
+  style?: React.CSSProperties
+}) {
+  return (
+    <div
+      style={{
+        background: 'linear-gradient(180deg, rgba(16,10,6,0.28) 0%, rgba(7,4,2,0.22) 100%)',
+        border: '1px solid rgba(107, 76, 42, 0.35)',
+        boxShadow: 'inset 0 0 0 1px rgba(214,187,146,0.05)',
+        padding: '6px 7px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '5px',
+        ...style,
+      }}
+    >
+      {title ? (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '5px',
+            color: accent || '#8e7557',
+            letterSpacing: '0.6px',
+          }}
+        >
+          <span>{title}</span>
+          <div style={{ flex: 1, height: '1px', background: hexToRgba(accent || '#8e7557', 0.22) }} />
+        </div>
+      ) : null}
+      {children}
+    </div>
+  )
+}
+
+function MetricCell({
+  label,
+  value,
+  color,
+  tone = 'default',
+}: {
+  label: string
+  value: React.ReactNode
+  color: string
+  tone?: 'default' | 'alert'
+}) {
+  return (
+    <div
+      style={{
+        padding: '5px 6px',
+        border: '1px solid rgba(107, 76, 42, 0.28)',
+        background: tone === 'alert' ? 'rgba(120, 46, 28, 0.11)' : 'rgba(10, 6, 4, 0.12)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '2px',
+        minWidth: 0,
+      }}
+    >
+      <div style={{ fontSize: '5px', color: '#7d674d' }}>{label}</div>
+      <div style={{ fontSize: '8px', color, lineHeight: 1.1 }}>{value}</div>
+    </div>
+  )
+}
+
 function CanvasPanel({
   title,
   accent,
@@ -183,11 +263,11 @@ function CanvasPanel({
 }
 
 export default function MapBottomInfo() {
-  const state = useStore((store) => store.state)
   const km = useStore((store) => store.knowledgeMap)
   const sites = useStore((store) => store.sites)
   const classifying = useStore((store) => store.classifying)
   const events = useStore((store) => store.events)
+  const feedbackDigest = useStore((store) => store.feedbackDigest)
   const cycleProgress = useStore((store) => store.cycleProgress)
   const setFeedbackDigest = useStore((store) => store.setFeedbackDigest)
 
@@ -280,13 +360,30 @@ export default function MapBottomInfo() {
 
   const definedSites = sites.filter((site) => site.defined)
   const undefinedCount = sites.length - definedSites.length
-  const avgMastery = workflows.length > 0
-    ? Math.round((workflows.reduce((sum, workflow) => sum + (workflow.mastery || 0), 0) / workflows.length) * 100)
-    : 0
+  const siteCoverage = sites.length > 0 ? Math.round((definedSites.length / sites.length) * 100) : 0
   const hasCycleTrace = latestCycleTrace.some((item) => item.hasEvent)
   const completedCycle = cycleStatus === 'success'
   const activePhase = completedCycle ? null : cycleProgress?.phase || (cycleLoading ? 'reflect' : null)
   const activePhaseIndex = activePhase ? PHASE_ORDER.indexOf(activePhase) : -1
+  const cycleTarget = cycleProgress?.target_workflow
+    || latestCycleTrace.find((item) => item.phase === 'plan' && item.detail)?.detail
+    || 'Awaiting target'
+  const currentCycleSummary = summarizeText(
+    cycleProgress?.summary
+    || latestCycleTrace.find((item) => item.phase === 'execute' && item.detail)?.detail
+    || latestCycleTrace.find((item) => item.phase === 'reflect' && item.detail)?.detail
+    || 'No live cycle output yet.',
+    120,
+  )
+  const latestCorrection = summarizeText(
+    feedbackDigest?.user_corrections[0]
+    || 'No explicit correction signals recorded.',
+    92,
+  )
+  const classifyProgressWidth = classifying ? '74%' : classifyStatus === 'done' ? '100%' : '18%'
+  const frontierWorkflows = [...workflows]
+    .sort((a, b) => (b.mastery || 0) - (a.mastery || 0) || (b.interaction_count || 0) - (a.interaction_count || 0))
+    .slice(0, 3)
 
   const classifyLabel = classifyStatus === 'running' ? 'SORTING' : classifyStatus === 'done' ? 'DONE' : 'READY'
   const classifyColor = classifyStatus === 'running' ? '#f0e68c' : classifyStatus === 'done' ? '#66bb6a' : '#8b7355'
@@ -300,175 +397,237 @@ export default function MapBottomInfo() {
           ? 'LAST RUN'
           : 'READY'
   const cycleColor = cycleStatus === 'failed' ? '#ff6b6b' : completedCycle ? '#66bb6a' : cycleLoading ? '#f0e68c' : '#8b7355'
-
-  const stats = [
-    { label: 'LV', value: state?.level ?? 0, color: '#f0e68c' },
-    { label: 'SKILLS', value: state?.skills_count ?? 0, color: '#55aaff' },
-    { label: 'SITES', value: definedSites.length, color: '#66bb6a' },
-    { label: 'UNSEEN', value: undefinedCount, color: '#ff9944' },
-    { label: 'MAP', value: state?.workflows_discovered ?? workflows.length, color: '#b48eff' },
-    { label: 'MASTERY', value: `${avgMastery}%`, color: '#d0b080' },
-  ]
+  const classifyHint = classifying
+    ? 'Re-stitching workflow names, links, and fog hints.'
+    : classifyStatus === 'done'
+      ? 'Fresh taxonomy sealed. Next site edit will wake the classifier again.'
+      : 'Next site mutation will trigger a new classification pass.'
+  const currentOrderText = summarizeText(cycleTarget, 44)
 
   return (
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 0.92fr 1.48fr 0.82fr',
+        gridTemplateColumns: '1.04fr 0.98fr 1.42fr 0.9fr',
         gap: '8px',
         width: '100%',
         minWidth: 0,
         fontFamily: 'var(--font-pixel)',
       }}
     >
-      <CanvasPanel title="CURRENT STATS" accent="#d0b080" status={`LV ${state?.level ?? 0}`} statusColor="#f0e68c">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px 8px', flex: 1 }}>
-          {stats.map((stat) => (
-            <div key={stat.label} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              <div style={{ fontSize: '5px', color: '#7d674d' }}>{stat.label}</div>
-              <div style={{ fontSize: '8px', color: stat.color }}>{stat.value}</div>
+      <CanvasPanel title="ATLAS" accent="#d0b080" status={`${siteCoverage}% CHARTED`} statusColor="#66bb6a">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', flex: 1 }}>
+          <InsetBox title="WORLD STATE" accent="#d0b080">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+              <MetricCell label="CHARTED" value={`${definedSites.length}/${Math.max(sites.length, definedSites.length)}`} color="#66bb6a" />
+              <MetricCell label="FOG" value={undefinedCount} color="#ff9944" tone={undefinedCount > 0 ? 'alert' : 'default'} />
             </div>
-          ))}
+          </InsetBox>
+
+          <InsetBox title="ACTIVE FRONTS" accent="#ffb36b" style={{ flex: 1 }}>
+            {frontierWorkflows.length > 0 ? frontierWorkflows.map((workflow) => {
+              const mastery = Math.round((workflow.mastery || 0) * 100)
+              return (
+                <div key={workflow.id} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '5px' }}>
+                    <span style={{ color: '#caa980', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {workflow.name}
+                    </span>
+                    <span style={{ color: '#d8b16a' }}>{mastery}%</span>
+                  </div>
+                  <div style={{ height: '6px', background: 'rgba(0,0,0,0.24)', border: '1px solid rgba(107, 76, 42, 0.42)', overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        width: `${mastery}%`,
+                        height: '100%',
+                        background: 'linear-gradient(90deg, rgba(216,177,106,0.35) 0%, #d8b16a 100%)',
+                      }}
+                    />
+                  </div>
+                </div>
+              )
+            }) : (
+              <div style={{ fontSize: '6px', color: '#8a7253', lineHeight: '1.35' }}>
+                No workflow fronts discovered yet. Finish a cycle to carve the first route into the atlas.
+              </div>
+            )}
+          </InsetBox>
         </div>
       </CanvasPanel>
 
       <CanvasPanel title="CLASSIFY" accent="#f0e68c" status={classifyLabel} statusColor={classifyColor}>
-        <div
-          style={{
-            height: '9px',
-            background: 'rgba(0,0,0,0.26)',
-            border: '1px solid rgba(107, 76, 42, 0.45)',
-            borderRadius: '999px',
-            overflow: 'hidden',
-          }}
-        >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, justifyContent: 'space-between' }}>
           <div
             style={{
-              width: classifyStatus === 'running' ? '78%' : classifyStatus === 'done' ? '100%' : '0%',
-              height: '100%',
-              background: classifyStatus === 'running'
-                ? 'linear-gradient(90deg, #785b22 0%, #f0e68c 100%)'
-                : classifyStatus === 'done'
-                  ? 'linear-gradient(90deg, #2f5c34 0%, #66bb6a 100%)'
-                  : 'transparent',
-              transition: 'width 0.35s ease',
+              height: '11px',
+              background: 'rgba(0,0,0,0.26)',
+              border: '1px solid rgba(107, 76, 42, 0.45)',
+              overflow: 'hidden',
             }}
-          />
-        </div>
-        <div style={{ fontSize: '6px', color: '#9a7f5f', lineHeight: '1.35' }}>
-          {classifyStatus === 'running'
-            ? 'LLM is rebuilding map categories after your latest site edits.'
-            : classifyStatus === 'done'
-              ? 'Latest site changes have been reclassified into the world map.'
-              : 'Deleting or editing a site will trigger a fresh classification pass.'}
+          >
+            <div
+              style={{
+                width: classifyProgressWidth,
+                height: '100%',
+                background: classifyStatus === 'running'
+                  ? 'linear-gradient(90deg, #785b22 0%, #f0e68c 100%)'
+                  : classifyStatus === 'done'
+                    ? 'linear-gradient(90deg, #2f5c34 0%, #66bb6a 100%)'
+                    : 'linear-gradient(90deg, rgba(240,230,140,0.14) 0%, rgba(240,230,140,0.28) 100%)',
+                transition: 'width 0.35s ease',
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              marginTop: 'auto',
+              padding: '6px 7px',
+              border: '1px solid rgba(107, 76, 42, 0.28)',
+              background: 'rgba(10, 6, 4, 0.14)',
+              fontSize: '6px',
+              color: '#b69770',
+              lineHeight: '1.38',
+            }}
+          >
+            {classifyHint}
+          </div>
         </div>
       </CanvasPanel>
 
       <CanvasPanel title="CYCLE FLOW" accent="#55aaff" status={cycleLabel} statusColor={cycleColor}>
-        <div style={{ display: 'flex', gap: '4px' }}>
-          {PHASE_ORDER.map((phase, index) => {
-            const isDone = completedCycle ? latestCycleTrace[index]?.hasEvent : index < activePhaseIndex
-            const isCurrent = !completedCycle && index === activePhaseIndex
-            return (
-              <div
-                key={phase}
-                style={{
-                  flex: 1,
-                  height: '8px',
-                  borderRadius: '999px',
-                  background: isDone ? '#66bb6a' : isCurrent ? PHASE_COLORS[phase] : 'rgba(0,0,0,0.22)',
-                  border: `1px solid ${isDone ? '#4a9a4a' : isCurrent ? hexToRgba(PHASE_COLORS[phase], 0.8) : 'rgba(107, 76, 42, 0.35)'}`,
-                  boxShadow: isCurrent ? `0 0 8px ${hexToRgba(PHASE_COLORS[phase], 0.22)}` : 'none',
-                }}
-              />
-            )
-          })}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          {latestCycleTrace.map(({ phase, detail, hasEvent }, index) => {
-            const isDone = completedCycle ? hasEvent : index < activePhaseIndex
-            const isCurrent = !completedCycle && index === activePhaseIndex
-            const text = detail || (isCurrent ? 'Waiting for step output...' : hasEvent ? 'Recorded.' : 'Pending...')
-            return (
-              <div
-                key={phase}
-                style={{
-                  display: 'flex',
-                  gap: '6px',
-                  alignItems: 'flex-start',
-                  padding: '4px 5px',
-                  borderRadius: '4px',
-                  background: isCurrent
-                    ? hexToRgba(PHASE_COLORS[phase], 0.12)
-                    : isDone
-                      ? 'rgba(102, 187, 106, 0.08)'
-                      : 'rgba(0,0,0,0.16)',
-                  border: `1px solid ${isCurrent
-                    ? hexToRgba(PHASE_COLORS[phase], 0.26)
-                    : isDone
-                      ? 'rgba(102, 187, 106, 0.2)'
-                      : 'rgba(107, 76, 42, 0.2)'}`,
-                }}
-              >
-                <div
-                  style={{
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '3px',
-                    flexShrink: 0,
-                    background: isDone ? '#66bb6a' : isCurrent ? PHASE_COLORS[phase] : 'rgba(42, 28, 15, 0.95)',
-                    border: `1px solid ${isDone ? '#4a9a4a' : isCurrent ? hexToRgba(PHASE_COLORS[phase], 0.85) : 'rgba(107, 76, 42, 0.35)'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '6px',
-                    color: isDone || isCurrent ? '#101010' : '#876e52',
-                  }}
-                >
-                  {index + 1}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '5px', color: PHASE_COLORS[phase], letterSpacing: '0.5px', marginBottom: '2px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', flex: 1 }}>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            {PHASE_ORDER.map((phase, index) => {
+              const isDone = completedCycle ? latestCycleTrace[index]?.hasEvent : index < activePhaseIndex
+              const isCurrent = !completedCycle && index === activePhaseIndex
+              return (
+                <div key={phase} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <div style={{ fontSize: '5px', color: PHASE_COLORS[phase], textAlign: 'center' }}>
                     {PHASE_LABELS[phase]}
                   </div>
                   <div
                     style={{
+                      height: '7px',
+                      background: isDone ? '#66bb6a' : isCurrent ? PHASE_COLORS[phase] : 'rgba(0,0,0,0.22)',
+                      border: `1px solid ${isDone ? '#4a9a4a' : isCurrent ? hexToRgba(PHASE_COLORS[phase], 0.8) : 'rgba(107, 76, 42, 0.35)'}`,
+                      boxShadow: isCurrent ? `0 0 8px ${hexToRgba(PHASE_COLORS[phase], 0.22)}` : 'none',
+                    }}
+                  />
+                </div>
+              )
+            })}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+            {latestCycleTrace.map(({ phase, detail, hasEvent }, index) => {
+              const isDone = completedCycle ? hasEvent : index < activePhaseIndex
+              const isCurrent = !completedCycle && index === activePhaseIndex
+              const text = summarizeText(
+                detail || (isCurrent ? currentCycleSummary : hasEvent ? 'Recorded.' : 'Pending...'),
+                56,
+              )
+              return (
+                <div
+                  key={phase}
+                  style={{
+                    display: 'flex',
+                    gap: '6px',
+                    alignItems: 'flex-start',
+                    padding: '4px 5px',
+                    background: isCurrent
+                      ? hexToRgba(PHASE_COLORS[phase], 0.12)
+                      : isDone
+                        ? 'rgba(102, 187, 106, 0.08)'
+                        : 'rgba(0,0,0,0.16)',
+                    border: `1px solid ${isCurrent
+                      ? hexToRgba(PHASE_COLORS[phase], 0.26)
+                      : isDone
+                        ? 'rgba(102, 187, 106, 0.2)'
+                        : 'rgba(107, 76, 42, 0.2)'}`,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '18px',
+                      height: '18px',
+                      flexShrink: 0,
+                      background: isDone ? '#66bb6a' : isCurrent ? PHASE_COLORS[phase] : 'rgba(42, 28, 15, 0.95)',
+                      border: `1px solid ${isDone ? '#4a9a4a' : isCurrent ? hexToRgba(PHASE_COLORS[phase], 0.85) : 'rgba(107, 76, 42, 0.35)'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       fontSize: '6px',
-                      color: isCurrent ? '#e2c89d' : isDone ? '#e8d5b0' : '#8c7457',
-                      lineHeight: '1.28',
-                      overflow: 'hidden',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
+                      color: isDone || isCurrent ? '#101010' : '#876e52',
                     }}
                   >
-                    {text}
+                    {index + 1}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '5px', color: PHASE_COLORS[phase], letterSpacing: '0.5px', marginBottom: '2px' }}>
+                      {PHASE_LABELS[phase]}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '6px',
+                        color: isCurrent ? '#e2c89d' : isDone ? '#e8d5b0' : '#8c7457',
+                        lineHeight: '1.28',
+                        overflow: 'hidden',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                      }}
+                    >
+                      {text}
+                    </div>
                   </div>
                 </div>
+              )
+            })}
+            {!hasCycleTrace && !cycleLoading ? (
+              <div style={{ fontSize: '6px', color: '#8a7253', lineHeight: '1.3' }}>
+                Start a cycle and this ledger will capture each phase as it lands.
               </div>
-            )
-          })}
-          {!hasCycleTrace && !cycleLoading ? (
-            <div style={{ fontSize: '6px', color: '#7c6548', lineHeight: '1.3' }}>
-              Start a cycle and this panel will capture each step live.
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
       </CanvasPanel>
 
       <CanvasPanel
-        title="ACTION"
+        title="COMMAND"
         accent="#66bb6a"
         status={feedbackCount > 0 ? `${feedbackCount} FB` : 'READY'}
         statusColor={feedbackCount > 0 ? '#f0e68c' : '#8b7355'}
       >
-        <div style={{ fontSize: '6px', color: '#9a7f5f', lineHeight: '1.35', flex: 1 }}>
-          Launch a quest cycle using the current map state and recorded feedback.
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', flex: 1 }}>
+          <div
+            style={{
+              padding: '8px 0 7px',
+              borderTop: '1px solid rgba(107, 76, 42, 0.25)',
+              borderBottom: '1px solid rgba(107, 76, 42, 0.25)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px',
+            }}
+          >
+            <div style={{ fontSize: '5px', color: '#d8b16a', letterSpacing: '0.6px' }}>NEXT ORDER</div>
+            <div style={{ fontSize: '7px', color: '#e2c89d', lineHeight: '1.3' }}>
+              {currentOrderText}
+            </div>
+            <div style={{ fontSize: '5px', color: '#7f694d', lineHeight: '1.32' }}>
+              {latestCorrection}
+            </div>
+          </div>
+
+          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <RpgButton onClick={handleStartCycle} disabled={cycleLoading || classifying}>
+              {cycleStatus === 'loading' ? '...' : cycleStatus === 'success' ? 'DONE' : cycleStatus === 'failed' ? 'FAILED' : '\u25B6 CYCLE'}
+            </RpgButton>
+            <div style={{ fontSize: '5px', color: '#7f694d', textAlign: 'center' }}>
+              {classifying ? 'Classification pass must finish before launch.' : 'Ready when you are.'}
+            </div>
+          </div>
         </div>
-        <RpgButton onClick={handleStartCycle} disabled={cycleLoading || classifying}>
-          {cycleStatus === 'loading' ? '...' : cycleStatus === 'success' ? 'DONE' : cycleStatus === 'failed' ? 'FAILED' : '\u25B6 CYCLE'}
-        </RpgButton>
       </CanvasPanel>
     </div>
   )
