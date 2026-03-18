@@ -70,8 +70,8 @@ GAME_BALANCE = {
     "rank_c_mastery_threshold": 15,
 }
 
-MODEL = os.environ.get("QUEST_MODEL", "gpt-5.4-nano")
-NPC_MODEL = os.environ.get("QUEST_NPC_MODEL", "gpt-5.4-nano")
+MODEL = os.environ.get("QUEST_MODEL", "gpt-5.4-mini")
+NPC_MODEL = os.environ.get("QUEST_NPC_MODEL", "gpt-5.4-mini")
 PROXY_URL = (
     os.environ.get("QUEST_PROXY_URL")
     or os.environ.get("HTTP_PROXY")
