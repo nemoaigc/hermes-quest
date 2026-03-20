@@ -6,10 +6,13 @@ import { API_URL, failQuest, fetchActiveQuests } from '../api'
 import { LS_KEYS } from '../constants/storage'
 import type { GameEvent } from '../store'
 
+// Only events where the AGENT made a decision that maps to a skill/workflow
+// Cycle cards have their own feedback buttons (in CyclePhaseGroup)
 const FEEDBACKABLE_TYPES = new Set([
-  'skill_drop', 'cycle_end', 'quest_complete', 'train_start',
-  'quest_create', 'quest_accept', 'quest_cancel', 'quest_fail',
-  'npc_chat', 'hub_acquire', 'cycle_start',
+  'skill_drop',      // agent learned a skill — user says good/bad skill
+  'quest_complete',   // agent finished a quest — user judges the outcome
+  'train_start',      // agent chose to train X — user steers direction
+  'hub_acquire',      // agent installed a skill — user approves/rejects
 ])
 
 const PHASE_ORDER = ['reflect', 'plan', 'execute', 'report'] as const
