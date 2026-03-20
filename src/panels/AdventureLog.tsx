@@ -6,7 +6,11 @@ import { API_URL, failQuest, fetchActiveQuests } from '../api'
 import { LS_KEYS } from '../constants/storage'
 import type { GameEvent } from '../store'
 
-const FEEDBACKABLE_TYPES = new Set(['skill_drop', 'cycle_end', 'quest_complete', 'train_start'])
+const FEEDBACKABLE_TYPES = new Set([
+  'skill_drop', 'cycle_end', 'quest_complete', 'train_start',
+  'quest_create', 'quest_accept', 'quest_cancel', 'quest_fail',
+  'npc_chat', 'hub_acquire', 'cycle_start',
+])
 
 const PHASE_ORDER = ['reflect', 'plan', 'execute', 'report'] as const
 const PHASE_META: Record<string, { color: string; label: string }> = {
@@ -22,7 +26,11 @@ type DisplayItem =
   | { kind: 'cycle_group'; phases: GameEvent[]; id: string }
 
 // --- Cycle Phase Group (collapsed by default) ---
-function CyclePhaseGroup({ phases }: { phases: GameEvent[] }) {
+function CyclePhaseGroup({ phases, onFeedback, sentFeedback }: {
+  phases: GameEvent[]
+  onFeedback: (key: string, type: 'positive' | 'negative', event_type: string, detail: string, eventData?: Record<string, unknown>) => void
+  sentFeedback: Record<string, 'positive' | 'negative'>
+}) {
   const [expanded, setExpanded] = useState(false)
 
   // Extract key info from phases
@@ -115,6 +123,47 @@ function CyclePhaseGroup({ phases }: { phases: GameEvent[] }) {
             {summary}
           </div>
         </div>
+
+        {/* Feedback buttons for the cycle */}
+        {(() => {
+          const cycleKey = `cycle-${latestTs}`
+          const alreadySent = sentFeedback[cycleKey]
+          return (
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                display: 'flex', gap: '2px', alignItems: 'center',
+                opacity: alreadySent ? 0.6 : 0.4,
+                transition: 'opacity 0.15s',
+                pointerEvents: alreadySent ? 'none' : 'auto',
+                flexShrink: 0,
+              }}
+              onMouseEnter={e => { if (!alreadySent) (e.currentTarget as HTMLElement).style.opacity = '1' }}
+              onMouseLeave={e => { if (!alreadySent) (e.currentTarget as HTMLElement).style.opacity = '0.4' }}
+            >
+              <button
+                onClick={() => onFeedback(cycleKey, 'positive', 'cycle_phase', summary, reflectPhase?.data)}
+                style={{
+                  background: alreadySent === 'positive' ? 'rgba(0,180,0,0.2)' : 'none',
+                  border: 'none', cursor: 'pointer', padding: '1px 2px',
+                  fontSize: '8px', lineHeight: 1,
+                  filter: alreadySent === 'negative' ? 'grayscale(1)' : 'none',
+                }}
+                title="Good cycle"
+              >👍</button>
+              <button
+                onClick={() => onFeedback(cycleKey, 'negative', 'cycle_phase', summary, reflectPhase?.data)}
+                style={{
+                  background: alreadySent === 'negative' ? 'rgba(180,0,0,0.2)' : 'none',
+                  border: 'none', cursor: 'pointer', padding: '1px 2px',
+                  fontSize: '8px', lineHeight: 1,
+                  filter: alreadySent === 'positive' ? 'grayscale(1)' : 'none',
+                }}
+                title="Bad cycle"
+              >👎</button>
+            </div>
+          )
+        })()}
 
         {/* Time + chevron */}
         <div style={{
@@ -351,7 +400,7 @@ export default function AdventureLog() {
 
           {displayItems.map((item, displayIdx) => {
             if (item.kind === 'cycle_group') {
-              return <CyclePhaseGroup key={item.id} phases={item.phases} />
+              return <CyclePhaseGroup key={item.id} phases={item.phases} onFeedback={handleFeedback} sentFeedback={sentFeedback} />
             }
 
             // Regular event rendering
