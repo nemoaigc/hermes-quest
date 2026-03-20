@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 import yaml
 
-from config import CYCLE_LOCK_FILE, EVENTS_FILE, MAP_FILE, QUESTS_V2_FILE, SKILLS_DIR, STATE_FILE
+from config import CYCLE_LOCK_FILE, EVENTS_FILE, FEEDBACK_DIGEST_FILE, MAP_FILE, QUESTS_V2_FILE, SKILLS_DIR, STATE_FILE
 
 from models import insert_event, upsert_state, upsert_skill, upsert_quest
 from ws_manager import manager
@@ -219,6 +219,17 @@ class QuestWatcher:
                     CYCLE_LOCK_FILE.unlink(missing_ok=True)
                 except OSError:
                     logger.warning("Failed to clear cycle lock after report phase", exc_info=True)
+
+            # For reflect phase: check if feedback digest has any signals
+            feedback_influenced = False
+            if data.get("phase") == "reflect":
+                try:
+                    digest = json.loads(FEEDBACK_DIGEST_FILE.read_text()) if FEEDBACK_DIGEST_FILE.exists() else {}
+                    total = digest.get("summary", {}).get("total_positive", 0) + digest.get("summary", {}).get("total_negative", 0)
+                    feedback_influenced = total > 0
+                except Exception:
+                    pass
+
             await manager.broadcast({
                 "type": "cycle_progress",
                 "data": {
@@ -228,6 +239,7 @@ class QuestWatcher:
                     "reason": data.get("reason"),
                     "progress": data.get("progress"),
                     "outcomes": data.get("outcomes"),
+                    "feedback_influenced": feedback_influenced,
                     "ts": event.get("ts"),
                 },
             })

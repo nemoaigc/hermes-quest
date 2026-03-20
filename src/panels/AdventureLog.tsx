@@ -50,8 +50,9 @@ function CyclePhaseGroup({ phases, onFeedback, sentFeedback }: {
   const reflectSummary = (reflectData?.summary as string) || ''
   const reportOutcomes = (reportData?.outcomes as string[]) || []
 
-  // Detect if feedback influenced this cycle
-  const feedbackInfluenced = reflectSummary.toLowerCase().includes('feedback') ||
+  // Detect if feedback influenced this cycle — prefer backend flag, fallback to keyword match
+  const feedbackInfluenced = (reflectData?.feedback_influenced === true) ||
+    reflectSummary.toLowerCase().includes('feedback') ||
     reflectSummary.toLowerCase().includes('avoid') ||
     reflectSummary.toLowerCase().includes('pivot') ||
     reflectSummary.toLowerCase().includes('rejection') ||
