@@ -267,6 +267,14 @@ async def reclassify_skills_after_site_change(sites: list, model: str, broadcast
                 if total_in_map != len(skills):
                     logger.warning(f"Skill count mismatch: {total_in_map} in map vs {len(skills)} in DB")
 
+                # Re-derive inter-workflow connections from the freshly
+                # populated skills_involved. Without this the SubRegionGraph
+                # panel renders isolated nodes.
+                from connections_infer import infer_connections
+                connections = infer_connections(km.get("workflows", []))
+                km["connections"] = connections
+                logger.info(f"Inferred {len(connections)} inter-workflow connection(s)")
+
                 MAP_FILE.write_text(json.dumps(km, indent=2))
 
             logger.info(f"Reclassified {len(skills)} skills into {len(defined_sites)} sites")
