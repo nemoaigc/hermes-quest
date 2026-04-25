@@ -64,6 +64,7 @@ _feedbacked_event_ids: set[str] = set()
 
 from npc_chat import chat_with_npc, VALID_NPCS
 from skill_classify import reclassify_skills_after_site_change
+from bag_classifier import classify_completion
 
 
 # --- Chronicle Event Helper ---
@@ -1123,16 +1124,18 @@ async def get_bag_items():
         for f in sorted(COMPLETIONS_DIR.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
             if f.suffix == ".md":
                 try:
+                    raw = f.read_text() if f.stat().st_size > 0 else ""
+                    classification = classify_completion(raw, f.stem)
                     items.append({
                         "id": f"completion-{f.stem}",
-                        "type": "research_note",
+                        "type": classification["type"],
                         "name": f.stem.replace("-", " ").title(),
-                        "description": f.read_text()[:200] if f.stat().st_size > 0 else "",
+                        "description": raw[:200],
                         "source_quest": None,
                         "created_at": datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc).isoformat(),
                         "file_path": str(f),
-                        "icon": "scroll",
-                        "rarity": "common",
+                        "icon": classification["icon"],
+                        "rarity": classification["rarity"],
                     })
                 except OSError:
                     pass
